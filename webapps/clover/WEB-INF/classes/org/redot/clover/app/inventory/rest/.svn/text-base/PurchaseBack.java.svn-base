@@ -1,0 +1,25 @@
+package org.redot.clover.app.inventory.rest;
+
+import org.redot.clover.app.inventory.PurchaseAction;
+import org.redot.clover.core.data.DataPackage;
+import org.redot.clover.core.ext.BaseResource;
+import org.restlet.resource.Post;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 12-11-5
+ * Time: 下午3:29
+ * To change this template use File | Settings | File Templates.
+ */
+public class PurchaseBack extends BaseResource{
+
+    @Post("json")
+    public String doPost() {
+        DataPackage dp = new DataPackage();
+        PurchaseAction a = new PurchaseAction();
+        a.setClient(client);
+        dp.setStatus(a.back(form));
+        return dp.toJSON();
+    }
+}

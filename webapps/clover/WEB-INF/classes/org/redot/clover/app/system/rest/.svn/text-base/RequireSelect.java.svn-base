@@ -1,0 +1,42 @@
+package org.redot.clover.app.system.rest;
+
+import org.redot.clover.app.system.DictAction;
+import org.redot.clover.app.system.RequireAction;
+import org.redot.clover.core.data.SimpleDataPackage;
+import org.redot.clover.core.ext.BaseResource;
+import org.redot.library.lang.StringUtils;
+import org.restlet.resource.Get;
+
+import java.util.List;
+import java.util.Map;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 11-3-27
+ * Time: 下午5:35
+ * To change this template use File | Settings | File Templates.
+ */
+public class RequireSelect extends BaseResource {
+
+    @Get("json")
+    public String doGet() {
+        SimpleDataPackage dp = new SimpleDataPackage();
+        RequireAction a = new RequireAction();
+        List<Map> list = a.select();
+        if (list == null) {
+            return dp.toJSON();
+        }
+        String[] suggestions = new String[list.size()];
+        String[] data = new String[list.size()];
+        for (int i = 0; i < list.size(); i++) {
+            suggestions[i] = StringUtils.toString(list.get(i).get("REQUIRE_DESC"));
+            data[i] = StringUtils.toString(list.get(i).get("REQUIRE_DESC"));
+        }
+        dp.setSuggestions(suggestions);
+        dp.setData(data);
+        return dp.toJSON();
+    }
+
+
+}

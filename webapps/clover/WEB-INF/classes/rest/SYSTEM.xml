@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<clover>
+    <!-- 系统 -->
+
+    <resource class="org.redot.clover.app.desk.rest.Desk">/desk</resource>
+    <resource class="org.redot.clover.app.desk.rest.Desk">/desk/info/{ID}</resource>
+    <!--<resource class="org.redot.clover.app.desk.rest.DeskList">/desk/list</resource>-->
+    <resource class="org.redot.clover.app.desk.rest.DeskList">/desk/list/{DESK_AREA_ID}</resource>
+    <resource class="org.redot.clover.app.desk.rest.DeskArea">/desk/area</resource>
+    <resource class="org.redot.clover.app.desk.rest.DeskAreaList">/desk/area/list</resource>
+    <resource class="org.redot.clover.app.desk.rest.DeskAreaTree">/desk/area/tree</resource>
+    <resource class="org.redot.clover.app.desk.rest.DeskFloor">/desk/floor</resource>
+    <resource class="org.redot.clover.app.desk.rest.DeskFloor">/desk/floor/{PARENT}</resource>
+    <resource class="org.redot.clover.app.desk.rest.DeskAreaSelect">/desk/area/select</resource>
+    <resource class="org.redot.clover.app.desk.rest.DeskFloorSelect">/desk/floor/select</resource>
+    <resource class="org.redot.clover.app.desk.rest.DeskType">/desk/type</resource>
+    <resource class="org.redot.clover.app.desk.rest.DeskStatus">/desk/status</resource>
+
+    <resource class="org.redot.clover.app.desk.rest.Deskx">/desk/{id}</resource>
+
+
+
+    <resource class="org.redot.clover.app.desk.rest.DeskArea">/deskarea</resource>
+
+    <resource class="org.redot.clover.app.desk.rest.DeskStatus">/deskstatus</resource>
+    <resource class="org.redot.clover.app.desk.rest.DeskSearch">/desksearch</resource>
+    <resource class="org.redot.clover.app.desk.rest.DeskFeeMin">/desk_fee_min</resource>
+    <resource class="org.redot.clover.app.desk.rest.DeskFeeMin">/desk_fee_min</resource>
+    <resource class="org.redot.clover.app.desk.rest.DeskFee">/desk/fee/{ID}</resource>
+    <resource class="org.redot.clover.app.desk.rest.DeskFloor">/deskfloor</resource>
+    <resource class="org.redot.clover.app.desk.rest.DeskType">/desktype</resource>
+    <resource class="org.redot.clover.app.desk.rest.DeskClothType">/deskclothtype</resource>
+    <resource class="org.redot.clover.app.common.TypeResource">/type/{id}</resource>
+
+
+
+    <!--<resource class="org.redot.clover.app.organization.AccountResource">/account/list</resource>-->
+    <!--<resource class="org.redot.clover.app.organization.AccountResource">/account/addinf</resource>-->
+
+
+
+
+
+    <!--综合设置-->
+    <resource class="org.redot.clover.app.system.rest.DPResource">/system/dp</resource>
+    <resource class="org.redot.clover.app.system.rest.KTResource">/system/kt</resource>
+
+    <!--商品-->
+
+
+
+
+
+
+
+
+<!--用户-->
+
+
+
+    <resource class="org.redot.clover.app.system.rest.CancelDishReason">/system/config/reason/dish/cancel</resource>
+    <resource class="org.redot.clover.app.system.rest.FreeDishReason">/system/config/reason/dish/free</resource>
+    <resource class="org.redot.clover.app.system.rest.GiveDishReason">/system/config/reason/dish/give</resource>
+    <resource class="org.redot.clover.app.system.rest.DiscountDishReason">/system/config/reason/dish/discount</resource>
+
+
+    <resource class="org.redot.clover.app.system.rest.CancelDishReasonSelect">/system/config/reason/dish/cancel/select</resource>
+    <resource class="org.redot.clover.app.system.rest.FreeDishReasonSelect">/system/config/reason/dish/free/select</resource>
+    <resource class="org.redot.clover.app.system.rest.GiveDishReasonSelect">/system/config/reason/dish/give/select</resource>
+    <resource class="org.redot.clover.app.system.rest.DiscountDishReasonSelect">/system/config/reason/dish/discount/select</resource>
+
+
+    <resource class="org.redot.clover.app.system.rest.DishTaste">/system/config/dish/taste</resource>
+    <resource class="org.redot.clover.app.system.rest.DishTasteSelect">/system/config/dish/taste/select</resource>
+
+    <resource class="org.redot.clover.app.system.rest.DishRequire">/system/config/dish/require</resource>
+    <resource class="org.redot.clover.app.system.rest.DishRequireSelect">/system/config/dish/require/select</resource>
+
+
+    <resource class="org.redot.clover.app.system.rest.SystemBasic">/system/basic</resource>
+
+    <resource class="org.redot.clover.app.system.rest.UnitList">/system/unit/list</resource>
+    <resource class="org.redot.clover.app.system.rest.UnitSelect">/system/unit/select</resource>
+    <resource class="org.redot.clover.app.system.rest.Unit">/system/unit/info/{ID}</resource>
+    <resource class="org.redot.clover.app.system.rest.Unit">/system/unit</resource>
+
+    <resource class="org.redot.clover.app.system.rest.TasteList">/system/taste/list</resource>
+    <resource class="org.redot.clover.app.system.rest.TasteSelect">/system/taste/select</resource>
+    <resource class="org.redot.clover.app.system.rest.Taste">/system/taste/info/{ID}</resource>
+    <resource class="org.redot.clover.app.system.rest.Taste">/system/taste</resource>
+
+    <resource class="org.redot.clover.app.system.rest.WayList">/system/way/list</resource>
+    <resource class="org.redot.clover.app.system.rest.WaySelect">/system/way/select</resource>
+    <resource class="org.redot.clover.app.system.rest.Way">/system/way/info/{ID}</resource>
+    <resource class="org.redot.clover.app.system.rest.Way">/system/way</resource>
+
+
+    <resource class="org.redot.clover.app.system.rest.ReasonList">/system/reason/list</resource>
+    <resource class="org.redot.clover.app.system.rest.Reason">/system/reason/info/{ID}</resource>
+    <resource class="org.redot.clover.app.system.rest.Reason">/system/reason</resource>
+
+    <resource class="org.redot.clover.app.system.rest.Require">/system/require</resource>
+    <resource class="org.redot.clover.app.system.rest.RequireSelect">/system/require/select</resource>
+
+
+    <resource class="org.redot.clover.app.system.rest.TakingList">/system/taking/list</resource>
+    <resource class="org.redot.clover.app.system.rest.Taking">/system/taking/info/{ID}</resource>
+    <resource class="org.redot.clover.app.system.rest.Taking">/system/taking</resource>
+
+
+    <resource class="org.redot.clover.app.system.rest.MTList">/system/mt/list</resource>
+    <resource class="org.redot.clover.app.system.rest.MTSelect">/system/mt/select</resource>
+    <resource class="org.redot.clover.app.system.rest.MTNow">/system/mt/now</resource>
+
+    <resource class="org.redot.clover.app.system.rest.SystemClear">/system/clear</resource>
+
+
+    <resource class="org.redot.clover.app.system.rest.LogList">/system/log/list</resource>
+    <resource class="org.redot.clover.app.system.rest.LogActionList">/system/log/action/list</resource>
+
+</clover>

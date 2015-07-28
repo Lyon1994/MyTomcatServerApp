@@ -1,0 +1,74 @@
+package org.redot.library.image;
+
+import com.sun.image.codec.jpeg.JPEGCodec;
+import com.sun.image.codec.jpeg.JPEGEncodeParam;
+import com.sun.image.codec.jpeg.JPEGImageEncoder;
+import org.redot.library.io.FileUtils;
+
+import javax.imageio.ImageIO;
+import java.awt.*;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 11-9-13
+ * Time: 下午3:42
+ * To change this template use File | Settings | File Templates.
+ */
+public class ImageUtils {
+
+    public static void compressJPEG(File srcFile, File targetFile, int width, int height, float quality) {
+        if (!FileUtils.isFile(srcFile)) {
+            return;
+        }
+        try {
+            Image src = ImageIO.read(srcFile);
+            int oldWidth = src.getWidth(null);
+            int oldHeight = src.getHeight(null);
+            BufferedImage img = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+            Graphics2D g = img.createGraphics();
+//            img = g.getDeviceConfiguration().createCompatibleImage(width, height, Transparency.TRANSLUCENT);
+//            g.dispose();
+//            g = img.createGraphics();
+            //g.setColor(Color.BLACK);
+            //g.setBackground(new Color(0x00, 0x00, 0x00, 0));
+            g.setColor(new Color(0xE0, 0xE0, 0xE0));
+
+            double xW = oldWidth / width;
+            double xH = oldHeight / height;
+            if (xW > xH) {
+                g.fillRect(0, 0, width, height);
+                int xHeight = (int) Math.round(oldHeight / xW);
+                g.drawImage(src.getScaledInstance(width, xHeight, Image.SCALE_SMOOTH), 0, (height - xHeight) / 2, null);
+            } else if (xW < xH) {
+                g.fillRect(0, 0, width, height);
+                int xWidth =  (int) Math.round(oldWidth / xH);
+                g.drawImage(src.getScaledInstance(xWidth, height, Image.SCALE_SMOOTH), (width - xWidth) / 2, 0, null);
+            } else {
+                g.drawImage(src.getScaledInstance(width, height, Image.SCALE_SMOOTH), 0, 0, null);
+            }
+            g.dispose();
+//            ImageIO.write(img, "png", targetFile);
+            FileOutputStream fos = null;
+            fos = new FileOutputStream(targetFile);
+            JPEGImageEncoder encoder = JPEGCodec.createJPEGEncoder(fos);
+            JPEGEncodeParam param = JPEGCodec.getDefaultJPEGEncodeParam(img);
+            /* 压缩质量 */
+            param.setQuality(quality, true);
+            encoder.encode(img, param);
+            fos.close();
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+    public static void compressJPEG(String srcFile, String targetFile, int width, int height, float quality) {
+        compressJPEG(FileUtils.toFile(srcFile), FileUtils.toFile(targetFile), width, height, quality);
+    }
+}

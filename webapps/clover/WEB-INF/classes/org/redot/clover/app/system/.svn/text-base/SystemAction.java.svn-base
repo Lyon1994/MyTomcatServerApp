@@ -1,0 +1,216 @@
+package org.redot.clover.app.system;
+
+import org.redot.clover.core.CloverManager;
+import org.redot.clover.core.ext.BaseAction;
+import org.redot.clover.core.ext.Params;
+import org.redot.library.db.IQuery;
+import org.redot.library.db.ITable;
+import org.redot.library.lang.DateUtils;
+import org.redot.library.lang.NumberUtils;
+import org.redot.library.lang.StringUtils;
+import org.restlet.data.Form;
+
+import java.text.NumberFormat;
+import java.util.*;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 10-12-31
+ * Time: 上午2:33
+ * To change this template use File | Settings | File Templates.
+ */
+public class SystemAction extends BaseAction {
+
+    public String makeSN(int type){
+        IQuery query = getQuery();
+        String now = DateUtils.formatDate(new Date(), "yyyyMMdd");
+        String sql = "SELECT SN_INDEX FROM X_SN WHERE SN_TYPE = ? AND SN_DATE = ?";
+        int index = 0;
+        if(query.rowCount(sql, type, now) == 0){
+            sql = "INSERT INTO X_SN (SN_DATE, SN_TYPE, SN_INDEX) VALUES (?, ?, ?)";
+            index = 1;
+            query.doExec(sql, now, type, index);
+        }
+        else{
+            index = NumberUtils.toInt(query.doQuery(sql, type, now).getValue()) + 1;
+            sql = "UPDATE X_SN SET SN_INDEX = ? WHERE SN_DATE = ? AND SN_TYPE = ?";
+            query.doExec(sql, index, now, type);
+        }
+        query.free();
+        NumberFormat format = NumberFormat.getInstance();
+        format.setMinimumIntegerDigits(4);
+        format.setGroupingUsed(false);
+        return now + format.format(index);
+    }
+    public String version(){
+        IQuery query = getQuery();
+        String sql = "SELECT VERSION FROM X_VERSION";
+        String version = query.doQuery(sql).getValue();
+        query.free();
+        return version;
+    }
+
+    public int clear(Form form){
+        Map data = form.getValuesMap();
+        String APPLY_TYPE = StringUtils.toString(data.get("APPLY_TYPE"));
+        String DATE_S = StringUtils.toString(data.get("DATE_S"));
+        String DATE_E = StringUtils.toString(data.get("DATE_E"));
+        if(APPLY_TYPE.equals("1")){
+            return clearBusiness(DATE_S, DATE_E);
+        }
+        else if(APPLY_TYPE.equals("2")){
+            return clearBusinessAll();
+        }
+        else if(APPLY_TYPE.equals("3")){
+            return clearAll();
+        }
+        return CloverManager.CODE_FAILED;
+    }
+
+    public int clearBusiness(String DATE_S, String DATE_E){
+        if(DATE_S.length() ==0 || DATE_E.length() == 0){
+            return CloverManager.CODE_FAILED;
+        }
+        IQuery query = getQuery();
+        String sql = "SELECT * FROM X_O WHERE O_DINE_DT >= '"+DATE_S+"' AND O_DINE_DT <= '"+DATE_E+"'";
+        System.out.println(sql);
+        List<Map> list = query.doQuery(sql).tables();
+        if(list.size() == 0){
+            query.free();
+            return CloverManager.CODE_SUCCESS;
+        }
+        String O_IDS = "";
+        String BILL_IDS = "";
+        String O_UNION_IDS = "";
+        for(Map m : list){
+            String O_ID = StringUtils.toString(m.get("O_ID"));
+            String BILL_ID = StringUtils.toString(m.get("O_BILL_ID"));
+            String O_UNION_ID = StringUtils.toString(m.get("O_UNION_ID"));
+            if(O_IDS.length() > 0){
+                O_IDS += ",";
+            }
+            O_IDS += O_ID;
+            if(BILL_ID.length() > 0){
+                if(BILL_IDS.length() > 0){
+                    BILL_IDS += ",";
+                }
+                BILL_IDS += BILL_ID;
+            }
+            if(O_UNION_ID.length() > 0){
+                if(O_UNION_IDS.length() > 0){
+                    O_UNION_IDS += ",";
+                }
+                O_UNION_IDS += O_UNION_ID;
+            }
+        }
+        query.doExec("DELETE FROM X_O WHERE O_ID IN ("+O_IDS+")");
+        if(O_UNION_IDS.length() > 0){
+            query.doExec("DELETE FROM X_O WHERE O_UNION_ID IN ("+O_UNION_IDS+")");
+        }
+        query.doExec("DELETE FROM X_O_P_UNDERTAKE WHERE O_P_NO IN (SELECT O_P_NO FROM X_O_P WHERE O_ID IN ("+O_IDS+"))");
+        query.doExec("DELETE FROM X_O_P WHERE O_ID IN ("+O_IDS+")");
+        if(BILL_IDS.length() > 0){
+            query.doExec("DELETE FROM X_BILL WHERE BILL_ID IN ("+BILL_IDS+")");
+            query.doExec("DELETE FROM X_BILL_PAY WHERE BILL_ID IN ("+BILL_IDS+")");
+            query.doExec("DELETE FROM X_BILL_FEE WHERE BILL_ID IN ("+BILL_IDS+")");
+            query.doExec("DELETE FROM X_BILL_UNDERTAKE WHERE BILL_ID IN ("+BILL_IDS+")");
+            query.doExec("DELETE FROM X_BILL_FAVORABLE_CASE WHERE BILL_ID IN ("+BILL_IDS+")");
+            query.doExec("DELETE FROM X_BILL_ACTIVATION WHERE BILL_ID IN ("+BILL_IDS+")");
+        }
+        query.doExec("DELETE FROM X_LOG WHERE O_DINE_DT >= '"+DATE_S+":00' AND O_DINE_DT <= '"+DATE_E+":59'");
+
+        return CloverManager.CODE_SUCCESS;
+    }
+
+    public int clearBusinessAll(){
+        IQuery query = getQuery();
+        query.doExec("DELETE FROM X_O");
+        query.doExec("DELETE FROM X_O_UNION ");
+        query.doExec("DELETE FROM X_O_P");
+        query.doExec("DELETE FROM X_O_P_UNDERTAKE");
+        query.doExec("DELETE FROM X_BILL");
+        query.doExec("DELETE FROM X_BILL_PAY");
+        query.doExec("DELETE FROM X_BILL_FEE");
+        query.doExec("DELETE FROM X_BILL_UNDERTAKE");
+        query.doExec("DELETE FROM X_BILL_FAVORABLE_CASE");
+        query.doExec("DELETE FROM X_BILL_ACTIVATION");
+        query.doExec("DELETE FROM X_SN");
+        query.doExec("DELETE FROM X_TAKE_MONEY");
+        query.doExec("DELETE FROM X_LOG");
+        query.free();
+        return CloverManager.CODE_SUCCESS;
+    }
+    public int clearAll(){
+        IQuery query = getQuery();
+        query.doExec("DELETE FROM X_O");
+        query.doExec("DELETE FROM X_O_UNION ");
+        query.doExec("DELETE FROM X_O_P");
+        query.doExec("DELETE FROM X_O_P_UNDERTAKE");
+        query.doExec("DELETE FROM X_BILL");
+        query.doExec("DELETE FROM X_BILL_PAY");
+        query.doExec("DELETE FROM X_BILL_FEE");
+        query.doExec("DELETE FROM X_BILL_UNDERTAKE");
+        query.doExec("DELETE FROM X_BILL_FAVORABLE_CASE");
+        query.doExec("DELETE FROM X_BILL_ACTIVATION");
+        query.doExec("DELETE FROM X_SN");
+        query.doExec("DELETE FROM X_TAKE_MONEY");
+        query.doExec("DELETE FROM X_DESK");
+        query.doExec("DELETE FROM X_DESK_AREA");
+        query.doExec("DELETE FROM X_DESK_FEE");
+        query.doExec("DELETE FROM X_DESK_FEE_AREA");
+        query.doExec("DELETE FROM X_DESK_FEE_MIN");
+        query.doExec("DELETE FROM X_P");
+        query.doExec("DELETE FROM X_P_COMBO");
+        query.doExec("DELETE FROM X_P_COMBO_P");
+        query.doExec("DELETE FROM X_P_COST");
+        query.doExec("DELETE FROM X_P_MT");
+        query.doExec("DELETE FROM X_P_SEASON");
+        query.doExec("DELETE FROM X_P_SP");
+        query.doExec("DELETE FROM X_P_TYPE");
+        query.doExec("DELETE FROM X_CLIENT");
+        query.doExec("DELETE FROM X_CLIENT_TYPE");
+        query.doExec("DELETE FROM X_CLIENT_CARD");
+        query.doExec("DELETE FROM X_FAVORABLE_CASE");
+        query.doExec("DELETE FROM X_FAVORABLE_CASE_DISCOUNT");
+        query.doExec("DELETE FROM X_FAVORABLE_CASE_MJ");
+        query.doExec("DELETE FROM X_FAVORABLE_CASE_MS");
+        query.doExec("DELETE FROM X_FAVORABLE_CASE_SO");
+        query.doExec("DELETE FROM X_KITCHEN_CASE");
+        query.doExec("DELETE FROM X_PRINT_CASE");
+        query.doExec("DELETE FROM X_PRINTER");
+        query.doExec("DELETE FROM X_DATA_VERSION");
+        query.doExec("DELETE FROM X_LOG");
+        query.free();
+        return CloverManager.CODE_SUCCESS;
+    }
+
+    public static String makeOSN(){
+        return new SystemAction().makeSN(1);
+    }
+
+    public static String makeBSN(){
+        return new SystemAction().makeSN(2);
+    }
+    public static String makePOSN(){
+        return new SystemAction().makeSN(11);
+    }
+    public  static String makePRSN(){
+        return new SystemAction().makeSN(12);
+    }
+    public static int getBookInterval(){
+        return new SystemBasicAction().getBookInterval();
+    }
+    public static String getCompany(){
+        return new SystemBasicAction().getCompany();
+    }
+
+    public static boolean isCut(){
+        return new SystemBasicAction().isCut();
+    }
+
+    public static boolean isSign(){
+        return new SystemBasicAction().isSign();
+    }
+
+}

@@ -1,0 +1,71 @@
+package org.redot.clover.demon;
+
+import org.apache.log4j.Logger;
+import org.redot.clover.demon.service.KitchenMonitor;
+import org.redot.clover.demon.service.PrintMonitor;
+import org.redot.clover.demon.service.PrintTemplateInitialize;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 11-4-7
+ * Time: 上午10:33
+ * To change this template use File | Settings | File Templates.
+ */
+public class DemonService extends Timer {
+    Logger logger = Logger.getLogger(this.getClass());
+
+    private static DemonService instance = null;
+
+    private List<Demon> demons = new ArrayList<Demon>();
+
+    public void addDemon(Demon demon){
+        logger.info("Add Demo ["+demon.getName()+"]");
+        this.demons.add(demon);
+        this.exec(demon);
+    }
+
+    private void exec(Demon demon){
+        if(demon.isRepeat()){
+            this.scheduleAtFixedRate(demon, demon.getDelay(), demon.getPeriod());
+        }
+        else{
+            this.schedule(demon, demon.getDelay());
+        }
+    }
+
+    @Override
+    public void cancel() {
+        super.cancel();
+        for(Demon demon : getDemons()){
+            demon.destroy();
+        }
+    }
+
+    private void init(){
+        addDemon(new PrintMonitor("print"));
+        addDemon(new PrintTemplateInitialize("print template initialize"));
+    }
+    public List<Demon> getDemons() {
+        return demons;
+    }
+
+    public DemonService(){
+        logger.info("Start Demon Service...");
+        init();
+    }
+
+    public static DemonService getInstance(){
+        if(instance == null){
+                instance = new DemonService();
+        }
+        return instance;
+    }
+
+
+}

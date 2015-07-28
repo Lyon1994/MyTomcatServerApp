@@ -1,0 +1,25 @@
+package org.redot.clover.app.product.rest;
+
+import org.redot.clover.app.product.ProductAction;
+import org.redot.clover.core.data.DataPackage;
+import org.redot.clover.core.ext.BaseResource;
+import org.restlet.resource.Post;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 11-4-18
+ * Time: 下午9:07
+ * To change this template use File | Settings | File Templates.
+ */
+public class ProductDelete extends BaseResource{
+
+
+    @Post("json")
+    public String doPost(){
+        DataPackage dp = new DataPackage();
+        ProductAction a = new ProductAction();
+        dp.setStatus(a.delete(form));
+        return dp.toJSON();
+    }
+}

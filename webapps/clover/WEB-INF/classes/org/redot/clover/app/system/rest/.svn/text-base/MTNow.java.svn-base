@@ -1,0 +1,40 @@
+package org.redot.clover.app.system.rest;
+
+import org.redot.clover.app.system.MarketTypeAction;
+import org.redot.clover.core.data.DataPackage;
+import org.redot.clover.core.ext.BaseResource;
+import org.restlet.resource.Get;
+
+import java.util.HashMap;
+import java.util.Map;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 10-12-31
+ * Time: 上午2:35
+ * To change this template use File | Settings | File Templates.
+ */
+public class MTNow extends BaseResource {
+    @Get("json")
+    public String doGet() {
+        DataPackage dp = new DataPackage();
+        MarketTypeAction a = new MarketTypeAction();
+        String[] mt = a.getNowMT();
+        Map m = new HashMap();
+        if(mt.length > 0){
+            m.put("MT_ID", mt[0]);
+            m.put("MT_NAME", mt[1]);
+            m.put("MT_DT_S", mt[2]);
+            m.put("MT_DT_E", mt[3]);
+        }
+        else{
+            m.put("MT_ID", "");
+            m.put("MT_NAME", "");
+            m.put("MT_DT_S", "");
+            m.put("MT_DT_E", "");
+        }
+        dp.getData().put("form", m);
+        return dp.toJSON();
+    }
+}

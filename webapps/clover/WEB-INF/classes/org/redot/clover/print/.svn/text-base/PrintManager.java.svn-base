@@ -1,0 +1,172 @@
+package org.redot.clover.print;
+
+import org.redot.clover.core.CloverManager;
+import org.redot.library.db.IQuery;
+import org.redot.library.lang.NumberUtils;
+import org.redot.library.lang.StringUtils;
+
+import java.util.*;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 11-4-13
+ * Time: 下午9:59
+ * To change this template use File | Settings | File Templates.
+ */
+public class PrintManager {
+
+    private static PrintManager instance = null;
+
+    private List<Printer> printerList = new ArrayList<Printer>();
+
+    private Map<Integer, PrintThread> printThreadMap = new Hashtable<Integer, PrintThread>();
+
+
+    public synchronized void addJob(PrintJob job){
+        job.start();
+    }
+
+    public synchronized void addProxy(PrintProxy printProxy){
+        PrintThread printThread = getPrintThreadMap().get(printProxy.getPrinter().getId());
+        if(printThread == null){
+            System.out.println("找不到打印线程:" + printProxy.getPrinter().getIp() + ", " + printProxy.getTemplate());
+            return;
+        }
+        printThread.addProxy(printProxy);
+    }
+
+     public synchronized void addJob(int command, Map params){
+        addJob(new PrintJob(command, params));
+    }
+
+    public synchronized Map<Integer, PrintThread> getPrintThreadMap() {
+        return printThreadMap;
+    }
+
+    public PrintManager(){
+        init();
+    }
+
+    private void init(){
+        System.out.println("初始化打印机......");
+        initPrinter();
+        for(Printer printer : getPrinterList()){
+            System.out.println("创建打印服务线程:" + printer.getIp());
+            PrintThread printThread = new PrintThread(printer.getId());
+            getPrintThreadMap().put(printer.getId(), printThread);
+            printThread.start();
+            System.out.println("打印服务线程启动:" + printer.getIp());
+        }
+
+    }
+
+
+
+    public Printer getPrinter(int id){
+
+        for(Printer printer : getPrinterList()){
+            if(printer.getId() == id){
+                return printer;
+            }
+        }
+        return null;
+//        IQuery query = CloverManager.getInstance().getQuery();
+//        String sql = "SELECT * FROM X_PRINTER WHERE PRINTER_ID = " + id + " AND PRINTER_STATUS = 1";
+//        Map map = query.doQuery(sql).table();
+//        query.free();
+//        if(map == null){
+//            return null;
+//        }
+//        Printer printer = new Printer();
+//        printer.setId(NumberUtils.toInt(map.get("PRINTER_ID")));
+//        printer.setName(StringUtils.toString(map.get("PRINTER_NAME")));
+//        printer.setIp(StringUtils.toString(map.get("PRINTER_IP")));
+//        printer.setPort(NumberUtils.toInt(map.get("PRINTER_PORT")));
+//        int bakPrinterId = NumberUtils.toInt(map.get("PRINTER_BAK"));
+////        System.out.println("bakPrinterId = " + bakPrinterId);
+//        if(bakPrinterId > 0){
+//
+//            printer.setBakPrinter(getPrinter(bakPrinterId));
+////            System.out.println("printer.getBakPrinter().getIp() = " + printer.getBakPrinter().getIp());
+//        }
+//        return printer;
+    }
+
+    public void initPrinter(){
+        IQuery query = CloverManager.getInstance().getQuery();
+        String sql = "SELECT * FROM X_PRINTER WHERE PRINTER_STATUS = 1";
+        List<Map> list = query.doQuery(sql).tables();
+        for(Map map : list){
+            Printer printer = new Printer();
+            printer.setId(NumberUtils.toInt(map.get("PRINTER_ID")));
+            printer.setName(StringUtils.toString(map.get("PRINTER_NAME")));
+            printer.setIp(StringUtils.toString(map.get("PRINTER_IP")));
+            printer.setPort(NumberUtils.toInt(map.get("PRINTER_PORT")));
+            printer.setBakPrinderID(NumberUtils.toInt(map.get("PRINTER_BAK")));
+            getPrinterList().add(printer);
+        }
+        query.free();
+    }
+
+    public List<Printer> getPrinterList() {
+        return printerList;
+    }
+
+    public List<Map> getCaseConfig(int command){
+        List<Map> caseConfig = new ArrayList<Map>();
+        String sql = "SELECT A.*, B.*, C.* " +
+                "FROM X_PRINT_CASE A " +
+                "LEFT JOIN X_PRINT_TEMPLATE B ON B.TEMPLATE_ID = A.CASE_TEMPLATE " +
+                "LEFT JOIN X_PRINTER C ON A.CASE_PRINTER = C.PRINTER_ID " +
+                "WHERE A.CASE_STATUS= 1 AND A.CASE_COMMAND = " + command;
+
+        IQuery query = CloverManager.getInstance().getQuery();
+        List<Map> list = query.doQuery(sql).tables();
+        if(list.size() == 0){
+            query.free();
+            return caseConfig;
+        }
+        for(int i= 0;i<list.size();i++){
+            Map m = list.get(i);
+            String PRINTER_ID = StringUtils.toString(m.get("PRINTER_ID"));
+            if(PRINTER_ID.length() == 0){
+                continue;
+            }
+            Printer printer = getPrinter(NumberUtils.toInt(m.get("PRINTER_ID")));
+            if(printer == null){
+                System.out.println("该方案找不到打印机");
+                continue;
+            }
+            if(StringUtils.toString(m.get("TEMPLATE_NAME")).length() == 0){
+                continue;
+            }
+            Map d = new Hashtable();
+            d.put("CASE_TEMPLATE", StringUtils.toString(m.get("TEMPLATE_ID")));
+            d.put("CASE_NUM", StringUtils.toString(m.get("CASE_NUM")));
+            d.put("CASE_PS", StringUtils.toString(m.get("CASE_PS")));
+            d.put("CASE_PSX", StringUtils.toString(m.get("CASE_PSX")));
+            d.put("CASE_PS_AREA", StringUtils.toString(m.get("CASE_PS_AREA")));
+            d.put("CASE_MONEY_BOX", StringUtils.toString(m.get("CASE_MONEY_BOX")));
+            d.put("CASE_TYPE", StringUtils.toString(m.get("CASE_TYPE")));
+            d.put("CASE_PRINTER",  printer);
+            caseConfig.add(d);
+        }
+        query.free();
+        return caseConfig;
+    }
+
+
+    public static PrintManager getInstance(){
+        if(instance == null){
+            instance = new PrintManager();
+        }
+        return instance;
+    }
+    public void destroy() {
+        Set<Integer> keys = getPrintThreadMap().keySet();
+        for(int key : keys){
+            getPrintThreadMap().get(key).setRun(false);
+        }
+    }
+}

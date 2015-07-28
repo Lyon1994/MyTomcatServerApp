@@ -1,0 +1,27 @@
+package org.redot.clover.app.inventory.rest;
+
+import org.redot.clover.app.inventory.UseAction;
+import org.redot.clover.core.data.DataPackage;
+import org.redot.clover.core.ext.BaseResource;
+import org.restlet.resource.Get;
+import org.restlet.resource.Post;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 11-3-27
+ * Time: 下午5:35
+ * To change this template use File | Settings | File Templates.
+ */
+public class UseCheck extends BaseResource {
+
+
+    @Post("json")
+    public String doGet() {
+        DataPackage dp = new DataPackage();
+        UseAction a = new UseAction();
+        a.setClient(client);
+        dp.setStatus(a.check(form));
+        return dp.toJSON();
+    }
+}

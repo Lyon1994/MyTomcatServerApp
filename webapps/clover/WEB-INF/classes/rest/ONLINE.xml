@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<clover>
+	<resource class="org.redot.clover.app.online.database.rest.DataBaseUpload">/online/database/upload_info</resource>
+	<resource class="org.redot.clover.app.online.user.rest.CheckUser">/online/user/checkout</resource>
+	<resource class="org.redot.clover.app.online.user.rest.SyncDriving">/online/sync/doing</resource>
+	<resource class="org.redot.clover.app.online.intelligent.rest.SelectDiscountByComboID">/online/SelectDiscountByComboID</resource>
+	<resource class="org.redot.clover.app.online.intelligent.rest.UpdateDiscount">/online/update_discount</resource>
+</clover>

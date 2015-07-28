@@ -1,0 +1,61 @@
+package org.redot.clover.app.crm;
+import org.redot.clover.core.ext.BaseAction;
+import org.redot.clover.core.ext.Params;
+import org.redot.library.db.IQuery;
+import org.redot.library.lang.DateUtils;
+import org.redot.library.lang.StringUtils;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: yh_admin
+ * Date: 12-8-15
+ * Time: 上午10:40
+ * To change this template use File | Settings | File Templates.
+ */
+public class ClientConsumptionSelectAction extends BaseAction {
+    public List<Map> select(Params params)
+    {
+        List<Map> data = new ArrayList<Map>();
+        String DINE_DATE_S = StringUtils.toString(params.val("DINE_DATE_S"));
+        String DINE_DATE_E = StringUtils.toString(params.val("DINE_DATE_E"));
+        String  CLIENT_ID=StringUtils.toString(params.val("CLIENT_ID"))  ;
+        String  CLIENT_CARD_NO=StringUtils.toString(params.val("CLIENT_CARD_NO"))  ;
+        String  BILL_MAKER_ID=StringUtils.toString(params.val("BILL_MAKER_ID"))  ;
+        if (DINE_DATE_S.length() == 0) {
+            DINE_DATE_S = DateUtils.getNowDate();
+        }
+        if (DINE_DATE_E.length() == 0) {
+            DINE_DATE_E = DateUtils.getNowDate();
+        }
+        if(DINE_DATE_S.compareTo(DINE_DATE_E) > 0){
+            DINE_DATE_S = DateUtils.getNowDate();
+            DINE_DATE_E = DateUtils.getNowDate();
+        }
+
+        String CS = "";
+        if(CLIENT_ID.length() > 0){
+            CS += " AND A.BILL_PAY_CLIENT_ID = " + CLIENT_ID;
+        }
+        if(CLIENT_CARD_NO.length() > 0){
+            CS += " AND E.CLIENT_CARD_NO = " + CLIENT_CARD_NO;
+        }
+        if(BILL_MAKER_ID.length() > 0){
+            CS += " AND C.BILL_MAKER_ID = " +"'" +BILL_MAKER_ID+"'";
+        }
+        String DT_CS = "SUBSTRING(C.BILL_DT_FINISH, 1, 10) >= '" + DINE_DATE_S.substring(0, 10)+ "' AND SUBSTRING(C.BILL_DT_FINISH, 1, 10) <= '" + DINE_DATE_E.substring(0, 10) + "'";
+        IQuery query = getQuery();
+        String sql ="SELECT A.BILL_PAY_CLIENT_ID,D.CLIENT_NAME,E.CLIENT_CARD_NO,C.BILL_DT_FINISH,C.BILL_AMOUNT_P,C.BILL_NO,C.BILL_MAKER FROM X_BILL_PAY A LEFT JOIN X_PAY_TYPE B ON A.BILL_PAY_TYPE=B.PAY_TYPE_ID " +
+                "LEFT JOIN X_BILL C ON A.BILL_ID=C.BILL_ID " +
+                " LEFT JOIN X_CLIENT_CARD E ON A.BILL_PAY_CLIENT_ID=E.CLIENT_ID" +
+                " LEFT JOIN X_CLIENT D ON A.BILL_PAY_CLIENT_ID=D.CLIENT_ID WHERE "+ DT_CS + CS + " AND B.PAY_TYPE_ID=0 ORDER BY E.CLIENT_CARD_NO, C.BILL_DT_FINISH ;";
+                List<Map> BILL_PAY = query.doQuery(sql).tables();
+        System.out.println(sql);
+        query.free();
+        return BILL_PAY;
+    }
+}
+

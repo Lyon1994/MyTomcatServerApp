@@ -1,0 +1,31 @@
+package org.redot.clover.app.order.rest;
+
+import org.redot.clover.app.order.OrderDishAction;
+import org.redot.clover.core.data.DataPackage;
+import org.redot.clover.core.ext.BaseResource;
+import org.redot.library.lang.StringUtils;
+import org.restlet.resource.Get;
+import org.restlet.resource.Post;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 10-12-30
+ * Time: 下午11:51
+ * To change this template use File | Settings | File Templates.
+ */
+public class OrderDishQuery extends BaseResource {
+
+    @Post("json")
+    public String doPost() {
+        DataPackage dp = new DataPackage();
+        String O_ID = StringUtils.toString(getRequestAttributes().get("O_ID"));
+        OrderDishAction a = new OrderDishAction();
+        dp.addTable("table", a.query(form));
+        return dp.toJSON();
+    }
+
+
+
+
+}

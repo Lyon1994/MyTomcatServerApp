@@ -1,0 +1,48 @@
+package org.redot.clover.app.item.rest;
+
+import org.redot.clover.app.item.ItemAction;
+import org.redot.clover.core.data.DataPackage;
+import org.redot.clover.core.ext.BaseResource;
+import org.redot.library.lang.NumberUtils;
+import org.redot.library.lang.StringUtils;
+import org.restlet.resource.Get;
+import org.restlet.resource.Post;
+import org.restlet.resource.Put;
+
+import java.util.Map;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 12-8-20
+ * Time: 上午10:59
+ * To change this template use File | Settings | File Templates.
+ */
+public class ItemList extends BaseResource{
+
+    @Get("json")
+    public String doGet() {
+        DataPackage dp = new DataPackage();
+        ItemAction a = new ItemAction();
+        dp.addTable("table", a.list(StringUtils.toString(getRequestAttributes().get("ITEM_TYPE_ID"))));
+        return dp.toJSON();
+    }
+    
+    @Post("json")
+    public String doPost(){
+        DataPackage dp = new DataPackage();
+        ItemAction a = new ItemAction();
+        Map data = a.set(form);
+        dp.setStatus(NumberUtils.toInt(data.get("STATUS")));
+        dp.getData().put("form",data);
+        return dp.toJSON();
+    }
+
+    @Put("json")
+    public String doDelete(){
+        DataPackage dp = new DataPackage();
+        ItemAction a = new ItemAction();
+        dp.setStatus(a.delete(form));
+        return dp.toJSON();
+    }
+}

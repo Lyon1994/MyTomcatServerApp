@@ -1,0 +1,39 @@
+package org.redot.clover.app.organization.rest;
+
+import org.redot.clover.app.organization.AccountAction;
+import org.redot.clover.core.data.DataPackage;
+import org.redot.clover.core.data.SimpleDataPackage;
+import org.redot.clover.core.ext.BaseResource;
+import org.redot.library.lang.StringUtils;
+import org.restlet.resource.Get;
+import org.restlet.resource.Post;
+
+import java.util.List;
+import java.util.Map;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 11-4-18
+ * Time: 下午9:07
+ * To change this template use File | Settings | File Templates.
+ */
+public class AccountSeller extends BaseResource{
+
+    @Get("json")
+    public String doGet(){
+        SimpleDataPackage dp = new SimpleDataPackage();
+        AccountAction a = new AccountAction();
+        List<Map> list = a.listSeller();
+        String[] suggestions = new String[list.size()];
+        String[] data = new String[list.size()];
+        for(int i=0;i<list.size(); i++){
+            Map m = list.get(i);
+            suggestions[i] = StringUtils.toString(m.get("ACCOUNT_NAME"));
+            data[i] = StringUtils.toString(m.get("ACCOUNT_ID"));
+        }
+        dp.setSuggestions(suggestions);
+        dp.setData(data);
+        return dp.toJSON();
+    }
+}

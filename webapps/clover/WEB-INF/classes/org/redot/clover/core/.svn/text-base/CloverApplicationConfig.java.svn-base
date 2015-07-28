@@ -1,0 +1,58 @@
+package org.redot.clover.core;
+
+import org.apache.log4j.Logger;
+import org.jdom.Element;
+import org.redot.library.db.DataSourceConfig;
+import org.redot.library.db.IDataBaseFactory;
+import org.redot.library.io.FileUtils;
+import org.redot.library.xml.XmlReader;
+import org.redot.library.xml.XmlToBean;
+import org.restlet.routing.Router;
+
+import java.io.File;
+import java.util.List;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: CASH
+ * Date: 10-12-17
+ * Time: 下午4:48
+ * To change this template use File | Settings | File Templates.
+ */
+public class CloverApplicationConfig {
+
+    Logger logger = Logger.getLogger(this.getClass());
+    private static final String restConfig = "/rest";
+
+    public CloverApplicationConfig() {
+    }
+
+    public void config(Router router){
+
+        File[] files = FileUtils.getFiles(this.getClass().getResource(restConfig).getPath(), "xml");
+        for(File file : files){
+            configRest(router, file);
+        }
+    }
+
+    private void configRest(Router router, File file){
+        XmlReader xr = new XmlReader(file);
+        if(!xr.isOK()){
+            logger.error("can't load rest config file["+file.getPath()+"]");
+            return;
+        }
+
+        List<Element> resources = xr.getRoot().getChildren("resource");
+        for(Element el : resources){
+            try {
+                Class cls = Class.forName(el.getAttributeValue("class"));
+                logger.info("[" + el.getText() + "] added to router");
+                router.attach(el.getText(), cls);
+            } catch (ClassNotFoundException e) {
+                logger.error(e);
+            }
+        }
+        resources.clear();
+        resources = null;
+    }
+}

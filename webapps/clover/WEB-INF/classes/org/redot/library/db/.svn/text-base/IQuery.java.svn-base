@@ -1,0 +1,685 @@
+package org.redot.library.db;
+
+import org.apache.log4j.Logger;
+import org.redot.library.lang.StringUtils;
+
+import java.sql.*;
+import java.util.*;
+
+/**
+ * Copyright By Redot.
+ * User: CASH
+ * Date: 2009-10-14
+ * Time: 19:26:39
+ */
+public class IQuery {
+    Logger logger = Logger.getLogger(this.getClass());
+
+    private IDataBase db = null;
+
+    private Connection conn = null;
+
+    private PreparedStatement ps = null;
+
+    private boolean autoCommit = true;
+
+    private ResultSet rs = null;
+
+    private boolean closed = false;
+
+    public boolean isClosed() {
+        return closed;
+    }
+
+    public void setClosed(boolean closed) {
+        this.closed = closed;
+    }
+
+    public ResultSetMetaData rsmd() {
+        return rsmd;
+    }
+
+    private ResultSetMetaData rsmd = null;
+
+    private String sql = null;
+
+    private Object[] values = null;
+
+    public IQuery(IDataBase db) {
+        this.db = db;
+        //newConn();
+    }
+
+    public void transaction() {
+        setAutoCommit(false);
+    }
+
+    public void commit() {
+        if (isAutoCommit()) {
+            return;
+        }
+        try {
+            getConn().commit();
+            setAutoCommit(true);
+        } catch (SQLException e) {
+            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+        }
+    }
+
+    public void rollback() {
+        if (isAutoCommit()) {
+            return;
+        }
+        try {
+            getConn().rollback();
+            setAutoCommit(true);
+        } catch (SQLException e) {
+            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+        }
+    }
+
+    public Connection getConn() {
+//        try {
+//            if (conn == null || conn.isClosed()) {
+//                newConn();
+//            }
+//        } catch (SQLException e) {
+//            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+//        }
+//        return conn;
+        return getDb().getDs().getConnection();
+    }
+
+    private void newConn() {
+        setConn(getDb().getDs().getConnection());
+    }
+
+    public void setConn(Connection conn) {
+        this.conn = conn;
+    }
+
+    public void free() {
+        /*
+        setClosed(true);
+        try {
+            if (rs != null) {
+                rs.close();
+                rsmd = null;
+                rs = null;
+            }
+            if (ps != null) {
+                ps.close();
+                ps = null;
+            }
+            if (conn != null) {
+                conn.close();
+//                conn = null;
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+        }
+        */
+    }
+
+    public void initValue(Object...values) throws SQLException {
+        //if (values == null || values.length == 0) {
+        //    return;
+        //}
+        //System.out.println(values.length);
+        for (int i = 0; i < values.length; i++) {
+
+            if(values[i] == null){
+                //System.out.println(99999999);
+                ps.setObject(i + 1, null);
+            }
+            else if (values[i] instanceof Integer) {
+//                System.out.println(values[i]);
+                ps.setInt(i + 1, (Integer) values[i]);
+            } else if (values[i] instanceof Long) {
+                ps.setLong(i + 1, (Long) values[i]);
+            } else if (values[i] instanceof Float) {
+                ps.setFloat(i + 1, (Float) values[i]);
+            } else if (values[i] instanceof Double) {
+                ps.setDouble(i + 1, (Double) values[i]);
+            } else if (values[i] instanceof Short) {
+                ps.setShort(i + 1, (Short) values[i]);
+            } else if (values[i] instanceof String) {
+                ps.setString(i + 1, (String) values[i]);
+            } else if (values[i] instanceof byte[]) {
+                ps.setBytes(i + 1, (byte[]) values[i]);
+            } else {
+                ps.setObject(i + 1, values[i]);
+            }
+        }
+    }
+
+    public  List<String[]> list(int...limit) {
+        List list = new ArrayList();
+        if(rs == null){
+            return list;
+        }
+        try {
+            if(limit != null && limit.length > 0){
+                if(limit[0] <= 0){
+                    return list;
+                }
+                if(limit.length > 1 && limit[1] > 0){
+                    rs.absolute(limit[1]);
+                }
+            }
+            int num = 0;
+            while(rs.next()){
+                String[] objs = new String[rsmd.getColumnCount()];
+                for(int i=0;i<objs.length;i++){
+                    objs[i] = StringUtils.toString(rs.getObject(i + 1));
+                }
+                list.add(objs);
+                num++;
+                if(limit != null && limit.length > 0){
+                    if(num >= limit[0]){
+                        break;
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+        }
+        return list;
+    }
+
+    public  List<String> listFirst(int...limit) {
+        List list = new ArrayList();
+        if(rs == null){
+            return list;
+        }
+        try {
+            if(limit != null && limit.length > 0){
+                if(limit[0] <= 0){
+                    return list;
+                }
+                if(limit.length > 1 && limit[1] > 0){
+                    rs.absolute(limit[1]);
+                }
+            }
+            int num = 0;
+            while(rs.next()){
+
+                list.add(StringUtils.toString(rs.getObject(1)));
+                num++;
+                if(limit != null && limit.length > 0){
+                    if(num >= limit[0]){
+                        break;
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+        }
+        return list;
+    }
+
+    public Object[] getO() {
+        if(rs == null){
+            return new Object[0];
+        }
+        try {
+            while(rs.next()){
+                Object[] objs = new Object[rsmd.getColumnCount()];
+                for(int i=0;i<objs.length;i++){
+                    objs[i] = rs.getObject(i + 1);
+                }
+                return objs;
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+            return new Object[0];
+        }
+        return new Object[0];
+    }
+
+    public String[] get() {
+        if(rs == null){
+            return new String[0];
+        }
+        try {
+            while(rs.next()){
+                String[] arr = new String[rsmd.getColumnCount()];
+                for(int i=0;i<arr.length;i++){
+                    arr[i] = StringUtils.toString(rs.getObject(i + 1));
+                }
+                return arr;
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+            return new String[0];
+        }
+        return new String[0];
+    }
+
+
+    public String getValue() {
+        if(rs == null){
+            return "";
+        }
+        try {
+            while(rs.next()){
+                return StringUtils.toString(rs.getObject(1));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+            return "";
+        }
+        return "";
+    }
+
+    public String getValueString() {
+        if(rs == null){
+            return "";
+        }
+        String str = "";
+        try {
+            while(rs.next()){
+                String strx = StringUtils.toString(rs.getObject(1));
+                if(str.length() > 0){
+                    if(strx.length() > 0){
+                        str += "," + strx;
+                    }
+                }
+                else{
+                    if(strx.length()> 0){
+                        str += strx;
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+            return "";
+        }
+        return str;
+    }
+
+    public List<Map> tables(int...limit){
+        List<Map> list = new ArrayList<Map>();
+        if(rs == null){
+            return list;
+        }
+        try {
+            if(limit != null && limit.length > 0){
+                if(limit[0] <= 0){
+                    return list;
+                }
+                if(limit.length > 1 && limit[1] > 0){
+                    rs.absolute(limit[1]);
+                }
+            }
+            int num = 0;
+            int columnCount = rsmd.getColumnCount();
+            while(rs.next()){
+                Map row = new Hashtable();
+                for(int i=0;i<columnCount;i++){
+
+                    row.put(rsmd.getColumnLabel(i+1).toUpperCase(), StringUtils.toString(rs.getString(i + 1)));
+                }
+                list.add(row);
+                num++;
+                if(limit != null && limit.length > 0){
+                    if(num >= limit[0]){
+                        break;
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+        }
+        return list;
+    }
+
+    public List<IRow> rows(int...limit){
+        List<IRow> list = new ArrayList<IRow>();
+        if(rs == null){
+            return list;
+        }
+        try {
+            int columnCount = rsmd.getColumnCount();
+            //rs.getRow()
+            //System.out.println("rs.getFetchSize()="+rs.getFetchSize());
+            if(limit != null && limit.length > 0){
+                if(limit[0] <= 0){
+                    return list;
+                }
+                if(limit.length > 1 && limit[1] > 0){
+                    rs.absolute(limit[1]);
+                }
+            }
+            int num = 0;
+            while(rs.next()){
+
+                IRow row = new IRow();
+                Hashtable data = new Hashtable();
+                Hashtable label = new Hashtable();
+                for(int i=0;i<columnCount;i++){
+                    data.put(rsmd.getColumnName(i+1).toUpperCase(), StringUtils.toString(rs.getObject(i + 1)));
+                    label.put(rsmd.getColumnName(i+1).toUpperCase(), rsmd.getColumnLabel(i+1).toUpperCase());
+                }
+                //System.out.println("row_id=" + rs.getRowId(1));
+                row.setData(data);
+                row.setLabels(label);
+                list.add(row);
+                num++;
+                if(limit != null && limit.length > 0){
+                    if(num >= limit[0]){
+                        break;
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+        }
+        return list;
+    }
+
+    public IRow row(){
+        if(rs == null){
+            return null;
+        }
+
+        try {
+            int columnCount = rsmd.getColumnCount();
+            while(rs.next()){
+                IRow row = new IRow();
+                Hashtable data = new Hashtable();
+                Hashtable label = new Hashtable();
+                for(int i=0;i<columnCount;i++){
+                    data.put(rsmd.getColumnName(i+1).toUpperCase(), StringUtils.toString(rs.getObject(i + 1)));
+                    label.put(rsmd.getColumnName(i+1).toUpperCase(), rsmd.getColumnLabel(i+1).toUpperCase());
+                }
+                row.setData(data);
+                row.setLabels(label);
+                return row;
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+            return null;
+        }
+        return null;
+    }
+
+    public Map table(){
+        if(rs == null){
+            return null;
+        }
+        try {
+            int columnCount = rsmd.getColumnCount();
+            while(rs.next()){
+                Map data = new Hashtable();
+                for(int i=0;i<columnCount;i++){
+                    data.put(rsmd.getColumnLabel(i+1).toUpperCase(), StringUtils.toString(rs.getObject(i + 1)));
+                }
+                return data;
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+            return null;
+        }
+        return null;
+    }
+
+    public IQuery doQuery(String sql, Object...values) {
+        //System.out.println("objs.length=" + values.length);
+        //setSql(sql);
+        //setValues(values);
+        Connection con = getConn();
+        try {
+            //System.out.println("sql="+sql);
+            ps = con.prepareStatement(sql);
+            //System.out.println("length=" + values.length);
+            initValue(values);
+            rs = ps.executeQuery();
+            this.rsmd = rs.getMetaData();
+            ///System.out.println(rsmd);
+            //for (int i = 0; i < rsmd.getColumnCount(); i++) {
+            //    System.out.println("column=" + rsmd.getColumnName(i + 1) + "|" + rsmd.getColumnLabel(i + 1));
+            //}
+            //while (rs.next()) {
+            //    System.out.println("rs.getString(1)=" + rs.getString(1));
+            //}
+            return this;
+        } catch (SQLException e) {
+            System.out.println("ERROR SQL : " + sql);
+            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+            rs = null;
+            rsmd = null;
+            return this;
+        }
+        finally {
+            //System.out.println("ooooooooooooooooooooo");
+            if(con != null)
+                //System.out.println("xxxxxxxxxxxxxxxxxxxxx");
+                try {
+                    con.close();
+                } catch (SQLException e) {
+                    e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+                }
+        }
+    }
+
+    public int doExec(String sql, Object... values) {
+        //setSql(sql);
+        //setValues(values);
+        //System.out.println("values = " + values.length);
+        Connection con = getConn();
+        try {
+
+            ps = con.prepareStatement(sql);
+            initValue(values);
+            return ps.executeUpdate();
+        } catch (SQLException e) {
+            System.out.println("ERR SQL = " + sql);
+            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+            return -1;
+        }
+        finally {
+            if(con != null)
+                try {
+                    con.close();
+                } catch (SQLException e) {
+                    e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+                }
+        }
+    }
+
+    public int doInsert(String table, Map map){
+        String[] columnNames = getColumnNames(table);
+        if(columnNames == null){
+            return -1;
+        }
+        StringBuffer sql = new StringBuffer("INSERT INTO " + table.toUpperCase() + "(");
+        Set keys = map.keySet();
+        Object[] values = new Object[columnNames.length];
+        int x = 0;
+        for(int i=0;i<columnNames.length;i++){
+            if(x > 0){
+                sql.append(", ");
+            }
+            if(keys.contains(columnNames[i])){
+                sql.append(columnNames[i]);
+                values[i] = map.get(columnNames[i]);
+                x++;
+            }
+//            sql.append(columnNames[i]);
+//            for(int j=0;j<keys.length;j++){
+//                if(keys[j].equalsIgnoreCase(columnNames[i])){
+//                    values[i] = map.get(keys[i]);
+//                }
+//            }
+        }
+        sql.append(") VALUES (");
+        for(int i=0;i<x;i++){
+            if(i > 0){
+                sql.append(", ");
+            }
+            sql.append("?");
+        }
+        sql.append(")");
+        System.out.println("sql = " + sql);
+
+        return doExec(sql.toString(), values);
+        //return -1;
+    }
+
+//    public IColumn[] getColumns(String table){
+//        doQuery("select * from " + table + " where 1=2");
+//        if(rsmd == null){
+//            return null;
+//        }
+//        try {
+//            IColumn[] columns = new IColumn[rsmd.getColumnCount()];
+//            for(int i=0;i<columns.length;i++){
+//                columns[i] = rsmd.getColumnName(i+1).toUpperCase();
+//            }
+//            return columnNames;
+//        } catch (SQLException e) {
+//            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+//        }
+//        return null;
+//    }
+
+    public String[] getColumnNames(String table){
+        doQuery("select * from " + table + " where 1=2");
+        if(rsmd == null){
+            return null;
+        }
+        try {
+            String[] columnNames = new String[rsmd.getColumnCount()];
+            for(int i=0;i<columnNames.length;i++){
+                columnNames[i] = rsmd.getColumnName(i+1).toUpperCase();
+            }
+            return columnNames;
+        } catch (SQLException e) {
+            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+        }
+        return null;
+    }
+
+    /*
+    public int rowCount(){
+        if(rs == null){
+            return 0;
+        }
+        try {
+            ISqlParser parse = new ISqlParser();
+            parse.parse(getSql().toLowerCase());
+            String sql = "select count(*) from " + getSql().substring(getSql().toLowerCase().indexOf(parse.getTables()));
+//            System.out.println("sql="+sql);
+            setSql(sql);
+            setValues(values);
+            ps = getConn().prepareStatement(sql);
+            initValue();
+            ResultSet rss = ps.executeQuery();
+            while(rss.next()){
+                int count = rss.getInt(1);
+                rss.close();
+                return count;
+            }
+            return 0;
+
+        } catch (SQLException e) {
+            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+            return 0;
+        }
+    }
+     */
+    public int rowCount(String sql, Object...values){
+        Connection con = getConn();
+        try {
+
+            ISqlParser parse = new ISqlParser();
+            parse.parse(sql.toLowerCase());
+            sql = "select count(*) from " + sql.substring(sql.toLowerCase().indexOf(parse.getTables()));
+            ps = con.prepareStatement(sql);
+            initValue(values);
+            ResultSet rss = ps.executeQuery();
+            while(rss.next()){
+                int count = rss.getInt(1);
+                rss.close();
+                rss = null;
+                return count;
+            }
+            return 0;
+
+        } catch (SQLException e) {
+            System.out.println("ERROR SQL : " + sql);
+            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+            return 0;
+        }
+        finally {
+            if(con != null)
+                try {
+                    con.close();
+                } catch (SQLException e) {
+                    e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+                }
+        }
+    }
+
+    public long getMaxID(String tableName, String columnName){
+        Connection con = getConn();
+        try {
+            String sql = "SELECT MAX("+columnName+") FROM " + tableName;
+            ps = con.prepareStatement(sql);
+            ResultSet rss = ps.executeQuery();
+            while(rss.next()){
+                long id = rss.getLong(1);
+                rss.close();
+                rss = null;
+                return id;
+            }
+            return 0;
+
+        } catch (SQLException e) {
+            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+            return 0;
+        }
+        finally {
+            if(con != null)
+                try {
+                    con.close();
+                } catch (SQLException e) {
+                    e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+                }
+        }
+    }
+
+    public IDataBase getDb() {
+        return db;
+    }
+
+    public boolean isAutoCommit() {
+        return autoCommit;
+    }
+
+    public void setAutoCommit(boolean autoCommit) {
+//        this.autoCommit = autoCommit;
+//        try {
+//            getConn().setAutoCommit(autoCommit);
+//        } catch (SQLException e) {
+//            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+//        }
+    }
+
+//    public String getSql() {
+//        return sql;
+//    }
+//
+//    public void setSql(String sql) {
+//        this.sql = sql;
+//    }
+//
+//    public Object[] getValues() {
+//        return values;
+//    }
+//
+//    public void setValues(Object...values) {
+//        this.values = values;
+//    }
+}

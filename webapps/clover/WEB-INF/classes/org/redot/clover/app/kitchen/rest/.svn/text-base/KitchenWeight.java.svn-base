@@ -1,0 +1,24 @@
+package org.redot.clover.app.kitchen.rest;
+
+import org.redot.clover.app.kitchen.KitchenAction;
+import org.redot.clover.core.data.DataPackage;
+import org.redot.clover.core.ext.BaseResource;
+import org.restlet.resource.Post;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 10-12-23
+ * Time: 下午11:16
+ * To change this template use File | Settings | File Templates.
+ */
+public class KitchenWeight extends BaseResource {
+
+    @Post("json")
+    public String doPost(){
+        DataPackage dp = new DataPackage();
+        KitchenAction a = new KitchenAction();
+        dp.setStatus(a.weight(form));
+        return dp.toJSON();
+    }
+}

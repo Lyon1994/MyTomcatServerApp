@@ -1,0 +1,1339 @@
+package org.redot.clover.app.kitchen;
+
+import org.redot.clover.app.system.MarketTypeAction;
+import org.redot.clover.app.system.SystemAction;
+import org.redot.clover.core.CloverManager;
+import org.redot.clover.core.ext.BaseAction;
+import org.redot.clover.core.ext.Params;
+import org.redot.library.db.IQuery;
+import org.redot.library.db.ITable;
+import org.redot.library.lang.ArrayUtils;
+import org.redot.library.lang.DateUtils;
+import org.redot.library.lang.NumberUtils;
+import org.redot.library.lang.StringUtils;
+import org.restlet.data.Form;
+
+import java.util.*;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 11-4-5
+ * Time: 上午12:27
+ * To change this template use File | Settings | File Templates.
+ */
+public class KitchenAction extends BaseAction {
+    public static final int FINISH_SHOW_NUM = 30;
+    public List<Map> listClearPush(){
+        String sql = "SELECT A.P_ID, A.P_NUM, A.P_STOCK_STATUS, B.P_NAME, C.P_STOCK_STATUS_NAME FROM X_P_STOCK A " +
+                "LEFT JOIN X_P B ON A.P_ID = B.P_ID " +
+                "LEFT JOIN X_P_STOCK_STATUS C ON A.P_STOCK_STATUS = C.P_STOCK_STATUS ORDER BY A.P_ID";
+        IQuery query = getQuery();
+        List<Map> list = query.doQuery(sql).tables();
+        query.free();
+        return list;
+    }
+    public int setClearPush(Form form) {
+        Map data = form.getValuesMap();
+        String P_ID = StringUtils.toString(data.get("P_ID"));
+        String P_NUM = StringUtils.toString(data.get("P_NUM"));
+        String P_STOCK_STATUS = StringUtils.toString(data.get("P_STOCK_STATUS"));
+        if(P_STOCK_STATUS.length() == 0){
+            P_STOCK_STATUS = "1";
+        }
+        if (P_ID.length() == 0 || P_NUM.length() == 0) {
+            return CloverManager.CODE_FAILED;
+        }
+        IQuery query = getQuery();
+        String sql = "SELECT * FROM X_P_STOCK WHERE P_ID=" + P_ID;
+        if(query.rowCount(sql) > 0){
+            sql = "UPDATE X_P_STOCK SET P_NUM = "+P_NUM+", P_STOCK_STATUS="+P_STOCK_STATUS+" WHERE P_ID=" + P_ID;
+        }
+        else{
+            sql = "INSERT INTO X_P_STOCK (P_ID, P_NUM, P_STOCK_STATUS) VALUES ("+P_ID+", "+P_NUM+", "+P_STOCK_STATUS+")";
+        }
+        int result = query.doExec(sql);
+        query.free();
+        if(result < 0){
+            return CloverManager.CODE_FAILED;
+        }
+        return CloverManager.CODE_SUCCESS;
+    }
+
+    public int deleteClearPush(Form form) {
+        Map data = form.getValuesMap();
+        String P_ID = StringUtils.toString(data.get("P_ID"));
+
+        if (P_ID.length() == 0) {
+            return CloverManager.CODE_FAILED;
+        }
+        IQuery query = getQuery();
+        String sql = "DELETE FROM X_P_STOCK WHERE P_ID=" + P_ID;
+
+        int result = query.doExec(sql);
+        query.free();
+        if(result < 0){
+            return CloverManager.CODE_FAILED;
+        }
+        return CloverManager.CODE_SUCCESS;
+    }
+
+
+    public List<Map> monitor(){
+        IQuery query = getQuery();
+        String sql = "SELECT";
+        List<Map> list = query.doQuery(sql).tables();
+        query.free();
+        return list;
+    }
+
+    public Map weightProduct(){
+        Map data = new HashMap();
+        IQuery query = getQuery();
+        String sql = "SELECT A.O_P_ID, A.O_P_NAME, SUM(CONVERT(A.O_P_NUM, DECIMAL(10,1))) AS O_P_NUM, '0' AS O_P_FILTER FROM X_O_P A WHERE A.O_P_STATUS IN (1,2,3) AND A.O_P_TAG_WEIGHT = 1 AND A.O_P_DT_WEIGHT IS NULL GROUP BY A.O_P_ID ORDER BY A.O_P_DT_ORDER";
+        //System.out.println(sql);
+        List<Map> OP_NORMAL = query.doQuery(sql).tables();
+        data.put("NORMAL", OP_NORMAL);
+        String[] MT = new MarketTypeAction().getNowMT();
+        sql = "SELECT A.O_P_ID, A.O_P_NAME, SUM(CONVERT(A.O_P_NUM, DECIMAL(10,1))) AS O_P_NUM, '1' AS O_P_FILTER FROM X_O_P A WHERE A.O_P_STATUS > 0 AND A.O_P_TAG_WEIGHT = 1 AND A.O_P_DT_WEIGHT IS NOT NULL AND A.O_P_DT_ORDER >= '"+MT[2]+"' AND A.O_P_DT_ORDER <= '"+MT[3]+"' GROUP BY A.O_P_ID ORDER BY A.O_P_DT_ORDER DESC";
+        List<Map> OP_FINISH = query.doQuery(sql).tables();
+        data.put("FINISH", OP_FINISH);
+        query.free();
+        return data;
+    }
+
+    public Map weightInfoProduct(Form form){
+        Map data = form.getValuesMap();
+        String O_P_ID = StringUtils.toString(data.get("O_P_ID"));
+        if(O_P_ID.length() == 0){
+            return data;
+        }
+        String O_P_FILTER = StringUtils.toString(data.get("O_P_FILTER"));
+        if(O_P_FILTER.length() == 0){
+            O_P_FILTER = "0";
+        }
+        IQuery query = getQuery();
+        String CS = "";
+        if(O_P_FILTER.equals("1")){
+            String[] MT = new MarketTypeAction().getNowMT();
+            CS = " AND A.O_P_STATUS > 0 AND A.O_P_DT_WEIGHT IS NOT NULL AND A.O_P_DT_ORDER >= '"+MT[2]+"' AND A.O_P_DT_ORDER <= '"+MT[3]+"'";
+        }
+        else{
+             CS = " AND A.O_P_STATUS IN (1,2,3) AND A.O_P_DT_WEIGHT IS NULL";
+        }
+        String sql = "SELECT A.*, " +
+                "(SELECT DESK_NAME FROM X_DESK WHERE DESK_ID = (SELECT O_DESK_ID FROM X_O WHERE O_ID = A.O_ID)) AS DESK_NAME, " +
+                "(SELECT DESK_CODE FROM X_DESK WHERE DESK_ID = (SELECT O_DESK_ID FROM X_O WHERE O_ID = A.O_ID)) AS DESK_CODE " +
+                "FROM X_O_P A WHERE A.O_P_TAG_WEIGHT = 1 AND A.O_P_ID = " + O_P_ID  + CS + " ORDER BY A.O_P_DT_ORDER";
+        List<Map> list = query.doQuery(sql).tables();
+        for(Map OP : list){
+            String O_P_TASTE = StringUtils.toString(OP.get("O_P_TASTE"));
+            String O_P_PACK = StringUtils.toString(OP.get("O_P_PACK"));
+            String O_P_REQUIRE = StringUtils.toString(OP.get("O_P_REQUIRE"));
+            String O_P_MEMO = StringUtils.toString(OP.get("O_P_MEMO"));
+            List<String> memos = new ArrayList<String>();
+            if(O_P_PACK.equals("1")){
+                memos.add("打包");
+            }
+
+            if(O_P_TASTE.length() > 0){
+                //memos.add(O_P_TASTE);
+            }
+            if(O_P_REQUIRE.length() > 0){
+                memos.add(O_P_REQUIRE);
+            }
+            if(O_P_MEMO.length() > 0){
+                memos.add(O_P_MEMO);
+            }
+            OP.put("O_P_MEMOS", ArrayUtils.join(",", memos));
+        }
+        data.clear();
+        data.put("NORMAL", list);
+        query.free();
+        return data;
+    }
+
+    public Map weightDesk(){
+        Map data = new HashMap();
+        IQuery query = getQuery();
+        String sql = "SELECT A.O_ID, A.O_NO, A.O_DT, A.O_STATUS, B.DESK_ID, B.DESK_CODE, B.DESK_NAME, '0' AS O_FILTER " +
+                "FROM X_O A " +
+                "LEFT JOIN X_DESK B ON A.O_DESK_ID = B.DESK_ID " +
+                "WHERE A.O_STATUS IN (4) AND " +
+                "A.O_ID IN (SELECT O_ID FROM X_O_P WHERE O_P_COMBO = 0 AND O_P_STATUS IN (1,2,3) AND O_P_TAG_WEIGHT = 1 AND O_P_DT_WEIGHT IS NULL AND O_ID = A.O_ID GROUP BY O_ID HAVING COUNT(O_ID) > 0) " +
+                //"A.O_ID IN (SELECT O_ID FROM X_O_P OP WHERE (SELECT COUNT(O_ID) FROM X_O_P WHERE O_P_STATUS > 0 AND A.O_P_TAG_WEIGHT = 1 AND A.O_P_DT_WEIGHT IS NULL AND O_ID = A.O_ID) > 0) " +
+                "ORDER BY B.DESK_CODE, B.DESK_ID";
+//        System.out.println(sql);
+        List<Map> DESK_NORMAL = query.doQuery(sql).tables();
+        String flag = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        int x = 0;
+        int i = 0;
+        int count = DESK_NORMAL.size();
+        for(Map m : DESK_NORMAL){
+            String DESK_NAME = StringUtils.toString(m.get("DESK_NAME"));
+            if(i < count - 1){
+                Map m2 = DESK_NORMAL.get(i + 1);
+                String DESK_NAME_ = StringUtils.toString(m2.get("DESK_NAME"));
+                if(DESK_NAME.equals(DESK_NAME_)){
+                    if(x == 0){
+                        m.put("DESK_NAME_SHOW", DESK_NAME + flag.charAt(x));
+                    }
+                    m2.put("DESK_NAME_SHOW", DESK_NAME + flag.charAt(x + 1));
+                    x++;
+                }
+                else{
+                    if(x == 0){
+                        m.put("DESK_NAME_SHOW", DESK_NAME);
+                    }
+                    x = 0;
+                }
+            }
+            else{
+                if(x == 0){
+                    m.put("DESK_NAME_SHOW", DESK_NAME);
+                }
+            }
+            i++;
+        }
+
+        data.put("NORMAL", DESK_NORMAL);
+//        sql = "SELECT A.DESK_ID, A.DESK_CODE, A.DESK_NAME " +
+//                "FROM (SELECT DESK_ID, DESK_CODE, DESK_NAME FROM X_DESK UNION ALL SELECT DESK_ID, DESK_CODE, DESK_NAME FROM X_DESK_TEMP) A " +
+//                "WHERE A.DESK_ID IN (SELECT O_DESK_ID FROM X_O WHERE O_ID IN (SELECT O_ID FROM X_O_P WHERE O_P_STATUS=1)) ORDER BY A.DESK_CODE";
+        String[] MT = new MarketTypeAction().getNowMT();
+        sql = "SELECT A.O_ID, A.O_NO, A.O_DT, A.O_STATUS, B.DESK_ID, B.DESK_CODE, B.DESK_NAME, '1' AS O_FILTER " +
+                "FROM X_O A " +
+                "LEFT JOIN X_DESK B ON A.O_DESK_ID = B.DESK_ID " +
+                "WHERE A.O_STATUS > 3 AND A.O_DINE_DT >= '"+MT[2]+"' AND A.O_DINE_DT <= '"+MT[3]+"' AND " +
+                "(SELECT COUNT(O_ID) FROM X_O_P WHERE O_P_COMBO = 0 AND O_P_STATUS >0 AND O_P_TAG_WEIGHT = 1 AND O_P_DT_WEIGHT IS NULL AND A.O_ID=O_ID) = 0 " +
+                //"A.O_ID IN (SELECT O_ID FROM X_O_P OP WHERE (SELECT COUNT(O_ID) FROM X_O_P WHERE O_P_STATUS > 0 AND A.O_P_TAG_WEIGHT = 1 AND A.O_P_DT_WEIGHT IS NOT NULL AND O_ID = A.O_ID) = 0) " +
+                "ORDER BY B.DESK_CODE, B.DESK_ID";
+//        System.out.println(sql);
+        List<Map> DESK_FINISH = query.doQuery(sql).tables();
+        x = 0;
+        i = 0;
+        count = DESK_FINISH.size();
+        for(Map m : DESK_FINISH){
+            String DESK_NAME = StringUtils.toString(m.get("DESK_NAME"));
+            if(i < count - 1){
+                Map m2 = DESK_FINISH.get(i + 1);
+                String DESK_NAME_ = StringUtils.toString(m2.get("DESK_NAME"));
+                if(DESK_NAME.equals(DESK_NAME_)){
+                    if(x == 0){
+                        m.put("DESK_NAME_SHOW", DESK_NAME + flag.charAt(x));
+                    }
+                    m2.put("DESK_NAME_SHOW", DESK_NAME + flag.charAt(x + 1));
+                    x++;
+                }
+                else{
+                    if(x == 0){
+                        m.put("DESK_NAME_SHOW", DESK_NAME);
+                    }
+                    x = 0;
+                }
+            }
+            else{
+                if(x == 0){
+                    m.put("DESK_NAME_SHOW", DESK_NAME);
+                }
+            }
+            i++;
+        }
+        data.put("FINISH", DESK_FINISH);
+        query.free();
+        return data;
+    }
+
+
+    public Map weightInfoDesk(Form form){
+        Map data = form.getValuesMap();
+        String O_ID = StringUtils.toString(data.get("O_ID"));
+        if(O_ID.length() == 0){
+            return data;
+        }
+        String O_FILTER = StringUtils.toString(data.get("O_FILTER"));
+        if(O_FILTER.length() == 0){
+            O_FILTER = "0";
+        }
+        IQuery query = getQuery();
+        String sql = "";
+        data.clear();
+        if(O_FILTER.equals("0")){
+            sql = "SELECT A.* " +
+                "FROM X_O_P A WHERE A.O_ID = " + O_ID + " AND A.O_P_STATUS IN (1,2,3) AND A.O_P_TAG_WEIGHT = 1 AND A.O_P_DT_WEIGHT IS NULL ORDER BY A.O_P_DT_ORDER";
+            List<Map> OP_NORMAL = query.doQuery(sql).tables();
+            for(Map OP : OP_NORMAL){
+                String O_P_TASTE = StringUtils.toString(OP.get("O_P_TASTE"));
+                String O_P_PACK = StringUtils.toString(OP.get("O_P_PACK"));
+                String O_P_REQUIRE = StringUtils.toString(OP.get("O_P_REQUIRE"));
+                String O_P_MEMO = StringUtils.toString(OP.get("O_P_MEMO"));
+                List<String> memos = new ArrayList<String>();
+                if(O_P_PACK.equals("1")){
+                    memos.add("打包");
+                }
+
+                if(O_P_TASTE.length() > 0){
+                    //memos.add(O_P_TASTE);
+                }
+                if(O_P_REQUIRE.length() > 0){
+                    memos.add(O_P_REQUIRE);
+                }
+                if(O_P_MEMO.length() > 0){
+                    memos.add(O_P_MEMO);
+                }
+                OP.put("O_P_MEMOS", ArrayUtils.join(",", memos));
+            }
+            data.put("NORMAL", OP_NORMAL);
+        }
+        sql = "SELECT A.* " +
+                "FROM X_O_P A WHERE A.O_ID = " + O_ID + " AND A.O_P_STATUS > 0 AND A.O_P_TAG_WEIGHT = 1 AND A.O_P_DT_WEIGHT IS NOT NULL ORDER BY A.O_P_DT_ORDER";
+        List<Map> OP_FINISH = query.doQuery(sql).tables();
+        for(Map OP : OP_FINISH){
+            String O_P_TASTE = StringUtils.toString(OP.get("O_P_TASTE"));
+            String O_P_PACK = StringUtils.toString(OP.get("O_P_PACK"));
+            String O_P_REQUIRE = StringUtils.toString(OP.get("O_P_REQUIRE"));
+            String O_P_MEMO = StringUtils.toString(OP.get("O_P_MEMO"));
+            List<String> memos = new ArrayList<String>();
+            if(O_P_PACK.equals("1")){
+                memos.add("打包");
+            }
+
+            if(O_P_TASTE.length() > 0){
+                //memos.add(O_P_TASTE);
+            }
+            if(O_P_REQUIRE.length() > 0){
+                memos.add(O_P_REQUIRE);
+            }
+            if(O_P_MEMO.length() > 0){
+                memos.add(O_P_MEMO);
+            }
+            OP.put("O_P_MEMOS", ArrayUtils.join(",", memos));
+        }
+
+        data.put("FINISH", OP_FINISH);
+        query.free();
+        return data;
+    }
+
+    public int weight(Form form){
+        Map data = form.getValuesMap();
+        String O_P_NO = StringUtils.toString(data.get("O_P_NO"));
+        String O_P_WEIGHT = StringUtils.toString(data.get("O_P_WEIGHT"));
+        System.out.println("O_P_NO = " + O_P_NO);
+        System.out.println("O_P_WEIGHT = " + O_P_WEIGHT);
+        if(O_P_NO.length() == 0 || O_P_WEIGHT.length() == 0){
+            return CloverManager.CODE_FAILED;
+        }
+        String[] O_P_NO_ARR = O_P_NO.split(",");
+        String[] O_P_WEIGHT_ARR = O_P_WEIGHT.split(",");
+        if(O_P_NO_ARR.length != O_P_WEIGHT_ARR.length){
+            return CloverManager.CODE_FAILED;
+        }
+        IQuery query = getQuery();
+        String sql = "SELECT * FROM X_O_P WHERE O_P_TAG_WEIGHT = 1 AND O_P_NO IN ("+O_P_NO+")";
+        List<Map> list = query.doQuery(sql).tables();
+        if(list.size() == 0){
+            query.free();
+            return CloverManager.CODE_FAILED;
+        }
+        int result = 0;
+        String NOW = DateUtils.getNow();
+        for(int i=0;i<O_P_NO_ARR.length;i++){
+            data.put(O_P_NO_ARR[i], O_P_WEIGHT_ARR[i]);
+        }
+        for(Map m : list){
+            String _O_P_NO = StringUtils.toString(m.get("O_P_NO"));
+            float _O_P_WEIGHT = NumberUtils.toFloat(data.get(_O_P_NO));
+            float O_P_PRICE = NumberUtils.toFloat(m.get("O_P_PRICE"));
+            float O_P_AMOUNT = _O_P_WEIGHT * O_P_PRICE;
+            sql = "UPDATE X_O_P SET O_P_DT_WEIGHT = '" + NOW + "', O_P_WEIGHT = " + _O_P_WEIGHT + ", O_P_AMOUNT = " + O_P_AMOUNT+" WHERE O_P_NO=" + _O_P_NO;
+            //System.out.println(sql);
+            result = query.doExec(sql);
+        }
+        query.free();
+        if(result < 0){
+            return CloverManager.CODE_FAILED;
+        }
+        return CloverManager.CODE_SUCCESS;
+    }
+
+    public Map cutProduct(){
+        Map data = new HashMap();
+        IQuery query = getQuery();
+        String CS = "";
+        KitchenCaseAction caseAction = new KitchenCaseAction();
+        String TYPE_IDS = caseAction.getCutProduct(getClient().getAddress());
+        if(TYPE_IDS.length() > 0){
+            CS += " AND A.O_P_TYPE_ID IN ("+TYPE_IDS+")";
+        }
+        String sql = "SELECT A.O_P_ID, A.O_P_NAME, SUM(CONVERT(A.O_P_NUM, DECIMAL(10,1))) AS O_P_NUM, '2' AS O_P_FILTER FROM X_O_P A WHERE A.O_P_COMBO = 0 AND A.O_P_STATUS = 1 "+CS+" AND (A.O_P_HURRY_CLIENT > 0 OR A.O_P_HURRY_SYSTEM > 0) GROUP BY A.O_P_ID ORDER BY A.O_P_DT_ORDER";
+        List<Map> OP_HURRY = query.doQuery(sql).tables();
+        data.put("HURRY", OP_HURRY);
+        sql = "SELECT A.O_P_ID, A.O_P_NAME, SUM(CONVERT(A.O_P_NUM, DECIMAL(10,1))) AS O_P_NUM, '1' AS O_P_FILTER FROM X_O_P A WHERE A.O_P_COMBO = 0 AND A.O_P_STATUS = 1 "+CS+" AND A.O_P_EXT_STATUS = 2 AND A.O_P_HURRY_CLIENT = 0 AND A.O_P_HURRY_SYSTEM = 0 GROUP BY A.O_P_ID ORDER BY A.O_P_DT_ORDER";
+        List<Map> OP_URGENT = query.doQuery(sql).tables();
+        data.put("URGENT", OP_URGENT);
+        sql = "SELECT A.O_P_ID, A.O_P_NAME, SUM(CONVERT(A.O_P_NUM, DECIMAL(10,1))) AS O_P_NUM, '0' AS O_P_FILTER FROM X_O_P A WHERE A.O_P_COMBO = 0 AND A.O_P_STATUS = 1 "+CS+" AND A.O_P_EXT_STATUS <> 2 AND A.O_P_HURRY_CLIENT = 0 AND A.O_P_HURRY_SYSTEM = 0 GROUP BY A.O_P_ID ORDER BY A.O_P_DT_ORDER";
+        List<Map> OP_NORMAL = query.doQuery(sql).tables();
+        data.put("NORMAL", OP_NORMAL);
+        String[] MT = new MarketTypeAction().getNowMT();
+        sql = "SELECT A.O_P_ID, A.O_P_NAME, SUM(CONVERT(A.O_P_NUM, DECIMAL(10,1))) AS O_P_NUM, '3' AS O_P_FILTER FROM X_O_P A WHERE A.O_P_COMBO = 0 AND A.O_P_STATUS > 1 "+CS+" AND A.O_P_DT_ORDER >= '"+MT[2]+"' AND A.O_P_DT_ORDER <= '"+MT[3]+"' GROUP BY A.O_P_ID ORDER BY A.O_P_DT_ORDER DESC";
+        List<Map> OP_FINISH = query.doQuery(sql).tables(FINISH_SHOW_NUM);
+        data.put("FINISH", OP_FINISH);
+        query.free();
+        return data;
+    }
+
+    public Map cutInfoProduct(Form form){
+        Map data = form.getValuesMap();
+        String O_P_ID = StringUtils.toString(data.get("O_P_ID"));
+        if(O_P_ID.length() == 0){
+            return data;
+        }
+        String O_P_FILTER = StringUtils.toString(data.get("O_P_FILTER"));
+        if(O_P_FILTER.length() == 0){
+            O_P_FILTER = "0";
+        }
+        IQuery query = getQuery();
+        String CS = "";
+        if(O_P_FILTER.equals("1")){
+            CS = " AND A.O_P_STATUS = 1 AND A.O_P_EXT_STATUS = 2 AND A.O_P_HURRY_CLIENT = 0 AND A.O_P_HURRY_SYSTEM = 0";
+        }
+        else if(O_P_FILTER.equals("2")){
+            CS = " AND A.O_P_STATUS = 1 AND (A.O_P_HURRY_CLIENT > 0 OR A.O_P_HURRY_SYSTEM > 0)";
+        }
+        else if(O_P_FILTER.equals("3")){
+            String[] MT = new MarketTypeAction().getNowMT();
+            CS = " AND A.O_P_STATUS > 1 AND A.O_P_DT_ORDER >= '"+MT[2]+"' AND A.O_P_DT_ORDER <= '"+MT[3]+"'";
+        }
+        else{
+             CS = " AND A.O_P_STATUS = 1 AND A.O_P_EXT_STATUS <> 2 AND A.O_P_HURRY_CLIENT = 0 AND A.O_P_HURRY_SYSTEM = 0";
+        }
+        String sql = "SELECT A.*, " +
+                "(SELECT DESK_NAME FROM X_DESK WHERE DESK_ID = (SELECT O_DESK_ID FROM X_O WHERE O_ID = A.O_ID)) AS DESK_NAME, " +
+                "(SELECT DESK_CODE FROM X_DESK WHERE DESK_ID = (SELECT O_DESK_ID FROM X_O WHERE O_ID = A.O_ID)) AS DESK_CODE " +
+                "FROM X_O_P A WHERE A.O_P_COMBO = 0 AND A.O_P_ID = " + O_P_ID  + CS + " ORDER BY A.O_P_DT_ORDER";
+
+        List<Map> list = query.doQuery(sql).tables();
+        for(Map OP : list){
+            String O_P_TASTE = StringUtils.toString(OP.get("O_P_TASTE"));
+            String O_P_PACK = StringUtils.toString(OP.get("O_P_PACK"));
+            String O_P_REQUIRE = StringUtils.toString(OP.get("O_P_REQUIRE"));
+            String O_P_MEMO = StringUtils.toString(OP.get("O_P_MEMO"));
+            List<String> memos = new ArrayList<String>();
+            if(O_P_PACK.equals("1")){
+                memos.add("打包");
+            }
+
+            if(O_P_TASTE.length() > 0){
+                //memos.add(O_P_TASTE);
+            }
+            if(O_P_REQUIRE.length() > 0){
+                memos.add(O_P_REQUIRE);
+            }
+            if(O_P_MEMO.length() > 0){
+                memos.add(O_P_MEMO);
+            }
+            OP.put("O_P_MEMOS", ArrayUtils.join(",", memos));
+        }
+        data.clear();
+        data.put("NORMAL", list);
+        query.free();
+        return data;
+    }
+
+    public Map cutDesk(){
+        Map data = new HashMap();
+        IQuery query = getQuery();
+//        String sql = "SELECT A.DESK_ID, A.DESK_CODE, A.DESK_NAME, B.O_ID, B.O_NO, B.O_DT, B.O_STATUS " +
+//                "FROM X_DESK A " +
+//                "RIGHT JOIN (" +
+//                "SELECT O.* FROM X_O O WHERE O.O_STATUS IN(4) AND O.O_ID IN (SELECT O_ID FROM X_O_P OP WHERE (SELECT COUNT(O_ID) FROM X_O_P WHERE O_P_STATUS=1 AND O_ID = OP.O_ID) > 0)" +
+//                ") B ON A.DESK_ID = B.O_DESK_ID " +
+//                "WHERE A.DESK_STATUS = 1 ORDER BY A.DESK_CODE, A.DESK_ID";
+        String CS = "";
+        KitchenCaseAction caseAction = new KitchenCaseAction();
+        String TYPE_IDS = caseAction.getCutProduct(getClient().getAddress());
+        if(TYPE_IDS.length() > 0){
+            CS += " AND A.O_P_TYPE_ID IN ("+TYPE_IDS+")";
+        }
+        String sql = "SELECT A.O_ID, A.O_NO, A.O_DT, A.O_STATUS, B.DESK_ID, B.DESK_CODE, B.DESK_NAME, '0' AS O_FILTER " +
+                "FROM X_O A " +
+                "LEFT JOIN X_DESK B ON A.O_DESK_ID = B.DESK_ID " +
+                "WHERE A.O_STATUS IN (4) AND " +
+                "A.O_ID IN (SELECT O_ID FROM X_O_P WHERE O_P_COMBO = 0 AND O_P_STATUS IN (1)"+ CS + " AND O_ID = A.O_ID GROUP BY O_ID HAVING COUNT(O_ID) > 0) " +
+//                "A.O_ID IN (SELECT O_ID FROM X_O_P OP WHERE (SELECT COUNT(O_ID) FROM X_O_P WHERE O_P_COMBO = 0 AND O_P_STATUS=1 AND O_ID = A.O_ID) > 0 "+CS+") " +
+                "ORDER BY B.DESK_CODE, B.DESK_ID";
+//        System.out.println(sql);
+        List<Map> DESK_NORMAL = query.doQuery(sql).tables();
+        String flag = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        int x = 0;
+        int i = 0;
+        int count = DESK_NORMAL.size();
+        for(Map m : DESK_NORMAL){
+            String DESK_NAME = StringUtils.toString(m.get("DESK_NAME"));
+            if(i < count - 1){
+                Map m2 = DESK_NORMAL.get(i + 1);
+                String DESK_NAME_ = StringUtils.toString(m2.get("DESK_NAME"));
+                if(DESK_NAME.equals(DESK_NAME_)){
+                    if(x == 0){
+                        m.put("DESK_NAME_SHOW", DESK_NAME + flag.charAt(x));
+                    }
+                    m2.put("DESK_NAME_SHOW", DESK_NAME + flag.charAt(x + 1));
+                    x++;
+                }
+                else{
+                    if(x == 0){
+                        m.put("DESK_NAME_SHOW", DESK_NAME);
+                    }
+                    x = 0;
+                }
+            }
+            else{
+                if(x == 0){
+                    m.put("DESK_NAME_SHOW", DESK_NAME);
+                }
+            }
+            i++;
+        }
+
+        data.put("NORMAL", DESK_NORMAL);
+//        sql = "SELECT A.DESK_ID, A.DESK_CODE, A.DESK_NAME " +
+//                "FROM (SELECT DESK_ID, DESK_CODE, DESK_NAME FROM X_DESK UNION ALL SELECT DESK_ID, DESK_CODE, DESK_NAME FROM X_DESK_TEMP) A " +
+//                "WHERE A.DESK_ID IN (SELECT O_DESK_ID FROM X_O WHERE O_ID IN (SELECT O_ID FROM X_O_P WHERE O_P_STATUS=1)) ORDER BY A.DESK_CODE";
+        String[] MT = new MarketTypeAction().getNowMT();
+        sql = "SELECT A.O_ID, A.O_NO, A.O_DT, A.O_STATUS, B.DESK_ID, B.DESK_CODE, B.DESK_NAME, '1' AS O_FILTER " +
+                "FROM X_O A " +
+                "LEFT JOIN X_DESK B ON A.O_DESK_ID = B.DESK_ID " +
+                "WHERE A.O_STATUS > 3 AND A.O_DINE_DT >= '"+MT[2]+"' AND A.O_DINE_DT <= '"+MT[3]+"' AND " +
+                "(SELECT COUNT(O_ID) FROM X_O_P WHERE O_P_COMBO = 0 AND O_P_STATUS IN (1) AND A.O_ID=O_ID) = 0 " +
+//                "A.O_ID IN (SELECT O_ID FROM X_O_P WHERE O_P_COMBO = 0 AND O_P_STATUS IN (1)"+ CS + " AND O_ID = A.O_ID GROUP BY O_ID HAVING COUNT(O_ID) = 0) " +
+//                "A.O_ID IN (SELECT O_ID FROM X_O_P OP WHERE (SELECT COUNT(O_ID) FROM X_O_P WHERE O_P_COMBO = 0 AND O_P_STATUS=2 AND O_ID = A.O_ID) = 0 "+CS+") " +
+                "ORDER BY B.DESK_CODE, B.DESK_ID";
+        System.out.println(sql);
+        List<Map> DESK_FINISH = query.doQuery(sql).tables(FINISH_SHOW_NUM);
+        x = 0;
+        i = 0;
+        count = DESK_FINISH.size();
+        for(Map m : DESK_FINISH){
+            String DESK_NAME = StringUtils.toString(m.get("DESK_NAME"));
+            if(i < count - 1){
+                Map m2 = DESK_FINISH.get(i + 1);
+                String DESK_NAME_ = StringUtils.toString(m2.get("DESK_NAME"));
+                if(DESK_NAME.equals(DESK_NAME_)){
+                    if(x == 0){
+                        m.put("DESK_NAME_SHOW", DESK_NAME + flag.charAt(x));
+                    }
+                    m2.put("DESK_NAME_SHOW", DESK_NAME + flag.charAt(x + 1));
+                    x++;
+                }
+                else{
+                    if(x == 0){
+                        m.put("DESK_NAME_SHOW", DESK_NAME);
+                    }
+                    x = 0;
+                }
+            }
+            else{
+                if(x == 0){
+                    m.put("DESK_NAME_SHOW", DESK_NAME);
+                }
+            }
+            i++;
+        }
+        data.put("FINISH", DESK_FINISH);
+        query.free();
+        return data;
+    }
+
+
+    public Map cutInfoDesk(Form form){
+        Map data = form.getValuesMap();
+        String O_ID = StringUtils.toString(data.get("O_ID"));
+        if(O_ID.length() == 0){
+            return data;
+        }
+        String O_FILTER = StringUtils.toString(data.get("O_FILTER"));
+        if(O_FILTER.length() == 0){
+            O_FILTER = "0";
+        }
+        IQuery query = getQuery();
+        String sql = "";
+        data.clear();
+        String CS = "";
+        KitchenCaseAction caseAction = new KitchenCaseAction();
+        String TYPE_IDS = caseAction.getCutProduct(getClient().getAddress());
+        if(TYPE_IDS.length() > 0){
+            CS += " AND A.O_P_TYPE_ID IN ("+TYPE_IDS+")";
+        }
+        if(O_FILTER.equals("0")){
+            sql = "SELECT A.* " +
+                "FROM X_O_P A WHERE A.O_P_COMBO = 0 AND A.O_ID = " + O_ID + " AND A.O_P_STATUS = 1 "+CS+" ORDER BY A.O_P_DT_ORDER";
+            List<Map> OP_NORMAL = query.doQuery(sql).tables();
+            for(Map OP : OP_NORMAL){
+                String O_P_TASTE = StringUtils.toString(OP.get("O_P_TASTE"));
+                String O_P_PACK = StringUtils.toString(OP.get("O_P_PACK"));
+                String O_P_REQUIRE = StringUtils.toString(OP.get("O_P_REQUIRE"));
+                String O_P_MEMO = StringUtils.toString(OP.get("O_P_MEMO"));
+                List<String> memos = new ArrayList<String>();
+                if(O_P_PACK.equals("1")){
+                    memos.add("打包");
+                }
+
+                if(O_P_TASTE.length() > 0){
+                    //memos.add(O_P_TASTE);
+                }
+                if(O_P_REQUIRE.length() > 0){
+                    memos.add(O_P_REQUIRE);
+                }
+                if(O_P_MEMO.length() > 0){
+                    memos.add(O_P_MEMO);
+                }
+                OP.put("O_P_MEMOS", ArrayUtils.join(",", memos));
+            }
+            data.put("NORMAL", OP_NORMAL);
+        }
+        sql = "SELECT A.O_P_NO, A.O_P_NAME, A.O_P_NUM, A.O_P_TASTE, A.O_P_REQUIRE, A.O_P_MEMO " +
+                "FROM X_O_P A WHERE A.O_P_COMBO = 0 AND A.O_ID = " + O_ID + " AND A.O_P_STATUS > 1 "+CS+" ORDER BY A.O_P_DT_ORDER";
+        List<Map> OP_FINISH = query.doQuery(sql).tables(FINISH_SHOW_NUM);
+        for(Map OP : OP_FINISH){
+            String O_P_TASTE = StringUtils.toString(OP.get("O_P_TASTE"));
+            String O_P_PACK = StringUtils.toString(OP.get("O_P_PACK"));
+            String O_P_REQUIRE = StringUtils.toString(OP.get("O_P_REQUIRE"));
+            String O_P_MEMO = StringUtils.toString(OP.get("O_P_MEMO"));
+            List<String> memos = new ArrayList<String>();
+            if(O_P_PACK.equals("1")){
+                memos.add("打包");
+            }
+
+            if(O_P_TASTE.length() > 0){
+                //memos.add(O_P_TASTE);
+            }
+            if(O_P_REQUIRE.length() > 0){
+                memos.add(O_P_REQUIRE);
+            }
+            if(O_P_MEMO.length() > 0){
+                memos.add(O_P_MEMO);
+            }
+            OP.put("O_P_MEMOS", ArrayUtils.join(",", memos));
+        }
+
+        data.put("FINISH", OP_FINISH);
+        query.free();
+        return data;
+    }
+
+    public int cut(Form form){
+        Map data = form.getValuesMap();
+        String O_P_NO = StringUtils.toString(data.get("O_P_NO"));
+        String O_P_NUM = StringUtils.toString(data.get("O_P_NUM"));
+        System.out.println("O_P_NO = " + O_P_NO);
+        System.out.println("O_P_NUM = " + O_P_NUM);
+        if(O_P_NO.length() == 0){
+            return CloverManager.CODE_FAILED;
+        }
+        String[] O_P_NO_ARR = O_P_NO.split(",");
+        String[] O_P_NUM_ARR = O_P_NUM.split(",");
+        if(O_P_NO_ARR.length != O_P_NUM_ARR.length){
+            return CloverManager.CODE_FAILED;
+        }
+        IQuery query = getQuery();
+        String sql = "SELECT * FROM X_O_P WHERE O_P_NO IN ("+O_P_NO+")";
+        List<Map> list = query.doQuery(sql).tables();
+        if(list.size() == 0){
+            query.free();
+            return CloverManager.CODE_FAILED;
+        }
+        ITable t = getTable("X_O_P");
+        int result = 0;
+        for(int i=0;i<O_P_NO_ARR.length;i++){
+            data.put(O_P_NO_ARR[i], O_P_NUM_ARR[i]);
+        }
+        for(Map m : list){
+            String _O_P_NO = StringUtils.toString(m.get("O_P_NO"));
+            int O_P_NUM_OLD = NumberUtils.toInt(m.get("O_P_NUM"));
+            int O_P_NUM_NEW = NumberUtils.toInt(data.get(_O_P_NO));
+            if(O_P_NUM_NEW == 0 || O_P_NUM_OLD == 0){
+                continue;
+            }
+            if(O_P_NUM_NEW < O_P_NUM_OLD){
+                float O_P_PRICE = NumberUtils.toFloat(m.get("O_P_PRICE"));
+                m.put("O_P_NO", t.getMaxID( "O_P_NO"));
+                m.put("O_P_NUM", O_P_NUM_NEW);
+                m.put("O_P_AMOUNT", O_P_NUM_NEW * O_P_PRICE);
+                m.put("O_P_STATUS", 2);
+                t.data(m).create();
+                sql = "UPDATE X_O_P SET O_P_NUM=" + (O_P_NUM_OLD - O_P_NUM_NEW) + ", O_P_AMOUNT="+(O_P_NUM_OLD - O_P_NUM_NEW)*O_P_PRICE+" WHERE O_P_NO=" + _O_P_NO;
+            }
+            else{
+                sql = "UPDATE X_O_P SET O_P_STATUS = 2 WHERE O_P_NO=" + _O_P_NO;
+            }
+            result = query.doExec(sql);
+        }
+        query.free();
+        if(result < 0){
+            return CloverManager.CODE_FAILED;
+        }
+        return CloverManager.CODE_SUCCESS;
+    }
+
+
+    public Map planProduct(){
+        Map data = new HashMap();
+        IQuery query = getQuery();
+        String O_P_STATUS = "1,2";
+        String CS = "";
+        KitchenCaseAction caseAction = new KitchenCaseAction();
+        String TYPE_IDS = caseAction.getPlanProduct(getClient().getAddress());
+        if(TYPE_IDS.length() > 0){
+            CS += " AND A.O_P_TYPE_ID IN ("+TYPE_IDS+")";
+        }
+        String AREA_IDS = caseAction.getPlanArea(getClient().getAddress());
+        if(AREA_IDS.length() > 0){
+            CS += " AND A.O_ID IN (SELECT X.O_ID FROM X_O X LEFT JOIN X_DESK XX ON X.O_DESK_ID = XX.DESK_ID WHERE XX.DESK_AREA_ID IN ("+AREA_IDS+"))";
+        }
+        String sql = "SELECT A.O_P_ID, A.O_P_NAME, SUM(CONVERT(A.O_P_NUM, DECIMAL(10,1))) AS O_P_NUM, '0' AS O_P_FILTER, B.P_TYPE_PARENT FROM X_O_P A " +
+                "LEFT JOIN X_P_TYPE B ON A.O_P_TYPE_ID=B.P_TYPE_ID " +
+                "WHERE A.O_P_COMBO = 0 AND A.O_P_STATUS IN ( "+O_P_STATUS+")"+CS+" GROUP BY A.O_P_ID ORDER BY A.O_P_DT_ORDER";
+        List<Map> OP_NORMAL = query.doQuery(sql).tables();
+        data.put("NORMAL", OP_NORMAL);
+        String[] MT = new MarketTypeAction().getNowMT();
+        O_P_STATUS = "2";
+        sql = "SELECT A.O_P_ID, A.O_P_NAME, SUM(CONVERT(A.O_P_NUM, DECIMAL(10,1))) AS O_P_NUM, '1' AS O_P_FILTER FROM X_O_P A WHERE A.O_P_COMBO = 0 AND A.O_P_STATUS > "+O_P_STATUS+CS+" AND A.O_P_DT_ORDER >= '"+MT[2]+"' AND A.O_P_DT_ORDER <= '"+MT[3]+"' GROUP BY A.O_P_ID ORDER BY A.O_P_DT_ORDER DESC";
+//        System.out.println(sql);
+        List<Map> OP_FINISH = query.doQuery(sql).tables(FINISH_SHOW_NUM);
+        data.put("FINISH", OP_FINISH);
+        query.free();
+        return data;
+    }
+
+    public Map planInfoProduct(Form form){
+        Map data = form.getValuesMap();
+        String O_P_ID = StringUtils.toString(data.get("O_P_ID"));
+        if(O_P_ID.length() == 0){
+            return data;
+        }
+        String O_P_FILTER = StringUtils.toString(data.get("O_P_FILTER"));
+        if(O_P_FILTER.length() == 0){
+            O_P_FILTER = "0";
+        }
+        IQuery query = getQuery();
+        String CS = "";
+        String O_P_STATUS = "1,2";
+        if(O_P_FILTER.equals("1")){
+            String[] MT = new MarketTypeAction().getNowMT();
+            O_P_STATUS = "2";
+            CS = " AND A.O_P_STATUS > "+O_P_STATUS+" AND A.O_P_DT_ORDER >= '"+MT[2]+"' AND A.O_P_DT_ORDER <= '"+MT[3]+"'";
+        }
+        else{
+             CS = " AND A.O_P_STATUS IN ("+O_P_STATUS + ")";
+        }
+        KitchenCaseAction caseAction = new KitchenCaseAction();
+        String AREA_IDS = caseAction.getSignArea(getClient().getAddress());
+        if(AREA_IDS.length() > 0){
+            CS += " AND A.O_ID IN (SELECT X.O_ID FROM X_O X LEFT JOIN X_DESK XX ON X.O_DESK_ID = XX.DESK_ID WHERE XX.DESK_AREA_ID IN ("+AREA_IDS+"))";
+        }
+        String sql = "SELECT A.*, " +
+                "(SELECT DESK_NAME FROM X_DESK WHERE DESK_ID = (SELECT O_DESK_ID FROM X_O WHERE O_ID = A.O_ID)) AS DESK_NAME, " +
+                "(SELECT DESK_CODE FROM X_DESK WHERE DESK_ID = (SELECT O_DESK_ID FROM X_O WHERE O_ID = A.O_ID)) AS DESK_CODE " +
+                "FROM X_O_P A WHERE A.O_P_COMBO = 0 AND A.O_P_ID = " + O_P_ID  + CS + " ORDER BY A.O_P_DT_ORDER";
+//        System.out.println(sql);
+        List<Map> list = query.doQuery(sql).tables();
+        for(Map OP : list){
+            String O_P_TASTE = StringUtils.toString(OP.get("O_P_TASTE"));
+            String O_P_PACK = StringUtils.toString(OP.get("O_P_PACK"));
+            String O_P_REQUIRE = StringUtils.toString(OP.get("O_P_REQUIRE"));
+            String O_P_MEMO = StringUtils.toString(OP.get("O_P_MEMO"));
+            List<String> memos = new ArrayList<String>();
+            if(O_P_PACK.equals("1")){
+                memos.add("打包");
+            }
+
+            if(O_P_TASTE.length() > 0){
+                //memos.add(O_P_TASTE);
+            }
+            if(O_P_REQUIRE.length() > 0){
+                memos.add(O_P_REQUIRE);
+            }
+            if(O_P_MEMO.length() > 0){
+                memos.add(O_P_MEMO);
+            }
+            OP.put("O_P_MEMOS", ArrayUtils.join(",", memos));
+        }
+        data.clear();
+        data.put("NORMAL", list);
+        query.free();
+        return data;
+    }
+
+    public Map planDesk(){
+        Map data = new HashMap();
+        IQuery query = getQuery();
+        String O_P_STATUS = "1,2";
+
+        String CS = "";
+        KitchenCaseAction caseAction = new KitchenCaseAction();
+        String TYPE_IDS = caseAction.getPlanProduct(getClient().getAddress());
+        if(TYPE_IDS.length() > 0){
+            CS += " AND A.O_P_TYPE_ID IN ("+TYPE_IDS+")";
+        }
+        String AREA_IDS = caseAction.getPlanArea(getClient().getAddress());
+        if(AREA_IDS.length() > 0){
+            CS += " AND B.DESK_AREA_ID IN ("+AREA_IDS+")";
+        }
+        String sql = "SELECT A.O_ID, A.O_NO, A.O_DT, A.O_STATUS, B.DESK_ID, B.DESK_CODE, B.DESK_NAME, '0' AS O_FILTER " +
+                "FROM X_O A " +
+                "LEFT JOIN X_DESK B ON A.O_DESK_ID = B.DESK_ID " +
+                "WHERE A.O_STATUS IN (4) AND " +
+                "A.O_ID IN (SELECT O_ID FROM X_O_P WHERE O_P_COMBO = 0 AND O_P_STATUS IN ("+O_P_STATUS+")"+ CS + " AND O_ID = A.O_ID GROUP BY O_ID HAVING COUNT(O_ID) > 0) " +
+                "ORDER BY B.DESK_CODE, B.DESK_ID";
+
+//        String sql = "SELECT A.O_ID, A.O_NO, A.O_DT, A.O_STATUS, B.DESK_ID, B.DESK_CODE, B.DESK_NAME, '0' AS O_FILTER " +
+//                "FROM X_O A " +
+//                "LEFT JOIN X_DESK B ON A.O_DESK_ID = B.DESK_ID " +
+//                "WHERE A.O_STATUS IN (4) AND " +
+//                "A.O_ID IN (SELECT O_ID FROM X_O_P OP WHERE (SELECT COUNT(O_ID) FROM X_O_P WHERE O_P_COMBO = 0 AND O_P_STATUS IN ("+O_P_STATUS+")"+" AND O_ID = A.O_ID) > 0 "+CS+") " +
+//                "ORDER BY B.DESK_CODE, B.DESK_ID";
+        List<Map> DESK_NORMAL = query.doQuery(sql).tables();
+        String flag = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        int x = 0;
+        int i = 0;
+        int count = DESK_NORMAL.size();
+        for(Map m : DESK_NORMAL){
+            String DESK_NAME = StringUtils.toString(m.get("DESK_NAME"));
+            if(i < count - 1){
+                Map m2 = DESK_NORMAL.get(i + 1);
+                String DESK_NAME_ = StringUtils.toString(m2.get("DESK_NAME"));
+                if(DESK_NAME.equals(DESK_NAME_)){
+                    if(x == 0){
+                        m.put("DESK_NAME_SHOW", DESK_NAME + flag.charAt(x));
+                    }
+                    m2.put("DESK_NAME_SHOW", DESK_NAME + flag.charAt(x + 1));
+                    x++;
+                }
+                else{
+                    if(x == 0){
+                        m.put("DESK_NAME_SHOW", DESK_NAME);
+                    }
+                    x = 0;
+                }
+            }
+            else{
+                if(x == 0){
+                    m.put("DESK_NAME_SHOW", DESK_NAME);
+                }
+            }
+            i++;
+        }
+
+        data.put("NORMAL", DESK_NORMAL);
+        String[] MT = new MarketTypeAction().getNowMT();
+        sql = "SELECT A.O_ID, A.O_NO, A.O_DT, A.O_STATUS, B.DESK_ID, B.DESK_CODE, B.DESK_NAME, '1' AS O_FILTER " +
+                "FROM X_O A " +
+                "LEFT JOIN X_DESK B ON A.O_DESK_ID = B.DESK_ID " +
+                "WHERE A.O_STATUS > 3 AND A.O_DINE_DT >= '"+MT[2]+"' AND A.O_DINE_DT <= '"+MT[3]+"' AND " +
+                "(SELECT COUNT(O_ID) FROM X_O_P WHERE O_P_COMBO = 0 AND O_P_STATUS IN ("+O_P_STATUS+") AND A.O_ID=O_ID) = 0 " +
+//                "A.O_ID IN (SELECT O_ID FROM X_O_P WHERE O_P_COMBO = 0 AND O_P_STATUS IN ("+O_P_STATUS+")"+ CS + " AND O_ID = A.O_ID GROUP BY O_ID HAVING COUNT(O_ID) = 0) " +
+                "ORDER BY B.DESK_CODE, B.DESK_ID";
+//        System.out.println(sql);
+        List<Map> DESK_FINISH = query.doQuery(sql).tables(FINISH_SHOW_NUM);
+        x = 0;
+        i = 0;
+        count = DESK_FINISH.size();
+        for(Map m : DESK_FINISH){
+            String DESK_NAME = StringUtils.toString(m.get("DESK_NAME"));
+            if(i < count - 1){
+                Map m2 = DESK_FINISH.get(i + 1);
+                String DESK_NAME_ = StringUtils.toString(m2.get("DESK_NAME"));
+                if(DESK_NAME.equals(DESK_NAME_)){
+                    if(x == 0){
+                        m.put("DESK_NAME_SHOW", DESK_NAME + flag.charAt(x));
+                    }
+                    m2.put("DESK_NAME_SHOW", DESK_NAME + flag.charAt(x + 1));
+                    x++;
+                }
+                else{
+                    if(x == 0){
+                        m.put("DESK_NAME_SHOW", DESK_NAME);
+                    }
+                    x = 0;
+                }
+            }
+            else{
+                if(x == 0){
+                    m.put("DESK_NAME_SHOW", DESK_NAME);
+                }
+            }
+            i++;
+        }
+        data.put("FINISH", DESK_FINISH);
+        query.free();
+        return data;
+    }
+
+
+    public Map planInfoDesk(Form form){
+        Map data = form.getValuesMap();
+        String O_ID = StringUtils.toString(data.get("O_ID"));
+        if(O_ID.length() == 0){
+            return data;
+        }
+        String O_FILTER = StringUtils.toString(data.get("O_FILTER"));
+        if(O_FILTER.length() == 0){
+            O_FILTER = "0";
+        }
+        String O_P_STATUS = "1,2";
+        IQuery query = getQuery();
+        String sql = "";
+        data.clear();
+        String CS = "";
+        KitchenCaseAction caseAction = new KitchenCaseAction();
+        String TYPE_IDS = caseAction.getPlanProduct(getClient().getAddress());
+        if(TYPE_IDS.length() > 0){
+            CS += " AND A.O_P_TYPE_ID IN ("+TYPE_IDS+")";
+        }
+        if(O_FILTER.equals("0")){
+            sql = "SELECT A.* " +
+                "FROM X_O_P A WHERE A.O_P_COMBO = 0 AND A.O_ID = " + O_ID + " AND A.O_P_STATUS IN ("+O_P_STATUS+")"+CS +" ORDER BY A.O_P_DT_ORDER";
+            List<Map> OP_NORMAL = query.doQuery(sql).tables();
+            for(Map OP : OP_NORMAL){
+                String O_P_TASTE = StringUtils.toString(OP.get("O_P_TASTE"));
+                String O_P_PACK = StringUtils.toString(OP.get("O_P_PACK"));
+                String O_P_REQUIRE = StringUtils.toString(OP.get("O_P_REQUIRE"));
+                String O_P_MEMO = StringUtils.toString(OP.get("O_P_MEMO"));
+                List<String> memos = new ArrayList<String>();
+                if(O_P_PACK.equals("1")){
+                    memos.add("打包");
+                }
+
+                if(O_P_TASTE.length() > 0){
+                    //memos.add(O_P_TASTE);
+                }
+                if(O_P_REQUIRE.length() > 0){
+                    memos.add(O_P_REQUIRE);
+                }
+                if(O_P_MEMO.length() > 0){
+                    memos.add(O_P_MEMO);
+                }
+                OP.put("O_P_MEMOS", ArrayUtils.join(",", memos));
+            }
+            data.put("NORMAL", OP_NORMAL);
+        }
+        O_P_STATUS = "2";
+        sql = "SELECT A.* " +
+                "FROM X_O_P A WHERE A.O_ID = " + O_ID + " AND A.O_P_STATUS > "+O_P_STATUS+CS+" ORDER BY A.O_P_DT_ORDER";
+        List<Map> OP_FINISH = query.doQuery(sql).tables(FINISH_SHOW_NUM);
+        for(Map OP : OP_FINISH){
+            String O_P_TASTE = StringUtils.toString(OP.get("O_P_TASTE"));
+            String O_P_PACK = StringUtils.toString(OP.get("O_P_PACK"));
+            String O_P_REQUIRE = StringUtils.toString(OP.get("O_P_REQUIRE"));
+            String O_P_MEMO = StringUtils.toString(OP.get("O_P_MEMO"));
+            List<String> memos = new ArrayList<String>();
+            if(O_P_PACK.equals("1")){
+                memos.add("打包");
+            }
+
+            if(O_P_TASTE.length() > 0){
+                //memos.add(O_P_TASTE);
+            }
+            if(O_P_REQUIRE.length() > 0){
+                memos.add(O_P_REQUIRE);
+            }
+            if(O_P_MEMO.length() > 0){
+                memos.add(O_P_MEMO);
+            }
+            OP.put("O_P_MEMOS", ArrayUtils.join(",", memos));
+        }
+
+        data.put("FINISH", OP_FINISH);
+        query.free();
+        return data;
+    }
+
+    public int plan(Form form){
+        Map data = form.getValuesMap();
+        String O_P_NO = StringUtils.toString(data.get("O_P_NO"));
+        String O_P_NUM = StringUtils.toString(data.get("O_P_NUM"));
+        System.out.println("O_P_NO   = " + O_P_NO);
+        System.out.println("O_P_NUM = " + O_P_NUM);
+        if(O_P_NO.length() == 0){
+            return CloverManager.CODE_FAILED;
+        }
+        String[] O_P_NO_ARR = O_P_NO.split(",");
+        String[] O_P_NUM_ARR = O_P_NUM.split(",");
+        if(O_P_NO_ARR.length != O_P_NUM_ARR.length){
+            return CloverManager.CODE_FAILED;
+        }
+        IQuery query = getQuery();
+        String sql = "SELECT * FROM X_O_P WHERE O_P_NO IN ("+O_P_NO+")";
+        List<Map> list = query.doQuery(sql).tables();
+        if(list.size() == 0){
+            query.free();
+            return CloverManager.CODE_FAILED;
+        }
+        ITable t = getTable("X_O_P");
+        int result = 0;
+        for(int i=0;i<O_P_NO_ARR.length;i++){
+            data.put(O_P_NO_ARR[i], O_P_NUM_ARR[i]);
+        }
+        for(Map m : list){
+            String _O_P_NO = StringUtils.toString(m.get("O_P_NO"));
+            int O_P_NUM_OLD = NumberUtils.toInt(m.get("O_P_NUM"));
+            int O_P_NUM_NEW = NumberUtils.toInt(data.get(_O_P_NO));
+            if(O_P_NUM_NEW == 0 || O_P_NUM_OLD == 0){
+                continue;
+            }
+            if(O_P_NUM_NEW < O_P_NUM_OLD){
+                float O_P_PRICE = NumberUtils.toFloat(m.get("O_P_PRICE"));
+                m.put("O_P_NO", t.getMaxID( "O_P_NO"));
+                m.put("O_P_NUM", O_P_NUM_NEW);
+                m.put("O_P_AMOUNT", O_P_NUM_NEW * O_P_PRICE);
+                m.put("O_P_STATUS", 3);
+                t.data(m).create();
+                sql = "UPDATE X_O_P SET O_P_NUM=" + (O_P_NUM_OLD - O_P_NUM_NEW) + ", O_P_AMOUNT="+(O_P_NUM_OLD - O_P_NUM_NEW)*O_P_PRICE+" WHERE O_P_NO=" + _O_P_NO;
+            }
+            else{
+                sql = "UPDATE X_O_P SET O_P_STATUS = 3 WHERE O_P_NO=" + _O_P_NO;
+            }
+            result = query.doExec(sql);
+        }
+        query.free();
+        if(result < 0){
+            return CloverManager.CODE_FAILED;
+        }
+        return CloverManager.CODE_SUCCESS;
+    }
+
+    public Map signProduct(){
+        Map data = new HashMap();
+        IQuery query = getQuery();
+        String O_P_STATUS = "1,2,3";
+        String CS = "";
+        KitchenCaseAction caseAction = new KitchenCaseAction();
+        String TYPE_IDS = caseAction.getSignProduct(getClient().getAddress());
+        if(TYPE_IDS.length() > 0){
+            CS += " AND A.O_P_TYPE_ID IN ("+TYPE_IDS+")";
+        }
+        String AREA_IDS = caseAction.getSignArea(getClient().getAddress());
+        if(AREA_IDS.length() > 0){
+            CS += " AND A.O_ID IN (SELECT X.O_ID FROM X_O X LEFT JOIN X_DESK XX ON X.O_DESK_ID = XX.DESK_ID WHERE XX.DESK_AREA_ID IN ("+AREA_IDS+"))";
+        }
+        String sql = "SELECT A.O_P_ID, A.O_P_NAME, SUM(CONVERT(A.O_P_NUM, DECIMAL(10,1))) AS O_P_NUM, '0' AS O_P_FILTER, B.P_TYPE_PARENT FROM X_O_P A " +
+                "LEFT JOIN X_P_TYPE B ON A.O_P_TYPE_ID=B.P_TYPE_ID " +
+                "WHERE A.O_P_COMBO = 0 AND A.O_P_STATUS IN ( "+O_P_STATUS+")"+CS+" GROUP BY A.O_P_ID ORDER BY A.O_P_DT_ORDER";
+        List<Map> OP_NORMAL = query.doQuery(sql).tables();
+        data.put("NORMAL", OP_NORMAL);
+        String[] MT = new MarketTypeAction().getNowMT();
+        O_P_STATUS = "10";
+        sql = "SELECT A.O_P_ID, A.O_P_NAME, SUM(CONVERT(A.O_P_NUM, DECIMAL(10,1))) AS O_P_NUM, '1' AS O_P_FILTER FROM X_O_P A WHERE A.O_P_COMBO = 0 AND A.O_P_STATUS = "+O_P_STATUS+CS+" AND A.O_P_DT_ORDER >= '"+MT[2]+"' AND A.O_P_DT_ORDER <= '"+MT[3]+"' GROUP BY A.O_P_ID ORDER BY A.O_P_DT_ORDER DESC";
+//        System.out.println(sql);
+        List<Map> OP_FINISH = query.doQuery(sql).tables(FINISH_SHOW_NUM);
+        data.put("FINISH", OP_FINISH);
+        query.free();
+        return data;
+    }
+
+    public Map signInfoProduct(Form form){
+        Map data = form.getValuesMap();
+        String O_P_ID = StringUtils.toString(data.get("O_P_ID"));
+        if(O_P_ID.length() == 0){
+            return data;
+        }
+        String O_P_FILTER = StringUtils.toString(data.get("O_P_FILTER"));
+        if(O_P_FILTER.length() == 0){
+            O_P_FILTER = "0";
+        }
+        IQuery query = getQuery();
+        String CS = "";
+//        boolean isCut = SystemAction.isCut();
+        String O_P_STATUS = "1,2,3";
+        if(O_P_FILTER.equals("1")){
+            String[] MT = new MarketTypeAction().getNowMT();
+            O_P_STATUS = "10";
+            CS = " AND A.O_P_STATUS = "+O_P_STATUS+" AND A.O_P_DT_ORDER >= '"+MT[2]+"' AND A.O_P_DT_ORDER <= '"+MT[3]+"'";
+        }
+        else{
+             CS = " AND A.O_P_STATUS IN ("+O_P_STATUS + ")";
+        }
+        KitchenCaseAction caseAction = new KitchenCaseAction();
+        String AREA_IDS = caseAction.getSignArea(getClient().getAddress());
+        if(AREA_IDS.length() > 0){
+            CS += " AND A.O_ID IN (SELECT X.O_ID FROM X_O X LEFT JOIN X_DESK XX ON X.O_DESK_ID = XX.DESK_ID WHERE XX.DESK_AREA_ID IN ("+AREA_IDS+"))";
+        }
+        String sql = "SELECT A.*, " +
+                "(SELECT DESK_NAME FROM X_DESK WHERE DESK_ID = (SELECT O_DESK_ID FROM X_O WHERE O_ID = A.O_ID)) AS DESK_NAME, " +
+                "(SELECT DESK_CODE FROM X_DESK WHERE DESK_ID = (SELECT O_DESK_ID FROM X_O WHERE O_ID = A.O_ID)) AS DESK_CODE " +
+                "FROM X_O_P A WHERE A.O_P_COMBO = 0 AND A.O_P_ID = " + O_P_ID  + CS + " ORDER BY A.O_P_DT_ORDER";
+//        System.out.println(sql);
+        List<Map> list = query.doQuery(sql).tables();
+        for(Map OP : list){
+            String O_P_TASTE = StringUtils.toString(OP.get("O_P_TASTE"));
+            String O_P_PACK = StringUtils.toString(OP.get("O_P_PACK"));
+            String O_P_REQUIRE = StringUtils.toString(OP.get("O_P_REQUIRE"));
+            String O_P_MEMO = StringUtils.toString(OP.get("O_P_MEMO"));
+            List<String> memos = new ArrayList<String>();
+            if(O_P_PACK.equals("1")){
+                memos.add("打包");
+            }
+
+            if(O_P_TASTE.length() > 0){
+                //memos.add(O_P_TASTE);
+            }
+            if(O_P_REQUIRE.length() > 0){
+                memos.add(O_P_REQUIRE);
+            }
+            if(O_P_MEMO.length() > 0){
+                memos.add(O_P_MEMO);
+            }
+            OP.put("O_P_MEMOS", ArrayUtils.join(",", memos));
+        }
+        data.clear();
+        data.put("NORMAL", list);
+        query.free();
+        return data;
+    }
+
+    public Map signDesk(){
+        Map data = new HashMap();
+        IQuery query = getQuery();
+        String O_P_STATUS = "1,2,3";
+        String CS = "";
+        KitchenCaseAction caseAction = new KitchenCaseAction();
+        String TYPE_IDS = caseAction.getSignProduct(getClient().getAddress());
+        if(TYPE_IDS.length() > 0){
+            CS += " AND A.O_P_TYPE_ID IN ("+TYPE_IDS+")";
+        }
+        String AREA_IDS = caseAction.getSignArea(getClient().getAddress());
+        if(AREA_IDS.length() > 0){
+            CS += " AND B.DESK_AREA_ID IN ("+AREA_IDS+")";
+        }
+        String sql = "SELECT A.O_ID, A.O_NO, A.O_DT, A.O_STATUS, B.DESK_ID, B.DESK_CODE, B.DESK_NAME, '0' AS O_FILTER " +
+                "FROM X_O A " +
+                "LEFT JOIN X_DESK B ON A.O_DESK_ID = B.DESK_ID " +
+                "WHERE A.O_STATUS IN (4) AND " +
+
+                "A.O_ID IN (SELECT O_ID FROM X_O_P WHERE O_P_COMBO = 0 AND O_P_STATUS IN ("+O_P_STATUS+")"+ CS + " AND O_ID = A.O_ID GROUP BY O_ID HAVING COUNT(O_ID) > 0) " +
+                "ORDER BY B.DESK_CODE, B.DESK_ID";
+
+//        String sql = "SELECT A.O_ID, A.O_NO, A.O_DT, A.O_STATUS, B.DESK_ID, B.DESK_CODE, B.DESK_NAME, '0' AS O_FILTER " +
+//                "FROM X_O A " +
+//                "LEFT JOIN X_DESK B ON A.O_DESK_ID = B.DESK_ID " +
+//                "WHERE A.O_STATUS IN (4) AND " +
+//                "A.O_ID IN (SELECT O_ID FROM X_O_P OP WHERE (SELECT COUNT(O_ID) FROM X_O_P WHERE O_P_COMBO = 0 AND O_P_STATUS IN ("+O_P_STATUS+")"+" AND O_ID = A.O_ID) > 0 "+CS+") " +
+//                "ORDER BY B.DESK_CODE, B.DESK_ID";
+        List<Map> DESK_NORMAL = query.doQuery(sql).tables();
+        String flag = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        int x = 0;
+        int i = 0;
+        int count = DESK_NORMAL.size();
+        for(Map m : DESK_NORMAL){
+            String DESK_NAME = StringUtils.toString(m.get("DESK_NAME"));
+            if(i < count - 1){
+                Map m2 = DESK_NORMAL.get(i + 1);
+                String DESK_NAME_ = StringUtils.toString(m2.get("DESK_NAME"));
+                if(DESK_NAME.equals(DESK_NAME_)){
+                    if(x == 0){
+                        m.put("DESK_NAME_SHOW", DESK_NAME + flag.charAt(x));
+                    }
+                    m2.put("DESK_NAME_SHOW", DESK_NAME + flag.charAt(x + 1));
+                    x++;
+                }
+                else{
+                    if(x == 0){
+                        m.put("DESK_NAME_SHOW", DESK_NAME);
+                    }
+                    x = 0;
+                }
+            }
+            else{
+                if(x == 0){
+                    m.put("DESK_NAME_SHOW", DESK_NAME);
+                }
+            }
+            i++;
+        }
+
+        data.put("NORMAL", DESK_NORMAL);
+        String[] MT = new MarketTypeAction().getNowMT();
+        sql = "SELECT A.O_ID, A.O_NO, A.O_DT, A.O_STATUS, B.DESK_ID, B.DESK_CODE, B.DESK_NAME, '1' AS O_FILTER " +
+                "FROM X_O A " +
+                "LEFT JOIN X_DESK B ON A.O_DESK_ID = B.DESK_ID " +
+                "WHERE A.O_STATUS > 3 AND A.O_DINE_DT >= '"+MT[2]+"' AND A.O_DINE_DT <= '"+MT[3]+"' AND " +
+                "(SELECT COUNT(O_ID) FROM X_O_P WHERE O_P_COMBO = 0 AND O_P_STATUS IN ("+O_P_STATUS+") AND A.O_ID=O_ID) = 0 " +
+//                "A.O_ID IN (SELECT O_ID FROM X_O_P WHERE O_P_COMBO = 0 AND O_P_STATUS IN ("+O_P_STATUS+")"+ CS + " AND O_ID = A.O_ID GROUP BY O_ID HAVING COUNT(O_ID) = 0) " +
+                "ORDER BY B.DESK_CODE, B.DESK_ID";
+//        System.out.println(sql);
+        List<Map> DESK_FINISH = query.doQuery(sql).tables(FINISH_SHOW_NUM);
+        x = 0;
+        i = 0;
+        count = DESK_FINISH.size();
+        for(Map m : DESK_FINISH){
+            String DESK_NAME = StringUtils.toString(m.get("DESK_NAME"));
+            if(i < count - 1){
+                Map m2 = DESK_FINISH.get(i + 1);
+                String DESK_NAME_ = StringUtils.toString(m2.get("DESK_NAME"));
+                if(DESK_NAME.equals(DESK_NAME_)){
+                    if(x == 0){
+                        m.put("DESK_NAME_SHOW", DESK_NAME + flag.charAt(x));
+                    }
+                    m2.put("DESK_NAME_SHOW", DESK_NAME + flag.charAt(x + 1));
+                    x++;
+                }
+                else{
+                    if(x == 0){
+                        m.put("DESK_NAME_SHOW", DESK_NAME);
+                    }
+                    x = 0;
+                }
+            }
+            else{
+                if(x == 0){
+                    m.put("DESK_NAME_SHOW", DESK_NAME);
+                }
+            }
+            i++;
+        }
+        data.put("FINISH", DESK_FINISH);
+        query.free();
+        return data;
+    }
+
+
+    public Map signInfoDesk(Form form){
+        Map data = form.getValuesMap();
+        String O_ID = StringUtils.toString(data.get("O_ID"));
+        if(O_ID.length() == 0){
+            return data;
+        }
+        String O_FILTER = StringUtils.toString(data.get("O_FILTER"));
+        if(O_FILTER.length() == 0){
+            O_FILTER = "0";
+        }
+        String O_P_STATUS = "1,2,3";
+        IQuery query = getQuery();
+        String sql = "";
+        data.clear();
+        String CS = "";
+        KitchenCaseAction caseAction = new KitchenCaseAction();
+        String TYPE_IDS = caseAction.getSignProduct(getClient().getAddress());
+        if(TYPE_IDS.length() > 0){
+            CS += " AND A.O_P_TYPE_ID IN ("+TYPE_IDS+")";
+        }
+        if(O_FILTER.equals("0")){
+            sql = "SELECT A.* " +
+                "FROM X_O_P A WHERE A.O_P_COMBO = 0 AND A.O_ID = " + O_ID + " AND A.O_P_STATUS IN ("+O_P_STATUS+")"+CS +" ORDER BY A.O_P_DT_ORDER";
+            List<Map> OP_NORMAL = query.doQuery(sql).tables();
+            for(Map OP : OP_NORMAL){
+                String O_P_TASTE = StringUtils.toString(OP.get("O_P_TASTE"));
+                String O_P_PACK = StringUtils.toString(OP.get("O_P_PACK"));
+                String O_P_REQUIRE = StringUtils.toString(OP.get("O_P_REQUIRE"));
+                String O_P_MEMO = StringUtils.toString(OP.get("O_P_MEMO"));
+                List<String> memos = new ArrayList<String>();
+                if(O_P_PACK.equals("1")){
+                    memos.add("打包");
+                }
+
+                if(O_P_TASTE.length() > 0){
+                    //memos.add(O_P_TASTE);
+                }
+                if(O_P_REQUIRE.length() > 0){
+                    memos.add(O_P_REQUIRE);
+                }
+                if(O_P_MEMO.length() > 0){
+                    memos.add(O_P_MEMO);
+                }
+                OP.put("O_P_MEMOS", ArrayUtils.join(",", memos));
+            }
+            data.put("NORMAL", OP_NORMAL);
+        }
+        O_P_STATUS = "10";
+        sql = "SELECT A.* " +
+                "FROM X_O_P A WHERE A.O_ID = " + O_ID + " AND A.O_P_STATUS = "+O_P_STATUS+CS+" ORDER BY A.O_P_DT_ORDER";
+        List<Map> OP_FINISH = query.doQuery(sql).tables(FINISH_SHOW_NUM);
+        for(Map OP : OP_FINISH){
+            String O_P_TASTE = StringUtils.toString(OP.get("O_P_TASTE"));
+            String O_P_PACK = StringUtils.toString(OP.get("O_P_PACK"));
+            String O_P_REQUIRE = StringUtils.toString(OP.get("O_P_REQUIRE"));
+            String O_P_MEMO = StringUtils.toString(OP.get("O_P_MEMO"));
+            List<String> memos = new ArrayList<String>();
+            if(O_P_PACK.equals("1")){
+                memos.add("打包");
+            }
+
+            if(O_P_TASTE.length() > 0){
+                //memos.add(O_P_TASTE);
+            }
+            if(O_P_REQUIRE.length() > 0){
+                memos.add(O_P_REQUIRE);
+            }
+            if(O_P_MEMO.length() > 0){
+                memos.add(O_P_MEMO);
+            }
+            OP.put("O_P_MEMOS", ArrayUtils.join(",", memos));
+        }
+
+        data.put("FINISH", OP_FINISH);
+        query.free();
+        return data;
+    }
+
+    public int sign(Form form){
+        Map data = form.getValuesMap();
+        String O_P_NO = StringUtils.toString(data.get("O_P_NO"));
+        String O_P_NUM = StringUtils.toString(data.get("O_P_NUM"));
+        System.out.println("O_P_NO   = " + O_P_NO);
+        System.out.println("O_P_NUM = " + O_P_NUM);
+        if(O_P_NO.length() == 0){
+            return CloverManager.CODE_FAILED;
+        }
+        String[] O_P_NO_ARR = O_P_NO.split(",");
+        String[] O_P_NUM_ARR = O_P_NUM.split(",");
+        if(O_P_NO_ARR.length != O_P_NUM_ARR.length){
+            return CloverManager.CODE_FAILED;
+        }
+        long a = System.currentTimeMillis();
+        IQuery query = getQuery();
+        String sql = "SELECT * FROM X_O_P WHERE O_P_NO IN ("+O_P_NO+")";
+        List<Map> list = query.doQuery(sql).tables();
+        if(list.size() == 0){
+            query.free();
+            return CloverManager.CODE_FAILED;
+        }
+        ITable t = getTable("X_O_P");
+        int result = 0;
+        for(int i=0;i<O_P_NO_ARR.length;i++){
+            data.put(O_P_NO_ARR[i], O_P_NUM_ARR[i]);
+        }
+        for(Map m : list){
+            String _O_P_NO = StringUtils.toString(m.get("O_P_NO"));
+            int O_P_NUM_OLD = NumberUtils.toInt(m.get("O_P_NUM"));
+            int O_P_NUM_NEW = NumberUtils.toInt(data.get(_O_P_NO));
+            if(O_P_NUM_NEW == 0 || O_P_NUM_OLD == 0){
+                continue;
+            }
+            if(O_P_NUM_NEW < O_P_NUM_OLD){
+                float O_P_PRICE = NumberUtils.toFloat(m.get("O_P_PRICE"));
+                m.put("O_P_NO", t.getMaxID( "O_P_NO"));
+                m.put("O_P_NUM", O_P_NUM_NEW);
+                m.put("O_P_AMOUNT", O_P_NUM_NEW * O_P_PRICE);
+                m.put("O_P_DT_FINISH", DateUtils.getNow());
+                m.put("O_P_STATUS", 10);
+                t.data(m).create();
+                sql = "UPDATE X_O_P SET O_P_NUM=" + (O_P_NUM_OLD - O_P_NUM_NEW) + ", O_P_AMOUNT="+(O_P_NUM_OLD - O_P_NUM_NEW)*O_P_PRICE+" WHERE O_P_NO=" + _O_P_NO;
+            }
+            else{
+                sql = "UPDATE X_O_P SET O_P_STATUS = 10,  O_P_DT_FINISH='"+ DateUtils.getNow()+"' WHERE O_P_NO=" + _O_P_NO;
+            }
+            result = query.doExec(sql);
+        }
+        query.free();
+        long b = System.currentTimeMillis();
+        System.out.println("SIGN TIMEOUT = " + (b-a));
+        if(result < 0){
+            return CloverManager.CODE_FAILED;
+        }
+        return CloverManager.CODE_SUCCESS;
+    }
+
+
+
+}

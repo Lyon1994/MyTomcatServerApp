@@ -1,0 +1,233 @@
+package org.redot.clover.print.cases;
+
+import org.redot.clover.core.CloverManager;
+import org.redot.clover.print.PrintManager;
+import org.redot.clover.print.PrintProxy;
+import org.redot.clover.print.PrintService;
+import org.redot.library.db.IQuery;
+import org.redot.library.lang.ArrayUtils;
+import org.redot.library.lang.DateUtils;
+import org.redot.library.lang.NumberUtils;
+import org.redot.library.lang.StringUtils;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 11-4-13
+ * Time: 下午11:24
+ * To change this template use File | Settings | File Templates.
+ */
+public class KitchenPrintCaseSame extends AbstractPrintCase {
+
+    private List<HashMap<String, String[]>> dataList = new ArrayList<HashMap<String, String[]>>();
+
+    @Override
+    public void process() {
+        IQuery query = CloverManager.getInstance().getQuery();
+        String sql = "SELECT PRINT_DT FROM X_PRINT_MONITOR WHERE PRINT_TYPE = 2";
+        String PRINT_DT = query.doQuery(sql).getValue();
+        String COND = "";
+        if(PRINT_DT.length() > 0){
+            COND += " AND A.O_P_DT_ORDER > '"+PRINT_DT+"'";
+        }
+        String CASE_PS = StringUtils.toString(getPrams().get("CASE_PS"));
+        String CASE_PSX = StringUtils.toString(getPrams().get("CASE_PSX"));
+        if(CASE_PS.length() > 0 || CASE_PSX.length() > 0){
+            String s = "";
+            s =  CASE_PS.length() > 0 ? "A.O_P_TYPE_ID IN ("+CASE_PS+")" : "";
+            if(CASE_PSX.length() > 0){
+                if(s.length() > 0){
+                    s += " OR ";
+                }
+                s += "A.O_P_ID IN ("+CASE_PSX+")";
+            }
+            COND += " AND ("+ s +")";
+        }
+        sql = "SELECT A.*, SUM(A.O_P_NUM) AS O_P_NUM_ALL, B.UNIT_NAME FROM X_O_P A " +
+                "LEFT JOIN X_UNIT B ON A.O_P_UNIT_ID = B.UNIT_ID WHERE A.O_P_STATUS >0 AND A.O_P_COMBO = 0"+COND+" GROUP BY A.O_P_NAME ORDER BY O_P_NUM_ALL DESC";
+        List<Map> OPS = query.doQuery(sql).tables();
+        List<String> P_NAME_LIST = new ArrayList<String>();
+        List<String> P_NUM_LIST = new ArrayList<String>();
+        List<String> P_UNIT_LIST = new ArrayList<String>();
+        List<String> P_PRICE_LIST = new ArrayList<String>();
+        List<String> P_MEMO_LIST = new ArrayList<String>();
+        for(int i=0;i<OPS.size();i++){
+            Map OP = OPS.get(i);
+            if(NumberUtils.toInt(OP.get("O_P_NUM_ALL")) == 1){
+                continue;
+            }
+
+            String O_P_TASTE = StringUtils.toString(OP.get("O_P_TASTE"));
+            String O_P_WAY = StringUtils.toString(OP.get("O_P_WAY"));
+            String O_P_PACK = StringUtils.toString(OP.get("O_P_PACK"));
+            String O_P_REQUIRE = StringUtils.toString(OP.get("O_P_REQUIRE"));
+            String O_P_MEMO = StringUtils.toString(OP.get("O_P_MEMO"));
+            float O_P_DISCOUNT = NumberUtils.toFloat(OP.get("O_P_DISCOUNT"));
+            List<String> memos = new ArrayList<String>();
+            if(O_P_PACK.equals("1")){
+                memos.add("打包");
+            }
+            if(O_P_DISCOUNT >= 0){
+                if(O_P_DISCOUNT == 0){
+                    memos.add("赠送");
+                }
+                else{
+                    memos.add(O_P_DISCOUNT + "折");
+                }
+            }
+            if(O_P_WAY.length() > 0){
+                memos.add(O_P_WAY);
+            }
+            if(O_P_TASTE.length() > 0){
+                memos.add(O_P_TASTE);
+            }
+            if(O_P_REQUIRE.length() > 0){
+                memos.add(O_P_REQUIRE);
+            }
+            if(O_P_MEMO.length() > 0){
+                memos.add(O_P_MEMO);
+            }
+            P_PRICE_LIST.add(StringUtils.toString(OP.get("O_P_PRICE")));
+            P_MEMO_LIST.add(ArrayUtils.join(",", memos));
+            String O_P_ID = StringUtils.toString(OP.get("O_P_ID"));
+            String O_P_EXT_STATUS = StringUtils.toString(OP.get("O_P_EXT_STATUS"));
+            String _O_P_NAME = StringUtils.toString(OP.get("O_P_NAME"));
+            long _O_P_ID = NumberUtils.toLong(O_P_ID);
+            if(_O_P_ID > 10000){
+                _O_P_NAME = "[临]" + _O_P_NAME;
+            }
+            if(O_P_EXT_STATUS.equals("1")){
+                _O_P_NAME = "[挂起]" + _O_P_NAME;
+            }
+            P_NAME_LIST.add(_O_P_NAME);
+
+            P_NUM_LIST.add(StringUtils.toString(OP.get("O_P_NUM_ALL")));
+            P_UNIT_LIST.add(StringUtils.toString(OP.get("UNIT_NAME")));
+        }
+        int count = P_NAME_LIST.size();
+        getData().put("菜品名称", P_NAME_LIST.toArray(new String[count]));
+        getData().put("数量", P_NUM_LIST.toArray(new String[count]));
+        getData().put("单位", P_UNIT_LIST.toArray(new String[count]));
+        getData().put("单价", P_PRICE_LIST.toArray(new String[count]));
+        getData().put("菜品备注", P_MEMO_LIST.toArray(new String[count]));
+
+        String P_NAMES = "";
+        for(int i=0;i<P_NAME_LIST.size();i++){
+            if(i>0){
+                P_NAMES += ",";
+            }
+            P_NAMES += "'"+P_NAME_LIST.get(i)+"'";
+        }
+        if(P_NAMES.length() > 0){
+            COND += " AND A.O_P_NAME NOT IN ("+P_NAMES+")";
+        }
+        sql = "SELECT A.*, B.UNIT_NAME FROM X_O_P A " +
+                "LEFT JOIN X_UNIT B ON A.O_P_UNIT_ID = B.UNIT_ID " +
+                "LEFT JOIN X_P_TYPE C ON A.O_P_TYPE_ID = C.P_TYPE_ID " +
+                "LEFT JOIN X_P_TYPE CX ON C.P_TYPE_PARENT = CX.P_TYPE_ID " +
+                "WHERE A.O_P_STATUS>0" + COND + " ORDER BY CX.P_TYPE_SORT";
+        OPS = query.doQuery(sql).tables();
+        query.doExec("DELETE FROM X_PRINT_MONITOR WHERE PRINT_TYPE = 2");
+        query.doExec("INSERT INTO X_PRINT_MONITOR (PRINT_TYPE, PRINT_DT) VALUES (2, '"+ DateUtils.getNow()+"')");
+        if(OPS.size() == 0){
+            query.free();
+            return;
+        }
+        String[] O_IDS = new String[OPS.size()];
+        for(int i=0;i<OPS.size();i++){
+            Map P = OPS.get(i);
+            O_IDS[i] = StringUtils.toString(P.get("O_ID"));
+        }
+        O_IDS = ArrayUtils.unique(O_IDS);
+        sql = "SELECT A.O_ID, A.O_NO, A.O_DINE_NOP, B.DESK_CODE, B.DESK_NAME,A.O_SERVER FROM X_O A " +
+                "LEFT JOIN X_DESK B ON A.O_DESK_ID = B.DESK_ID " +
+                "WHERE A.O_ID IN (" + ArrayUtils.join(",", O_IDS) + ")";
+
+        List<Map> OS = query.doQuery(sql).tables();
+        for(int i=0; i<OS.size(); i++){
+            Map O = OS.get(i);
+            HashMap<String, String[]> D = new HashMap<String, String[]>();
+            D.put("桌台", new String[]{StringUtils.toString(O.get("DESK_CODE"))  + StringUtils.toString(O.get("DESK_NAME"))});
+            int DINE_NOP = NumberUtils.toInt(O.get("O_DINE_NOP"));
+            D.put("人数", new String[]{DINE_NOP+""});
+            D.put("订单号", new String[]{StringUtils.toString(O.get("O_NO"))});
+            P_NAME_LIST.clear();
+            P_NUM_LIST.clear();
+            P_UNIT_LIST.clear();
+            P_PRICE_LIST.clear();
+            P_MEMO_LIST.clear();
+            for(int j=0;j<OPS.size();j++){
+                Map OP = OPS.get(j);
+                if(!StringUtils.toString(OP.get("O_ID")).equals(StringUtils.toString(O.get("O_ID")))){
+                    continue;
+                }
+
+                String O_P_TASTE = StringUtils.toString(OP.get("O_P_TASTE"));
+                String O_P_PACK = StringUtils.toString(OP.get("O_P_PACK"));
+                String O_P_REQUIRE = StringUtils.toString(OP.get("O_P_REQUIRE"));
+                String O_P_MEMO = StringUtils.toString(OP.get("O_P_MEMO"));
+                float O_P_DISCOUNT = NumberUtils.toFloat(OP.get("O_P_DISCOUNT"));
+                List<String> memos = new ArrayList<String>();
+                if(O_P_PACK.equals("1")){
+                    memos.add("打包");
+                }
+                if(O_P_DISCOUNT >= 0){
+                    if(O_P_DISCOUNT == 0){
+                        memos.add("赠送");
+                    }
+                    else{
+                        memos.add(O_P_DISCOUNT + "折");
+                    }
+                }
+                if(O_P_TASTE.length() > 0){
+                    memos.add(O_P_TASTE);
+                }
+                if(O_P_REQUIRE.length() > 0){
+                    memos.add(O_P_REQUIRE);
+                }
+                if(O_P_MEMO.length() > 0){
+                    memos.add(O_P_MEMO);
+                }
+                P_PRICE_LIST.add(StringUtils.toString(OP.get("O_P_PRICE")));
+                P_MEMO_LIST.add(ArrayUtils.join(",", memos));
+                P_NAME_LIST.add(StringUtils.toString(OP.get("O_P_NAME")));
+                P_NUM_LIST.add(StringUtils.toString(OP.get("O_P_NUM")));
+                P_UNIT_LIST.add(StringUtils.toString(OP.get("UNIT_NAME")));
+            }
+            int x = P_NAME_LIST.size();
+            if(x == 0){
+                continue;
+            }
+            D.put("菜品名称", P_NAME_LIST.toArray(new String[x]));
+            D.put("数量", P_NUM_LIST.toArray(new String[x]));
+            D.put("单位", P_UNIT_LIST.toArray(new String[x]));
+            D.put("单价", P_PRICE_LIST.toArray(new String[x]));
+            D.put("菜品备注", P_MEMO_LIST.toArray(new String[x]));
+            dataList.add(D);
+        }
+        query.free();
+    }
+
+    @Override
+    public void print(){
+        System.out.println("打印中");
+        if(getData().get("菜品名称") != null && getData().get("菜品名称").length > 0){
+            PrintManager.getInstance().addProxy(new PrintProxy(getPrinter(), getData(), getTemplate(), getPrintNum(), isMoneyBox()));
+            //PrintService.doPrint(getPrinter(), getData(), getTemplate(), getPrintNum(), isMoneyBox());
+        }
+
+        for(int i=0;i<dataList.size();i++){
+            HashMap<String, String[]> D = dataList.get(i);
+            if(D.get("菜品名称") == null || D.get("菜品名称").length == 0){
+                continue;
+            }
+            PrintManager.getInstance().addProxy(new PrintProxy(getPrinter(), D, getTemplate(), getPrintNum(), isMoneyBox()));
+//            PrintService.doPrint(getPrinter(), D, getTemplate(), getPrintNum(), isMoneyBox());
+        }
+    }
+}

@@ -1,0 +1,38 @@
+package org.redot.clover.app.common;
+
+import org.redot.clover.core.data.SimpleDataPackage;
+import org.redot.clover.core.ext.BaseResource;
+import org.redot.library.lang.StringUtils;
+import org.restlet.resource.Get;
+
+import java.util.List;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 10-12-21
+ * Time: 下午5:02
+ * To change this template use File | Settings | File Templates.
+ */
+public class TypeResource extends BaseResource {
+
+    @Get("json")
+    public String doGet(){
+        SimpleDataPackage dp = new SimpleDataPackage();
+        String id = StringUtils.toString(getRequestAttributes().get("id"));
+        if(id.length() == 0){
+            return dp.toJSON();
+        }
+        TypeAction ta = new TypeAction() ;
+        List<String[]> list = ta.list(id);
+        String[] suggestions = new String[list.size()];
+        String[] data = new String[list.size()];
+        for(int i=0;i<list.size(); i++){
+            suggestions[i] = StringUtils.toString(list.get(i)[1]);
+            data[i] = StringUtils.toString(list.get(i)[0]);
+        }
+        dp.setSuggestions(suggestions);
+        dp.setData(data);
+        return dp.toJSON();
+    }
+}

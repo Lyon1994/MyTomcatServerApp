@@ -1,0 +1,40 @@
+package org.redot.library.codec;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: CASH
+ * Date: 2009-10-7
+ * Time: 23:19:41
+ * To change this template use File | Settings | File Templates.
+ */
+public class BaseCodec {
+
+    public static String bytesToHex(byte[] b) {
+        StringBuffer sb = new StringBuffer("");
+        for (int i = 0; i < b.length; i++) {
+            String hex = Integer.toHexString(b[i] & 0xFF);
+            if (hex.length() == 1) {
+                hex = '0' + hex;
+            }
+            sb.append(hex.toUpperCase());
+        }
+        return sb.toString();
+    }
+
+    public static byte[] hexToBytes(String hex) {
+        byte[] tmp = hex.getBytes();
+        byte[] b = new byte[tmp.length];
+        int len = b.length/2;
+        for (int i = 0; i < len; i++) {
+            b[i] = uniteBytes(tmp[i*2], tmp[i*2+1]);
+        }
+        return b;
+    }
+
+    public static byte uniteBytes(byte b1, byte b2) {
+        b1 = Byte.decode("0x" + new String(new byte[]{b1})).byteValue();
+        b1 = (byte) (b1 << 4);
+        b2 = Byte.decode("0x" + new String(new byte[]{b2})).byteValue();
+        return (byte) (b1 ^ b2);
+    }
+}

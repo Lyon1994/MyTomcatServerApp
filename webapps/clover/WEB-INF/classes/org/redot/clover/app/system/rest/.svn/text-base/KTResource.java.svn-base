@@ -1,0 +1,32 @@
+package org.redot.clover.app.system.rest;
+
+import org.redot.clover.app.system.KTAction;
+import org.redot.clover.core.data.DataPackage;
+import org.redot.clover.core.ext.BaseResource;
+import org.restlet.resource.Get;
+import org.restlet.resource.Post;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 10-12-30
+ * Time: 上午4:14
+ * To change this template use File | Settings | File Templates.
+ */
+public class KTResource extends BaseResource {
+    @Get("json")
+    public String doGet() {
+        DataPackage dp = new DataPackage();
+        KTAction a = new KTAction();
+        dp.getData().put("KT", a.getKT());
+        return dp.toJSON();
+    }
+
+    @Post("json")
+    public String doPost() {
+        DataPackage dp = new DataPackage();
+        KTAction a = new KTAction();
+        dp.setStatus(a.setKT(form));
+        return dp.toJSON();
+    }
+}

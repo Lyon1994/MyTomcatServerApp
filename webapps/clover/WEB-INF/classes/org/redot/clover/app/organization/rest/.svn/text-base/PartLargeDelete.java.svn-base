@@ -1,0 +1,23 @@
+package org.redot.clover.app.organization.rest;
+
+import org.redot.clover.app.organization.PartAction;
+import org.redot.clover.core.data.DataPackage;
+import org.redot.clover.core.ext.BaseResource;
+import org.restlet.resource.Post;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 12-11-22
+ * Time: 上午10:00
+ * To change this template use File | Settings | File Templates.
+ */
+public class PartLargeDelete extends BaseResource{
+    @Post
+    public String doGet(){
+        DataPackage dp = new DataPackage();
+        PartAction a = new PartAction();
+        dp.setStatus(a.deleteLarge(form));
+        return dp.toJSON();
+    }
+}

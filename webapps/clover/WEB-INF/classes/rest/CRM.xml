@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<clover>
+     <resource class="org.redot.clover.app.crm.rest.ClientTypeSelect">/crm/client/type/select</resource>
+     <resource class="org.redot.clover.app.crm.rest.ClientTypeList">/crm/client/type/list</resource>
+     <resource class="org.redot.clover.app.crm.rest.ClientType">/crm/client/type</resource>
+     <resource class="org.redot.clover.app.crm.rest.ClientType">/crm/client/type/info/{ID}</resource>
+     <resource class="org.redot.clover.app.crm.rest.ClientTypeDelete">/crm/client/type/delete</resource>
+
+     <resource class="org.redot.clover.app.crm.rest.ClientList">/crm/client/list</resource>
+     <resource class="org.redot.clover.app.crm.rest.Client">/crm/client</resource>
+     <resource class="org.redot.clover.app.crm.rest.Client">/crm/client/info/{ID}</resource>
+     <resource class="org.redot.clover.app.crm.rest.ClientDelete">/crm/client/delete</resource>
+
+    <resource class="org.redot.clover.app.crm.rest.ClientChargeList">/crm/client/charge/list</resource>
+    <resource class="org.redot.clover.app.crm.rest.ClientCharge">/crm/client/charge/info</resource>
+    <resource class="org.redot.clover.app.crm.rest.ClientCharge">/crm/client/charge</resource>
+    <resource class="org.redot.clover.app.crm.rest.ClientBalance">/crm/client/balance</resource>
+    <resource class="org.redot.clover.app.crm.rest.ClientStored">/crm/client/stored</resource>
+    <resource class="org.redot.clover.app.crm.rest.ClientBack">/crm/client/charge/back</resource>
+
+    <resource class="org.redot.clover.app.crm.rest.ClientIntegral">/crm/client/integral/list</resource>
+     <resource class="org.redot.clover.app.crm.rest.ClientIntegralGift">/crm/client/integral</resource>
+    <resource class="org.redot.clover.app.crm.rest.ClientIntegralExchange">/crm/client/integral/exchange</resource>
+    <resource class="org.redot.clover.app.crm.rest.ClientGiftIntegral">/crm/client/integral/gift</resource>
+
+    <resource class="org.redot.clover.app.crm.rest.ClientConsumptionSelect">/crm/client/select</resource>
+    <resource class="org.redot.clover.app.crm.rest.ClientPasswordCheck">/crm/client/check</resource>
+
+    <resource class="org.redot.clover.print.cases.ClientChargeBill">/crm/client/charge/bill</resource>
+</clover>

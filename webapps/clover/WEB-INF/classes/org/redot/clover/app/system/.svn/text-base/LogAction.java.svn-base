@@ -1,0 +1,154 @@
+package org.redot.clover.app.system;
+
+import org.redot.clover.core.CloverManager;
+import org.redot.clover.core.ext.BaseAction;
+import org.redot.clover.core.ext.Client;
+import org.redot.library.db.IQuery;
+import org.redot.library.db.ITable;
+import org.redot.library.lang.DateUtils;
+import org.redot.library.lang.NumberUtils;
+import org.redot.library.lang.StringUtils;
+import org.restlet.data.Form;
+
+import java.text.NumberFormat;
+import java.util.Date;
+import java.util.Hashtable;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 10-12-31
+ * Time: 上午2:33
+ * To change this template use File | Settings | File Templates.
+ */
+public class LogAction extends BaseAction {
+
+
+    public int log(Client client, int ACTION, String OS, String PS, String BS, String EXT){
+        Map data = new Hashtable();
+        String ACCOUNT_ID = StringUtils.toString(client.getCookies().get("ACCOUNT_ID"));
+        data.put("LOG_MAKER", ACCOUNT_ID);
+        data.put("LOG_IP", client.getAddress());
+        data.put("LOG_ACTION", ACTION);
+        data.put("LOG_DT", DateUtils.getNow());
+        if(OS != null && OS.length() > 0){
+            data.put("LOG_OS", OS);
+        }
+        if(PS != null && PS.length() > 0){
+            data.put("LOG_PS", PS);
+        }
+        if(BS != null && BS.length() > 0){
+            data.put("LOG_BS", BS);
+        }
+        if(EXT != null && EXT.length() > 0){
+            data.put("LOG_EXT", EXT);
+        }
+       
+        ITable T = getTable("X_LOG");
+        T.data(data).create();
+        return CloverManager.CODE_SUCCESS;
+    }
+    
+    public List<Map> list(Form form){
+        if(form == null){
+            form = new Form();
+        }
+        String DATE_S = StringUtils.toString(form.getFirstValue("DATE_S"));
+        String DATE_E = StringUtils.toString(form.getFirstValue("DATE_E"));
+
+        if (DATE_S.length() == 0) {
+            DATE_S = DateUtils.getNowDate();
+        }
+        if (DATE_E.length() == 0) {
+            DATE_E = DateUtils.getNowDate();
+        }
+        if (DATE_S.compareTo(DATE_E) > 0) {
+            DATE_S = DateUtils.getNowDate();
+            DATE_E = DateUtils.getNowDate();
+        }
+        DATE_S += " 00:00:00";
+        DATE_E += " 23:59:59";
+        String LOG_ACTION = StringUtils.toString(form.getFirstValue("LOG_ACTION"));
+        String LOG_MAKER = StringUtils.toString(form.getFirstValue("LOG_MAKER"));
+
+        String COND = " WHERE A.LOG_DT >= '"+DATE_S+"' AND A.LOG_DT <= '"+DATE_E+"'";
+        if(!LOG_ACTION.equals("")){
+            COND += " AND A.LOG_ACTION = " + LOG_ACTION;
+        }
+        if(!LOG_MAKER.equals("")){
+            COND += " AND A.LOG_MAKER = " + LOG_MAKER;
+        }
+        
+        String sql = "SELECT A.*, B.LOG_ACTION_NAME,C.ACCOUNT_NAME AS LOG_MAKER_NAME FROM X_LOG A " +
+                "LEFT JOIN X_LOG_ACTION B ON A.LOG_ACTION = B.LOG_ACTION " +
+                "LEFT JOIN X_ACCOUNT C ON A.LOG_MAKER = C.ACCOUNT_ID" + COND + " ORDER BY A.LOG_DT";
+        System.out.println(sql);
+        IQuery query = getQuery();
+        List<Map> list = query.doQuery(sql).tables();
+        for(Map m : list){
+            String DESK_NAME = "";
+            int action = NumberUtils.toInt(m.get("LOG_ACTION"));
+            if(action < 20){
+                String IDS = StringUtils.toString(m.get("LOG_OS"));
+                if(IDS.length() > 0){
+                    sql = "SELECT A.DESK_NAME FROM X_DESK A " +
+                            "LEFT JOIN X_O B ON A.DESK_ID = B.O_DESK_ID " +
+                            "WHERE B.O_ID IN ("+IDS+") GROUP BY A.DESK_ID";
+                    DESK_NAME = query.doQuery(sql).getValueString();
+                }
+            }
+            else if(action >= 20 && action < 40){
+                String IDS = StringUtils.toString(m.get("LOG_PS"));
+                if(IDS.length() > 0){
+                    sql = "SELECT A.DESK_NAME FROM X_DESK A " +
+                            "LEFT JOIN X_O B ON A.DESK_ID = B.O_DESK_ID " +
+                            "LEFT JOIN X_O_P C ON B.O_ID = C.O_ID " +
+                            "WHERE C.O_P_NO IN ("+IDS+") GROUP BY A.DESK_ID";
+                    DESK_NAME = query.doQuery(sql).getValueString();
+                }
+            }
+            else if(action >= 40){
+                String IDS = StringUtils.toString(m.get("LOG_BS"));
+                if(IDS.length() > 0){
+                    sql = "SELECT A.DESK_NAME FROM X_DESK A " +
+                            "LEFT JOIN X_O B ON A.DESK_ID = B.O_DESK_ID " +
+                            "WHERE B.O_BILL_ID IN ("+IDS+") GROUP BY A.DESK_ID";
+                    DESK_NAME = query.doQuery(sql).getValueString();
+                }
+            }
+            m.put("LOG_DESK", DESK_NAME);
+        }
+        query.free();
+        return list;
+    }
+
+    public List<Map> listAction(){
+        String sql = "SELECT * FROM X_LOG_ACTION ORDER BY LOG_ACTION";
+        IQuery query = getQuery();
+        List<Map> list = query.doQuery(sql).tables();
+        query.free();
+        return list;
+    }
+    
+
+
+
+    public static int add(Client client,  int ACTION, String OS, String PS, String BS, String EXT){
+        return new LogAction().log(client, ACTION, OS, PS, BS, EXT);
+    }
+
+    public static int add(Client client, int ACTION, String OS){
+        return new LogAction().log(client, ACTION, OS, null, null, null);
+    }
+
+    public static int add(Client client, int ACTION, String OS, String PS){
+        return new LogAction().log(client, ACTION, OS, PS, null, null);
+    }
+
+    public static int add(Client client, int ACTION, String OS, String PS, String BS){
+        return new LogAction().log(client, ACTION, OS, PS, BS, null);
+    }
+
+}

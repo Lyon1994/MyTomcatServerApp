@@ -1,0 +1,30 @@
+package org.redot.clover.app.crm.rest;
+
+import org.redot.clover.app.crm.ClientTypeAction;
+import org.redot.clover.core.data.DataPackage;
+import org.redot.clover.core.ext.BaseResource;
+import org.redot.library.lang.StringUtils;
+import org.restlet.resource.Get;
+import org.restlet.resource.Post;
+
+import java.util.Hashtable;
+import java.util.Map;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 11-3-27
+ * Time: 下午5:35
+ * To change this template use File | Settings | File Templates.
+ */
+public class ClientTypeDelete extends BaseResource {
+
+
+    @Post("json")
+    public String doPost() {
+        DataPackage dp = new DataPackage();
+        ClientTypeAction a = new ClientTypeAction();
+       dp.setStatus(a.delete(form));
+        return dp.toJSON();
+    }
+}

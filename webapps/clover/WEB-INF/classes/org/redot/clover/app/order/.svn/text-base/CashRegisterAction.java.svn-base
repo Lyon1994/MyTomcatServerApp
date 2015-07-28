@@ -1,0 +1,186 @@
+package org.redot.clover.app.order;
+
+import org.redot.clover.app.system.DictAction;
+import org.redot.clover.core.CloverManager;
+import org.redot.clover.core.ext.BaseAction;
+import org.redot.library.db.IQuery;
+import org.redot.library.db.ITable;
+import org.redot.library.lang.ArrayUtils;
+import org.redot.library.lang.DateUtils;
+import org.redot.library.lang.StringUtils;
+import org.restlet.data.Form;
+
+import java.util.Hashtable;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 11-1-5
+ * Time: 下午7:31
+ * To change this template use File | Settings | File Templates.
+ */
+public class CashRegisterAction extends BaseAction {
+
+    public List<Map> listDesk() {
+        String sql = "SELECT A.DESK_ID AS ID, A.*, " +
+                "B.DESK_USE_STATUS_ID AS STATUS_ID,B.DESK_USE_STATUS_NAME AS STATUS_NAME, " +
+                "C.*, C.O_DINE_NOP AS DINE_NOP, GET_P_NUM(C.O_ID) AS P_NUM, GET_P_AMOUNT(C.O_ID) AS P_AMOUNT " +
+                "FROM X_DESK A " +
+                "LEFT JOIN X_DESK_USE_STATUS B ON A.DESK_USE_STATUS_ID = B.DESK_USE_STATUS_ID " +
+                "LEFT JOIN (SELECT * FROM X_O WHERE O_STATUS NOT IN (4,10)) C ON A.DESK_ID = C.O_DESK_ID " +
+                "WHERE A.DESK_STATUS = 0";
+        String id = "";
+        IQuery query = getQuery();
+        List<Map> list = query.doQuery(sql).tables();
+        for (int i = 0; i < list.size(); i++) {
+            Map m =  list.get(i);
+            String DINE_NOP = StringUtils.toString(m.get("DINE_NOP"));
+            if (DINE_NOP.length() == 0) {
+                m.put("DINE_NOP", 0);
+            }
+            String O_OD_USER = StringUtils.toString(m.get("O_OD_USER"));
+            if (O_OD_USER.length() == 0) {
+                m.put("O_OD_USER", "无");
+            }
+            String O_SERVER = StringUtils.toString(m.get("O_SERVER"));
+            if (O_SERVER.length() == 0) {
+                m.put("O_SERVER", "无");
+            }
+        }
+        sql = "SELECT A.O_NO AS ID, A.*, " +
+                "A.O_STATUS AS STATUS,B.O_STATUS_NAME AS STATUS_NAME, " +
+                "C.*, '0' AS DINE_NOP, GET_P_NUM(A.O_ID) AS P_NUM, GET_P_AMOUNT(A.O_ID) AS P_AMOUNT " +
+                "FROM X_O A " +
+                "LEFT JOIN X_O_STATUS B ON A.O_STATUS = B.O_STATUS " +
+                "LEFT JOIN X_DESK_TEMP C ON C.DESK_ID = A.O_DESK_ID " +
+                "WHERE A.O_TYPE <> 0 AND A.O_STATUS NOT IN (4,10)";
+
+        List<Map> listx = query.doQuery(sql).tables();
+        for (int i=0; i < listx.size(); i++) {
+            Map m = listx.get(i);
+            list.add(m);
+        }
+
+        query.free();
+        return list;
+    }
+
+    public int openDesk(Form form) {
+        Map data = form.getValuesMap();
+        String[] DESK_IDS = StringUtils.split(StringUtils.toString(data.get("DESK_ID")), ",");
+        data.remove("DESK_ID");
+        ITable o = getTable("X_O");
+        int result = 0;
+        String nowDate = DateUtils.getNow();
+        encodeData(data, "O");
+        ITable d = getTable("X_DESK");
+        IQuery query = getQuery();
+        for (String DESK_ID : DESK_IDS) {
+            int count = query.rowCount("SELECT DESK_USE_STATUS_ID FROM X_DESK WHERE DESK_USE_STATUS_ID = 0 AND DESK_ID= "+ DESK_ID);
+            if(count == 0){
+                continue;
+            }
+            o.clear();
+            Map _data = ArrayUtils.cloneTable(data);
+            _data.put("O_ID", o.getMaxID("O_ID"));
+            _data.put("O_NO", "O" + System.currentTimeMillis());
+            _data.put("O_STATUS", 1);
+            _data.put("O_DT", nowDate);
+            _data.put("O_DINE_DT", nowDate);
+            _data.put("O_DESK_ID", DESK_ID);
+            result = o.data(_data).create();
+            if (result < 0) {
+                return CloverManager.CODE_FAILED;
+            }
+            Map s = new Hashtable();
+            s.put("DESK_USE_STATUS_ID", 1);
+            d.clear().data(s).where(d.column("DESK_ID").eq(DESK_ID)).update();
+        }
+
+        if (result < 0) {
+            return CloverManager.CODE_FAILED;
+        }
+        return CloverManager.CODE_SUCCESS;
+    }
+
+    public int clearDesk(Form form) {
+        Map data = form.getValuesMap();
+        String[] DESK_IDS = StringUtils.split(StringUtils.toString(data.get("DESK_ID")), ",");
+        String[] O_IDS = StringUtils.split(StringUtils.toString(data.get("O_IDS")), ",");
+        IQuery query = getQuery();
+        for (String O_ID : O_IDS) {
+            String[] ARR = query.doQuery("SELECT O_STATUS, O_DESK_ID FROM X_O WHERE O_ID = " + O_ID).get();
+            if (ARR[0].equals("1")) {
+                query.doExec("UPDATE X_O SET O_STATUS=4 WHERE O_ID = " + O_ID);
+            } else {
+                query.doExec("UPDATE X_O SET O_STATUS=10 WHERE O_ID = " + O_ID);
+            }
+            query.doExec("UPDATE X_DESK SET DESK_USE_STATUS_ID=0 WHERE DESK_ID = " + ARR[1]);
+        }
+        return CloverManager.CODE_SUCCESS;
+    }
+
+    public int bill(Form form) {
+        Map data = form.getValuesMap();
+        String DESK_ID = (String) data.get("DESK_ID");
+        String deskid[] = DESK_ID.split(",");
+        String all_inf = (String) data.get("O_ID");
+        String inf[] = all_inf.split(",");
+        if (inf.length > 0) {
+            for (int i = 0; i < inf.length; i++) {
+
+
+                ITable t = getTable("X_BILL").clear();
+                Map _data = new Hashtable();
+                String nowDate = DateUtils.getNow();
+                _data.put("BILL_ID", t.getMaxID("BILL_ID"));
+                _data.put("BILL_NO", "O" + System.currentTimeMillis());
+                _data.put("BILL_STATUS_ID", 1);
+                _data.put("O_ID", inf[i]);
+                _data.put("BILL_DT", nowDate);
+                _data.put("BILL_P_AMOUNT", StringUtils.toString(data.get("P_AMOUNT")));
+                _data.put("BILL_ZERO_AMOUNT", StringUtils.toString(data.get("ZERO_AMOUNT")));
+                _data.put("BILL_AMOUNT", StringUtils.toString(data.get("AMOUNT")));
+                _data.put("BILL_AL_AMOUNT", StringUtils.toString(data.get("AL_AMOUNT")));
+                _data.put("BILL_BL_AMOUNT", StringUtils.toString(data.get("BL_AMOUNT")));
+                _data.put("BILL_CASH_AMOUNT", StringUtils.toString(data.get("CASH_AMOUNT")));
+                _data.put("BILL_BANK_AMOUNT", StringUtils.toString(data.get("BANK_AMOUNT")));
+                _data.put("BILL_CHANGE_AMOUNT", StringUtils.toString(data.get("CHANGE_AMOUNT")));
+                int result = t.data(_data).create();
+
+                IQuery query = getQuery();
+                query.doExec("UPDATE X_DESK SET DESK_USE_STATUS_ID = 3 WHERE DESK_ID = " + deskid[i]);
+                query.doExec("UPDATE X_O SET O_STATUS = 3 WHERE O_ID = " + inf[i]);
+//        String P_AMOUNT = StringUtils.toString(data.get("P_AMOUNT"));
+//        String ZERO_AMOUNT = StringUtils.toString(data.get("ZERO_AMOUNT"));
+//        String AMOUNT = StringUtils.toString(data.get("AMOUNT"));
+//        String AL_AMOUNT = StringUtils.toString(data.get("AMOUNT"));
+//        String BL_AMOUNT = StringUtils.toString(data.get("BL_AMOUNT"));
+//        String CASH_AMOUNT = StringUtils.toString(data.get("CASH_AMOUNT"));
+//        String BANK_AMOUNT = StringUtils.toString(data.get("BANK_AMOUNT"));
+//        String CHANGE_AMOUNT = StringUtils.toString(data.get("CHANGE_AMOUNT"));
+            }
+        }
+        return CloverManager.CODE_SUCCESS;
+
+    }
+
+    public int incomeExt(Form form){
+        Map data = form.getValuesMap();
+        String INCOME_EXT_NAME = StringUtils.toString(data.get("INCOME_EXT_NAME"));
+        if(INCOME_EXT_NAME.length() == 0){
+            return CloverManager.CODE_FAILED;
+        }
+        new DictAction().addDict("INCOME/EXT", INCOME_EXT_NAME);
+        ITable t = getTable("X_INCOME_EXT");
+        data.put("INCOME_EXT_ID", t.getMaxID("INCOME_EXT_ID"));
+        data.put("INCOME_EXT_DT",DateUtils.getNow());
+        int result = t.data(data).create();
+        if(result < 0){
+            return CloverManager.CODE_FAILED;
+        }
+        return CloverManager.CODE_FAILED;
+    }
+}

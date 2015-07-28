@@ -1,0 +1,156 @@
+package org.redot.clover.app.system;
+
+import org.redot.clover.app.message.MessageManager;
+import org.redot.clover.core.CloverManager;
+import org.redot.clover.core.ext.BaseAction;
+import org.redot.library.db.IQuery;
+import org.redot.library.db.ITable;
+import org.redot.library.lang.NumberUtils;
+import org.redot.library.lang.StringUtils;
+import org.restlet.data.Form;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 10-12-31
+ * Time: 上午2:33
+ * To change this template use File | Settings | File Templates.
+ */
+public class WayAction extends BaseAction {
+
+    public List<Map> list() {
+        String sql = "SELECT A.*, B.STATUS_NAME AS WAY_STATUS_NAME FROM X_WAY A " +
+                "LEFT JOIN X_STATUS B ON A.WAY_STATUS = B.STATUS " +
+                "WHERE A.WAY_STATUS <> 2 AND A.WAY_ID >= 0 ORDER BY  A.WAY_ID";
+        IQuery query = getQuery();
+        List<Map> list = query.doQuery(sql).tables();
+        for(Map m : list){
+            String WAY_ID = StringUtils.toString(m.get("WAY_ID"));
+            sql = "SELECT WAY_DESC, WAY_DESC_DEF, WAY_PRICE FROM X_WAY_DESC WHERE WAY_ID = ?";
+            List<String[]> DESCS = query.doQuery(sql, WAY_ID).list();
+            String WAY_DESC = "";
+            String WAY_DEF = "";
+            String WAY_PRICE = "";
+            for(String[] DESC : DESCS){
+                if(WAY_DESC.length() > 0){
+                    WAY_DESC += ",";
+                    WAY_PRICE += ",";
+                }
+                WAY_DESC += DESC[0];
+                WAY_PRICE += DESC[2];
+                if(DESC[1].equals("1")){
+                    WAY_DEF = DESC[0];
+                }
+            }
+            m.put("WAY_DESC", WAY_DESC);
+            m.put("WAY_PRICE", WAY_PRICE);
+            m.put("WAY_DEF", WAY_DEF);
+        }
+        query.free();
+        return list;
+    }
+
+    public List<Map> select() {
+        String sql = "SELECT * FROM X_WAY WHERE WAY_STATUS  = 1 ORDER BY WAY_ID";
+        IQuery query = getQuery();
+        List<Map> list = query.doQuery(sql).tables();
+        query.free();
+        return list;
+    }
+
+    public Map get(String WAY_ID) {
+        String sql = "SELECT * FROM X_WAY WHERE WAY_ID  = ?";
+        IQuery query = getQuery();
+        Map data = query.doQuery(sql, WAY_ID).table();
+        if(data == null){
+            query.free();
+            return data;
+        }
+        sql = "SELECT * FROM X_WAY_DESC WHERE WAY_ID = ?";
+        List<Map> WAY_DESCS = query.doQuery(sql, WAY_ID).tables();
+        data.put("WAY_DESCS", WAY_DESCS);
+        query.free();
+        return data;
+    }
+
+    public int set(Form form) {
+        Map data = form.getValuesMap();
+        String WAY_ID = StringUtils.toString(data.get("WAY_ID"));
+        String WAY_NAME = StringUtils.toString(data.get("WAY_NAME"));
+        ITable T = getTable("X_WAY").clearData();
+        int result = 0;
+        if (WAY_ID.length() == 0) {
+            WAY_ID = T.getMaxID("WAY_ID") + "";
+            data.put("WAY_ID", WAY_ID);
+            result = T.data(data).create();
+        } else {
+            result = T.data(data).where(T.column("WAY_ID").eq(WAY_ID)).update();
+        }
+
+        if (result < 0) {
+            return CloverManager.CODE_FAILED;
+        }
+        ITable D = getTable("X_WAY_DESC").clearData();
+        D.where(D.column("WAY_ID").eq(WAY_ID)).delete();
+        String[] WAY_DESCS = form.getValuesArray("WAY_DESC");
+        String[] WAY_PRICES = form.getValuesArray("WAY_PRICE");
+        String WAY_DESC_DEF = StringUtils.toString(data.get("WAY_DESC_DEF"));
+        if(WAY_DESCS != null && WAY_DESCS.length > 0){
+            int x = 0;
+            int i = 0;
+            for(String WAY_DESC : WAY_DESCS){
+                if(WAY_DESC == null || WAY_DESC.length() == 0){
+                    i++;
+                    continue;
+                }
+                Map m = new HashMap();
+                m.put("WAY_ID", WAY_ID);
+                m.put("WAY_DESC", WAY_DESC);
+                m.put("WAY_PRICE", NumberUtils.toFloat(WAY_PRICES[i]));
+                if(WAY_DESC_DEF.length() == 0 && x == 0){
+                    m.put("WAY_DESC_DEF", 1);
+                }
+                if(WAY_DESC_DEF.equals(WAY_DESC)){
+                    m.put("WAY_DESC_DEF", 1);
+                }
+                else{
+                    if(WAY_DESC_DEF.length() == 0 && x == 0){
+                        m.put("WAY_DESC_DEF", 1);
+                    }
+                    else {
+                        m.put("WAY_DESC_DEF", 0);
+                    }
+                }
+                x++;
+                i++;
+                D.data(m).create();
+            }
+        }
+        MessageManager.getInstance().setVersion(MessageManager.MSG_VER_WAY);
+        return CloverManager.CODE_SUCCESS;
+    }
+
+    public int delete(Form form) {
+        Map data = form.getValuesMap();
+        String WAY_ID = StringUtils.toString(data.get("WAY_ID"));
+        if (WAY_ID.length() == 0) {
+            return CloverManager.CODE_FAILED;
+        }
+        String sql = "DELETE FROM X_WAY  WHERE WAY_ID = ?";
+        IQuery query = getQuery();
+        int result = query.doExec(sql, WAY_ID);
+        sql = "DELETE FROM X_WAY_DESC  WHERE WAY_ID = ?";
+        result = query.doExec(sql, WAY_ID);
+        query.free();
+        if (result < 0) {
+            return CloverManager.CODE_FAILED;
+        }
+        return CloverManager.CODE_SUCCESS;
+    }
+
+
+}

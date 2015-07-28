@@ -1,0 +1,46 @@
+package org.redot.clover.app.product.rest;
+
+import org.redot.clover.app.product.ProductTypeAction;
+import org.redot.clover.core.data.DataPackage;
+import org.redot.clover.core.ext.BaseResource;
+import org.redot.library.lang.NumberUtils;
+import org.restlet.resource.Get;
+import org.restlet.resource.Post;
+import org.restlet.resource.Put;
+
+import java.util.Map;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 11-4-18
+ * Time: 下午9:07
+ * To change this template use File | Settings | File Templates.
+ */
+public class ProductTypeLarge extends BaseResource{
+
+    @Get("json")
+    public String doGet(){
+        DataPackage dp = new DataPackage();
+        ProductTypeAction a = new ProductTypeAction();
+        dp.addTable("table", a.listLarge());
+        return dp.toJSON();
+    }
+
+    @Post("json")
+    public String doPost(){
+        DataPackage dp = new DataPackage();
+        ProductTypeAction a = new ProductTypeAction();
+        Map data = a.setLarge(form);
+        dp.setStatus(NumberUtils.toInt(data.get("STATUS")));
+        dp.getData().put("form", data);
+        return dp.toJSON();
+    }
+    @Put("json")
+    public String doDelete(){
+        DataPackage dp = new DataPackage();
+        ProductTypeAction a = new ProductTypeAction();
+        dp.setStatus(a.deleteLarge(form));
+        return dp.toJSON();
+    }
+}

@@ -1,0 +1,42 @@
+package org.redot.clover.print.rest;
+
+import org.redot.clover.app.desk.DeskAction;
+import org.redot.clover.core.data.SimpleDataPackage;
+import org.redot.clover.core.ext.BaseResource;
+import org.redot.clover.print.PrinterAction;
+import org.redot.library.lang.StringUtils;
+import org.restlet.resource.Get;
+
+import java.util.List;
+import java.util.Map;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 10-12-18
+ * Time: 下午3:42
+ * To change this template use File | Settings | File Templates.
+ */
+public class PrinterSelect extends BaseResource {
+
+    @Get("json")
+    public String doGet(){
+        SimpleDataPackage dp = new SimpleDataPackage();
+        PrinterAction a = new PrinterAction();
+        List<Map> list = a.select();
+        String[] suggestions = new String[list.size() + 1];
+        String[] data = new String[list.size() + 1];
+        suggestions[0] = "请选择";
+        data[0] = "";
+        for(int i=0;i<list.size(); i++){
+            Map m = list.get(i);
+            suggestions[i+1] = StringUtils.toString(m.get("PRINTER_NAME"));
+            data[i+1] = StringUtils.toString(m.get("PRINTER_ID"));
+        }
+        list.clear();
+        list = null;
+        dp.setSuggestions(suggestions);
+        dp.setData(data);
+        return dp.toJSON();
+    }
+}

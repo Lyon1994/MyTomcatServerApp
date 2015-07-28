@@ -1,0 +1,39 @@
+package org.redot.clover.app.favorable.rest;
+
+import org.redot.clover.app.favorable.FavorableAction;
+import org.redot.clover.core.data.SimpleDataPackage;
+import org.redot.clover.core.ext.BaseResource;
+import org.redot.library.lang.StringUtils;
+import org.restlet.resource.Get;
+
+import java.util.List;
+import java.util.Map;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 11-3-27
+ * Time: 下午5:35
+ * To change this template use File | Settings | File Templates.
+ */
+public class FavorableCaseTypeSelect extends BaseResource {
+
+    @Get("json")
+    public String doGet() {
+        SimpleDataPackage dp = new SimpleDataPackage();
+        FavorableAction a = new FavorableAction();
+        List<Map> list = a.selectCaseType();
+        String[] suggestions = new String[list.size()];
+        String[] data = new String[list.size()];
+        for (int i = 0; i < list.size(); i++) {
+            Map m = list.get(i);
+            suggestions[i] = StringUtils.toString(m.get("CASE_TYPE_NAME"));
+            data[i] = StringUtils.toString(m.get("CASE_TYPE"));
+        }
+        dp.setSuggestions(suggestions);
+        dp.setData(data);
+        return dp.toJSON();
+    }
+
+
+}

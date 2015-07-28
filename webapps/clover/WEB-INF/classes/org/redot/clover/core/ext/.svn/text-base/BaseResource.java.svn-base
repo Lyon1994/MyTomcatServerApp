@@ -1,0 +1,95 @@
+package org.redot.clover.core.ext;
+
+import org.restlet.data.ClientInfo;
+import org.restlet.data.Cookie;
+import org.restlet.data.Form;
+import org.restlet.representation.Representation;
+import org.restlet.representation.Variant;
+import org.restlet.resource.Options;
+import org.restlet.resource.ResourceException;
+import org.restlet.resource.ServerResource;
+
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
+import java.util.HashMap;
+import java.util.Hashtable;
+import java.util.Iterator;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: CASH
+ * Date: 10-12-17
+ * Time: 下午12:52
+ * To change this template use File | Settings | File Templates.
+ */
+public class BaseResource extends ServerResource{
+    public Params params;
+    public Form form;
+    public Client client;
+
+    @Override
+    protected void doInit() throws ResourceException {
+     //   if(DateUtils.getDateMinusDays(new Date(), DateUtils.toDate("2011-03-08")) > 0){
+         //   System.out.println("系统授权过期");
+         //   System.exit(0);
+      //  }
+        super.doInit();
+//        System.out.println("-------------------------------");
+
+//        System.out.println(getRequest().getClientInfo().getAddress());
+//        System.out.println(getClientInfo().getAddress());
+//        System.out.println("-------------------------------");
+
+        //System.out.println(this.getMethod().getName());
+        //System.out.println(this.getRequest().getAttributes());
+        //System.out.println(this.getRequest().getAttributes().get("org.restlet.http.headers"));
+        client = new Client();
+        client.setMethod(getMethod().getName());
+        client.setAddress(getClientInfo().getAddress());
+        Iterator<Cookie> it = getCookies().iterator();
+        while(it.hasNext()){
+            Cookie cookie  = it.next();
+            try {
+                client.getCookies().put(cookie.getName(), URLDecoder.decode(cookie.getValue(), "utf-8"));
+            } catch (UnsupportedEncodingException e) {
+                e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+            }
+        }
+
+        this.params = new Params(getQuery());
+        Form responseHeaders = (Form) getResponse().getAttributes().get("org.restlet.http.headers");
+        if (responseHeaders == null) {
+            responseHeaders = new Form();
+            getResponse().getAttributes().put("org.restlet.http.headers", responseHeaders);
+        }
+        responseHeaders.add("Access-Control-Allow-Origin", "*");
+        responseHeaders.add("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
+        responseHeaders.add("Access-Control-Allow-Headers", "Content-Type, X-Requested-With, X-File-Name");
+        responseHeaders.add("Access-Control-Allow-Credentials", "false");
+        responseHeaders.add("Access-Control-Max-Age", "60000");
+    }
+
+    @Override
+    protected Representation get(Variant variant) throws ResourceException {
+        return super.get(variant);
+    }
+
+    @Override
+    protected Representation post(Representation entity) throws ResourceException {
+        //entity.getEncodings();
+        this.form = new Form(entity);
+        return super.post(entity);
+    }
+
+    @Override
+    protected Representation put(Representation entity) throws ResourceException {
+        this.form = new Form(entity);
+        return super.put(entity);
+    }
+
+    @Options
+    public String doOption() {
+        System.out.println("DO OPTION");
+         return "{}";
+    }
+}

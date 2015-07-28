@@ -1,0 +1,19 @@
+package org.redot.library.dao;
+
+import org.redot.library.dao.annotation.Column;
+import org.redot.library.dao.annotation.Table;
+
+/**
+ * Copyright By Redot.
+ * User: CASH
+ * Date: 2009-10-14
+ * Time: 13:23:42
+ */
+@Table()
+public abstract class Test implements IDAOHandler {
+
+    @Column(type=ColumnType.VARCHAR)
+    private String name;
+
+    
+}

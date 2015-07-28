@@ -1,0 +1,35 @@
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/yee/!svn/ver/131/server/Redot/CloverServer/src/org/redot/clover/app/organization
+END
+PrmsAction.java
+K 25
+svn:wc:ra_dav:version-url
+V 100
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/organization/PrmsAction.java
+END
+RoleAction.java
+K 25
+svn:wc:ra_dav:version-url
+V 100
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/organization/RoleAction.java
+END
+PartAction.java
+K 25
+svn:wc:ra_dav:version-url
+V 101
+/svn/yee/!svn/ver/112/server/Redot/CloverServer/src/org/redot/clover/app/organization/PartAction.java
+END
+DepartmentAction.java
+K 25
+svn:wc:ra_dav:version-url
+V 106
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/organization/DepartmentAction.java
+END
+AccountAction.java
+K 25
+svn:wc:ra_dav:version-url
+V 103
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/organization/AccountAction.java
+END

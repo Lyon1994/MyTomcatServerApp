@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<clover>
+     <resource class="org.redot.clover.app.hr.rest.HumanPaymentConfig">/hr/human/payment/config</resource>
+
+</clover>

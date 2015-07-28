@@ -1,0 +1,25 @@
+package org.redot.clover.app.system.rest;
+
+import org.redot.clover.app.system.LogAction;
+import org.redot.clover.core.data.DataPackage;
+import org.redot.clover.core.ext.BaseResource;
+import org.restlet.resource.Post;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 10-12-31
+ * Time: 上午2:35
+ * To change this template use File | Settings | File Templates.
+ */
+public class LogList extends BaseResource {
+    @Post("json")
+    public String doPost() {
+        DataPackage dp = new DataPackage();
+        LogAction a = new LogAction();
+        dp.addTable("table", a.list(form));
+        String str = dp.toJSON();
+//        System.out.println(str);
+        return str;
+    }
+}

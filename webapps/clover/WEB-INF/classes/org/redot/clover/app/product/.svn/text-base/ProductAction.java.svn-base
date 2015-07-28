@@ -1,0 +1,630 @@
+package org.redot.clover.app.product;
+
+import org.redot.clover.app.message.MessageManager;
+import org.redot.clover.app.order.OrderDishAction;
+import org.redot.clover.app.system.UnitAction;
+import org.redot.clover.core.CloverManager;
+import org.redot.clover.core.ext.BaseAction;
+import org.redot.clover.core.ext.Params;
+import org.redot.library.db.IQuery;
+import org.redot.library.db.ITable;
+import org.redot.library.lang.*;
+import org.restlet.data.Form;
+
+import java.util.*;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 10-12-30
+ * Time: 下午4:37
+ * To change this template use File | Settings | File Templates.
+ */
+public class ProductAction extends BaseAction {
+
+    public List<Map> list() {
+        String sql = "SELECT A.*, B.P_TYPE_NAME, B.P_TYPE_PARENT, C.UNIT_NAME AS P_UNIT_NAME, D.P_STATUS_NAME " +
+                "FROM X_P A " +
+                "LEFT JOIN X_P_TYPE B ON A.P_TYPE_ID=B.P_TYPE_ID " +
+                "LEFT JOIN X_UNIT C ON A.P_UNIT_ID=C.UNIT_ID " +
+                "LEFT JOIN X_P_STATUS D ON A.P_STATUS = D.P_STATUS " +
+                "WHERE A.P_STATUS <> 2 ORDER BY B.P_TYPE_PARENT, A.P_TYPE_ID, A.P_SORT, A.P_NAME";
+//        System.out.println(sql);
+        IQuery query = getQuery();
+        List<Map> list = query.doQuery(sql).tables();
+        OrderDishAction a = new OrderDishAction();
+        for(Map m : list){
+            String P_ID = StringUtils.toString(m.get("P_ID"));
+            String P_TAG_SEASON = StringUtils.toString(m.get("P_TAG_SEASON"));
+            if(P_TAG_SEASON.equals("1")){
+                float P_PRICE_SEASON = a.getSeasonPrice(P_ID);
+                if(P_PRICE_SEASON > 0){
+                    m.put("P_PRICE", P_PRICE_SEASON);
+                }
+            }
+        }
+        query.free();
+        return list;
+    }
+
+    public List<Map> list(String P_TYPE_ID) {
+        IQuery query = getQuery();
+        String sql = "SELECT P_TYPE_ID FROM X_P_TYPE WHERE P_TYPE_PARENT = " + P_TYPE_ID;
+        List<String[]> types = query.doQuery(sql).list();
+        List<String> typeList = new ArrayList<String>();
+        typeList.add(P_TYPE_ID);
+        for(Object[] arr : types){
+            typeList.add(arr[0] + "");
+        }
+        sql = "SELECT A.*, B.P_TYPE_NAME, C.UNIT_NAME AS P_UNIT_NAME, D.P_STATUS_NAME, " +
+                "E.TASTE_NAME AS P_TASTE_NAME, F.WAY_NAME AS P_WAY_NAME " +
+                "FROM X_P A " +
+                "LEFT JOIN X_P_TYPE B ON A.P_TYPE_ID=B.P_TYPE_ID " +
+                "LEFT JOIN X_UNIT C ON A.P_UNIT_ID=C.UNIT_ID " +
+                "LEFT JOIN X_P_STATUS D ON A.P_STATUS = D.P_STATUS " +
+                "LEFT JOIN X_TASTE E ON A.P_TASTE = E.TASTE_ID " +
+                "LEFT JOIN X_WAY F ON A.P_WAY = F.WAY_ID " +
+                "WHERE A.P_TYPE_ID in ("+ArrayUtils.join(",", typeList)+") AND A.P_STATUS <> 2 ORDER BY A.P_SORT,A.P_ID";
+        List<Map> list = query.doQuery(sql).tables();
+        query.free();
+        return list;
+    }
+
+    public int set1(Form form){
+        Map data = form.getValuesMap();
+        String P_ID = StringUtils.toString(data.get("P_ID"));
+
+        ITable P = getTable("X_P").clearData();
+        int result = 0;
+        boolean isNew = true;
+        //data.put("P_UNIT_ID", new SystemAction().getUnit(StringUtils.toString(data.get("P_UNIT_NAME")) + ""));
+        data.put("P_NAME_EXT", PinyinUtils.getPinYinHeader(StringUtils.toString(data.get("P_NAME"))));
+        data.put("P_USE_AREA", form.getValues("P_USE_AREA"));
+        if(P_ID.length() == 0){
+            P_ID = String.valueOf(P.getMaxID("P_ID"));
+            data.put("P_ID", P_ID);
+            result = P.data(data).create();
+        }
+        else{
+            isNew = false;
+            result = P.data(data).where(P.column("P_ID").eq(P_ID)).update();
+        }
+        if(result < 0){
+            return CloverManager.CODE_FAILED;
+        }
+        ITable P_MK = getTable("X_P_MK").clearData();
+        if(isNew){
+            result = P_MK.data(data).create();
+        }
+        else{
+            result = P_MK.data(data).where(P.column("P_ID").eq(P_ID)).update();
+        }
+        if(result < 0){
+            return CloverManager.CODE_FAILED;
+        }
+        ITable P_T = getTable("X_P_TASTE").clearData();
+        P_T.where(P.column("P_ID").eq(P_ID)).delete();
+        String[] P_TASTE = form.getValuesArray("P_TASTE");
+        String[] P_TASTE_PRICE = form.getValuesArray("P_TASTE_PRICE");
+        for (int i = 0; i < P_TASTE.length; i++) {
+            if (StringUtils.toString(P_TASTE[i]).length() == 0) {
+                continue;
+            }
+            Map d = new Hashtable();
+            d.put("P_ID", P_ID);
+            d.put("P_TASTE", P_TASTE[i]);
+            d.put("P_TASTE_PRICE", StringUtils.toString(P_TASTE_PRICE[i]));
+            result = P_T.clearData().data(d).create();
+        }
+        ITable P_COST = getTable("X_P_COST").clearData();
+        ITable P_SP = getTable("X_P_SP").clearData();
+        P_COST.where(P.column("P_ID").eq(P_ID)).delete();
+        P_SP.where(P.column("P_ID").eq(P_ID)).delete();
+        data.put("P_SP_AREA", form.getValues("P_SP_AREA"));
+        result = P_COST.data(data).create();
+        result = P_SP.data(data).create();
+
+
+//            result = P_COST.data(data).where(P.column("P_ID").eq(P_ID)).update();
+//            result = P_SP.data(data).where(P.column("P_ID").eq(P_ID)).update();
+//        }
+        if(result < 0){
+            return CloverManager.CODE_FAILED;
+        }
+        return CloverManager.CODE_SUCCESS;
+    }
+
+    public Map get(String P_ID){
+        Map data = new Hashtable();
+        String sql = "SELECT DESK_AREA FROM X_DESK GROUP BY DESK_AREA ORDER BY DESK_AREA";
+        IQuery query = getQuery();
+        List<String[]> listx = query.doQuery(sql).list();
+        List areas = new ArrayList();
+        for(Object[] arr : listx){
+            areas.add(arr[0]);
+        }
+        data.put("DESK_AREAS", areas);
+        sql = "SELECT A.*, B.P_TYPE_NAME, B.P_TYPE_PARENT, D.P_TYPE_NAME AS P_TYPE_PARENT_NAME, C.UNIT_NAME AS P_UNIT_NAME " +
+                "FROM X_P A " +
+                "LEFT JOIN X_P_TYPE B ON A.P_TYPE_ID = B.P_TYPE_ID " +
+                "LEFT JOIN X_UNIT C ON A.P_UNIT_ID = C.UNIT_ID " +
+                "LEFT JOIN X_P_TYPE D ON B.P_TYPE_PARENT = D.P_TYPE_ID " +
+                "WHERE A.P_STATUS <> 2 AND A.P_ID = "+P_ID+" ORDER BY B.P_TYPE_PARENT, A.P_TYPE_ID, A.P_SORT";
+
+        Map m = query.doQuery(sql).table();
+        if(m == null){
+            query.free();
+            return data;
+        }
+        data.putAll(m);
+        sql = "SELECT * FROM X_P_MK WHERE P_ID = " + P_ID;
+        Map m1 = query.doQuery(sql).table();
+        if(m1 != null){
+            m1.remove("P_ID");
+            data.putAll(m1);
+        }
+
+        sql = "SELECT * FROM X_P_COST WHERE P_ID = " + P_ID;
+        Map m2 = query.doQuery(sql).table();
+        if(m2 != null){
+            m2.remove("P_ID");
+            data.putAll(m2);
+        }
+
+        sql = "SELECT * FROM X_P_SP WHERE P_ID = " + P_ID;
+        Map m3 = query.doQuery(sql).table();
+        if(m3 != null){
+            m3.remove("P_ID");
+            data.putAll(m3);
+        }
+
+        sql = "SELECT A.* FROM X_P_TASTE A WHERE A.P_ID = " + P_ID;
+        List<Map> list = query.doQuery(sql).tables();
+        data.put("P_TASTES", list);
+
+        query.free();
+        return data;
+    }
+    public int deletebak(Form form) {
+        Map data = form.getValuesMap();
+        String P_ID = StringUtils.toString(data.get("P_ID"));
+        if(P_ID.length() == 0){
+            return CloverManager.CODE_FAILED;
+        }
+        IQuery query = getQuery();
+
+        String sql = "UPDATE X_P SET P_STATUS = 2 WHERE P_ID = " + P_ID;
+        int result = query.doExec(sql);
+        query.free();
+        if(result < 0){
+            return CloverManager.CODE_FAILED;
+        }
+        return CloverManager.CODE_SUCCESS;
+    }
+
+    public int delete(Form form) {
+        Map data = form.getValuesMap();
+        String P_ID = StringUtils.toString(data.get("P_ID"));
+        if(P_ID.length() == 0){
+            return CloverManager.CODE_FAILED;
+        }
+        IQuery query = getQuery();
+
+//        String sql = "DELETE FROM X_P WHERE P_ID = " + P_ID;
+        String sql = "UPDATE X_P SET P_STATUS = 2 WHERE P_ID = " + P_ID;
+        int result = query.doExec(sql);
+        query.free();
+        if(result < 0){
+            return CloverManager.CODE_FAILED;
+        }
+        MessageManager.getInstance().setVersion(MessageManager.MSG_VER_PRODUCT);
+        return CloverManager.CODE_SUCCESS;
+    }
+
+
+    public Map hot(){
+        Map m = new Hashtable();
+
+        IQuery query = getQuery();
+        String sql = "SELECT A.*,B.UNIT_NAME AS P_UNIT_NAME FROM X_P A LEFT JOIN X_UNIT B ON A.P_UNIT_ID=B.UNIT_ID ORDER BY P_ID";
+        List<Map> list = query.doQuery(sql).tables(5);
+        List<Map> slider = new ArrayList<Map>();
+        for(int i=0;i<list.size();i++){
+            Map d = list.get(i);
+            d.put("P_PIC_L", "/product/pic/" + StringUtils.toString(d.get("P_ID")));
+            d.put("P_STAR", 5);
+            slider.add(d);
+        }
+        m.put("LIST", list);
+        m.put("SLIDER", slider);
+        query.free();
+        return m;
+    }
+
+    public String picture(String P_ID){
+        IQuery query = getQuery();
+        String sql = "SELECT P_PIC FROM X_P WHERE P_ID=" + P_ID;
+        String pic = query.doQuery(sql).getValue();
+        query.free();
+        return pic;
+    }
+
+    public String pictureCombo(String P_ID){
+        IQuery query = getQuery();
+        String sql = "SELECT P_COMBO_PIC FROM X_P_COMBO WHERE P_COMBO_ID=" + P_ID;
+        String pic = query.doQuery(sql).getValue();
+        query.free();
+        return pic;
+    }
+
+
+    public List<Map> tree(String P_TYPE_ID){
+        P_TYPE_ID = P_TYPE_ID == null || P_TYPE_ID.equals("") ? "0" : P_TYPE_ID;
+        String sql = "SELECT P_TYPE_ID, P_TYPE_NAME, P_TYPE_PARENT FROM X_P_TYPE WHERE P_TYPE_STATUS <> 2 AND P_TYPE_PARENT= "+P_TYPE_ID+" ORDER BY P_TYPE_SORT, P_TYPE_ID";
+        IQuery query = getQuery();
+        List<Map> list = query.doQuery(sql).tables();
+        List<Map> data = new ArrayList<Map>();
+        for(int i=0;i<list.size();i++){
+            Map m = list.get(i);
+            Map d = new Hashtable();
+            String P_TYPE_ID_ = StringUtils.toString(m.get("P_TYPE_ID"));
+            d.put("ID", "TP-" + P_TYPE_ID_);
+            d.put("NAME", StringUtils.toString(m.get("P_TYPE_NAME")));
+            d.put("EXT", m);
+
+            List<Map> items = new ArrayList<Map>();
+            sql = "SELECT A.P_ID, A.P_NAME, A.P_CODE, A.P_TYPE_ID, A.P_PRICE FROM X_P A WHERE A.P_STATUS =1 AND A.P_TYPE_ID = "+P_TYPE_ID_ + " ORDER BY A.P_SORT, A.P_ID";
+            List<Map> PS = query.doQuery(sql).tables();
+            if(PS.size() > 0){
+                for(int j=0;j<PS.size();j++){
+                    Map mx = PS.get(j);
+                    Map dx = new Hashtable();
+                    String P_ID = StringUtils.toString(mx.get("P_ID"));
+                    dx.put("ID", P_ID);
+                    dx.put("NAME", StringUtils.toString(mx.get("P_NAME")));
+                    dx.put("EXT", mx);
+                    dx.put("ITEM", new ArrayList());
+                    items.add(dx);
+                }
+            }
+            sql = "SELECT P_TYPE_ID, P_TYPE_NAME, P_TYPE_PARENT FROM X_P_TYPE WHERE P_TYPE_STATUS <> 2 AND P_TYPE_PARENT="+P_TYPE_ID_;
+            if(query.rowCount(sql) > 0){
+                items.addAll(tree(P_TYPE_ID_));
+            }
+            d.put("ITEM", items);
+            data.add(d);
+        }
+        query.free();
+        return data;
+    }
+
+    public String tree(){
+        IQuery query = getQuery();
+        String sql = "SELECT P_TYPE_ID, P_TYPE_NAME, P_TYPE_PARENT FROM X_P_TYPE ORDER BY P_TYPE_SORT";
+        List<Map> d = query.doQuery(sql).tables();
+        String sqlx = "SELECT A.*,B.UNIT_NAME AS P_UNIT_NAME FROM X_P A LEFT JOIN X_UNIT B ON A.P_UNIT_ID=B.UNIT_ID ORDER BY P_ID";
+        List<Map> dx = query.doQuery(sqlx).tables();
+        StringBuffer sb = new StringBuffer("");
+        sb.append("{");
+        sb.append("\"data\": {");
+        sb.append("\"ITEMS\": [");
+        boolean b1 = false;
+        for(int i=0;i<d.size(); i++){
+            Map m = d.get(i);
+            String P_TYPE_PARENT = StringUtils.toString(m.get("P_TYPE_PARENT"));
+            if(P_TYPE_PARENT.equals("0")){
+                String P_TYPE_L = StringUtils.toString(m.get("P_TYPE_ID"));
+                if(b1){
+                    sb.append(",");
+                }
+                sb.append("{");
+                sb.append("\"ID\": \"tp-l-"+P_TYPE_L+"\", ");
+                sb.append("\"NAME\": \""+StringUtils.toString(m.get("P_TYPE_NAME"))+"\", ");
+                sb.append("\"EXT\": {");
+                    sb.append("\"P_TYPE_ID\": \""+StringUtils.toString(m.get("P_TYPE_ID"))+"\", ");
+                    sb.append("\"P_TYPE_NAME\": \""+StringUtils.toString(m.get("P_TYPE_NAME"))+"\" ");
+                sb.append("},");
+                sb.append("\"ITEM\": [");
+                boolean b2 = false;
+
+                for(int j=0;j<d.size();j++){
+                    Map mx = d.get(j);
+                    String P_TYPE_S = StringUtils.toString(mx.get("P_TYPE_ID"));
+                    String P_TYPE_S_PARENT = StringUtils.toString(mx.get("P_TYPE_PARENT"));
+                    if(P_TYPE_S_PARENT.equals(P_TYPE_L)){
+                        if(b2){
+                            sb.append(",");
+                        }
+                        sb.append("{");
+                        sb.append("\"ID\": \"tp-s-"+P_TYPE_S+"\", ");
+                        sb.append("\"NAME\": \""+StringUtils.toString(mx.get("P_TYPE_NAME"))+"\", ");
+                        sb.append("\"EXT\": {");
+                            sb.append("\"P_TYPE_ID\": \""+StringUtils.toString(mx.get("P_TYPE_ID"))+"\", ");
+                            sb.append("\"P_TYPE_NAME\": \""+StringUtils.toString(mx.get("P_TYPE_NAME"))+"\" ");
+                        sb.append("},");
+                        sb.append("\"ITEM\": [");
+                        boolean b3 = false;
+                        for(int z=0;z<dx.size();z++){
+                            Map mxx = dx.get(z);
+                            if(StringUtils.toString(mxx.get("P_TYPE_ID")).equals(P_TYPE_S)){
+                                if(b3){
+                                    sb.append(",");
+                                }
+                                sb.append("{");
+                                sb.append("\"ID\": \""+StringUtils.toString(mxx.get("P_ID"))+"\", ");
+                                sb.append("\"NAME\": \""+StringUtils.toString(mxx.get("P_NAME"))+"\",");
+                                sb.append("\"EXT\": {");
+                                    sb.append("\"P_ID\": \""+StringUtils.toString(mxx.get("P_ID"))+"\", ");
+                                    sb.append("\"P_CODE\": \""+StringUtils.toString(mxx.get("P_CODE"))+"\", ");
+                                    sb.append("\"P_NAME\": \""+StringUtils.toString(mxx.get("P_NAME"))+"\", ");
+                                    sb.append("\"P_NAME_EN\": \""+StringUtils.toString(mxx.get("P_NAME_EN"))+"\", ");
+                                    sb.append("\"P_NAME_EXT\": \""+StringUtils.toString(mxx.get("P_NAME_EXT"))+"\", ");
+                                    sb.append("\"P_UNIT_ID\": \""+StringUtils.toString(mxx.get("P_UNIT_ID"))+"\", ");
+                                    sb.append("\"P_UNIT_NAME\": \""+StringUtils.toString(mxx.get("P_UNIT_NAME"))+"\", ");
+                                    sb.append("\"P_TYPE_L\": \""+StringUtils.toString(mxx.get("P_TYPE_ID"))+"\", ");
+                                    sb.append("\"P_TYPE_S\": \""+StringUtils.toString(mxx.get("P_TYPE_ID"))+"\", ");
+                                    sb.append("\"P_PRICE\": \""+StringUtils.toString(mxx.get("P_PRICE"))+"\", ");
+                                    sb.append("\"P_TASTES\": [{\"P_TASTE\":\"WORI\", \"P_TASTE_PRICE\":\"10\"}, {\"P_TASTE\":\"WORI\", \"P_TASTE_PRICE\":\"10\"}], ");
+                                    sb.append("\"P_PIC\": \"/product/pic/"+StringUtils.toString(mxx.get("P_ID"))+"\" ");
+                                sb.append("}");
+                                sb.append("}");
+                                b3 = true;
+                            }
+                        }
+                        sb.append("]");
+                        sb.append("}");
+                        b2 = true;
+                    }
+                }
+
+                sb.append("]");
+                sb.append("}");
+                b1 = true;
+            }
+        }
+        sb.append("]");
+        sb.append("}");
+        sb.append("}");
+        query.free();
+        return sb.toString();
+    }
+
+    public List<Map> query(String Q){
+        Q = StringUtils.toString(Q);
+        String C = "";
+        if(Q.length() > 0){
+            C = "AND (P_NAME LIKE '%"+Q+"%' OR P_CODE LIKE '%"+Q+"%' OR P_NAME_EXT LIKE '%"+Q+"%' OR P_NAME_EN LIKE '%"+Q+"%')";
+        }
+        String sql = "SELECT P_ID, P_NAME, P_CODE FROM X_P WHERE P_STATUS = 1 "+C+" ORDER BY P_NAME";
+        IQuery query = getQuery();
+        List<Map> list = query.doQuery(sql).tables(8);
+        query.free();
+        return list;
+    }
+
+
+    public Map getConfig(){
+        Map data = new Hashtable();
+        IQuery query = getQuery();
+        String sql = "SELECT A.* FROM X_UNIT A WHERE A.UNIT_STATUS = 1";
+        List<Map> list = query.doQuery(sql).tables();
+        data.put("UNITS", list);
+        sql = "SELECT A.* FROM X_TASTE A WHERE A.TASTE_STATUS = 1 ORDER BY A.TASTE_ID";
+        List<Map> listx = query.doQuery(sql).tables();
+        //for(int i=0;i<listx.size();i++){
+        //    Map m = listx.get(i);
+        //    sql = "SELECT TASTE_DESC FROM X_TASTE_DESC WHERE TASTE_ID = " + StringUtils.toString(m.get("TASTE_ID")) + " ORDER BY TASTE_DESC_DEF DESC";
+        ///    m.put("DESCS", query.doQuery(sql).listFirst());
+        //}
+        data.put("TASTES", listx);
+        sql = "SELECT A.* FROM X_WAY A WHERE A.WAY_STATUS = 1 ORDER BY A.WAY_ID";
+        List<Map> listxx = query.doQuery(sql).tables();
+        //for(int i=0;i<listxx.size();i++){
+       //     Map m = listxx.get(i);
+        //    sql = "SELECT WAY_DESC FROM X_WAY_DESC WHERE WAY_ID = " + StringUtils.toString(m.get("WAY_ID")) + " ORDER BY WAY_DESC_DEF DESC";
+        //    m.put("DESCS", query.doQuery(sql).listFirst());
+        //}
+        data.put("WAYS", listxx);
+        query.free();
+        return data;
+    }
+
+    public int setConfig(Form form) {
+        return 0;  //To change body of created methods use File | Settings | File Templates.
+    }
+
+    public Map set(Form form){
+        Map data = form.getValuesMap();
+        String P_ID = StringUtils.toString(data.get("P_ID"));
+        ITable P = getTable("X_P").clearData();
+        int result = 0;
+        data.put("P_NAME_EXT", PinyinUtils.getPinYinHeader(StringUtils.toString(data.get("P_NAME"))));
+        String P_SORT = StringUtils.toString(data.get("P_SORT"));
+        String P_TYPE_ID = StringUtils.toString(data.get("P_TYPE_ID"));
+        String P_UNIT_ID = StringUtils.toString(data.get("P_UNIT_ID"));
+        if(new UnitAction().isWeightUnit(P_UNIT_ID)){
+            data.put("P_TAG_WEIGHT", 1);
+        }
+        else{
+            data.put("P_TAG_WEIGHT", 0);
+        }
+        data.remove("P_CLEAR");
+        if(P_ID.length() == 0){
+            P_ID = String.valueOf(P.getMaxID("P_ID"));
+            data.put("P_ID", P_ID);
+            IQuery query = getQuery();
+            String sql = "SELECT MAX(P_SORT) FROM X_P WHERE P_TYPE_ID = "+P_TYPE_ID;
+            if(P_SORT.length() == 0){
+                P_SORT = (NumberUtils.toInt(query.doQuery(sql).getValue()) + 1) + "";
+            }
+//            else{
+//                sql = "UPDATE X_P SET P_SORT=P_SORT+1 WHERE P_TYPE_ID = "+P_TYPE_ID+" AND P_SORT > " + P_SORT;
+//                query.doExec(sql);
+//                P_SORT = (NumberUtils.toInt(P_SORT) + 1) + "";
+//            }
+            query.free();
+            //data.put("P_SORT", P_SORT);
+            result = P.data(data).create();
+        }
+        else{
+            //data.remove("P_SORT");
+            result = P.data(data).where(P.column("P_ID").eq(P_ID)).update();
+        }
+        if(result < 0){
+            data.put("STATUS", CloverManager.CODE_FAILED);
+        }
+        else{
+            MessageManager.getInstance().setVersion(MessageManager.MSG_VER_PRODUCT);
+            data.put("STATUS", CloverManager.CODE_SUCCESS);
+        }
+        return data;
+    }
+
+
+    public Map setSort(Params params){
+        String P_ID = params.val("P_ID");
+        int P_SORT = NumberUtils.toInt(params.val("P_SORT"));
+
+        Map d = new Hashtable();
+        d.put("P_ID", P_ID);
+        d.put("P_SORT", P_SORT);
+        int result;
+        if(P_ID.length() > 0){
+            String sql = "UPDATE X_P SET P_SORT=P_SORT+1 WHERE P_SORT > " + P_SORT;
+            IQuery query = getQuery();
+            result = query.doExec(sql);
+            sql = "UPDATE X_P SET P_SORT=" + (P_SORT+1) + " WHERE P_ID = " + P_ID;
+            result = query.doExec(sql);
+            query.free();
+        }
+        else{
+            d.put("STATUS", CloverManager.CODE_FAILED);
+            return d;
+        }
+        if(result < 0){
+            d.put("STATUS", CloverManager.CODE_FAILED);
+        }
+        else{
+
+            MessageManager.getInstance().setVersion(MessageManager.MSG_VER_PRODUCT);
+            d.put("STATUS", CloverManager.CODE_SUCCESS);
+        }
+        return d;
+    }
+
+    public Map setChange(Params params){
+        String P_ID = params.val("P_ID");
+        String P_TYPE_ID = params.val("P_TYPE_ID");
+
+
+        Map d = new Hashtable();
+        d.put("P_ID", P_ID);
+        d.put("P_TYPE_ID", P_TYPE_ID);
+        int result;
+        if(P_ID.length() > 0){
+            String sql = "SELECT MAX(P_SORT) FROM X_P WHERE P_TYPE_ID = "+P_TYPE_ID;
+            IQuery query = getQuery();
+            int P_SORT = (NumberUtils.toInt(query.doQuery(sql).getValue()) + 1);
+            result = query.doExec(sql);
+            sql = "UPDATE X_P SET P_SORT=" + P_SORT + ",P_TYPE_ID="+P_TYPE_ID+" WHERE P_ID = " + P_ID;
+            result = query.doExec(sql);
+            query.free();
+        }
+        else{
+            d.put("STATUS", CloverManager.CODE_FAILED);
+            return d;
+        }
+        if(result < 0){
+            d.put("STATUS", CloverManager.CODE_FAILED);
+        }
+        else{
+            MessageManager.getInstance().setVersion(MessageManager.MSG_VER_PRODUCT);
+            d.put("STATUS", CloverManager.CODE_SUCCESS);
+        }
+        return d;
+    }
+
+    public Map getMT(){
+        String sql = "SELECT * FROM X_P_MT";
+        IQuery query = getQuery();
+        Map m = query.doQuery(sql).table();
+        if(m == null){
+            query.free();
+            return new Hashtable();
+        }
+        Map data = new HashMap();
+        Set<String> keys = m.keySet();
+        for(String key : keys){
+            String value = StringUtils.toString(m.get(key));
+            String value_ = "";
+            if(value.length() > 0){
+                sql = "SELECT P_NAME FROM X_P WHERE P_ID IN ("+value+")";
+                List<String> list = query.doQuery(sql).listFirst();
+                for(int i=0;i<list.size();i++){
+                    if(i > 0){
+                        value_ += ",";
+                    }
+                    value_ += StringUtils.toString(list.get(i));
+                }
+            }
+            data.put(key + "_NAME", value_);
+        }
+        data.putAll(m);
+        query.free();
+        return data;
+    }
+
+    public int setMT(Form form){
+        Map data = form.getValuesMap();
+        ITable T = getTable("X_P_MT").clearData();
+        T.delete();
+        T.data(data).create();
+        MessageManager.getInstance().setVersion(MessageManager.MSG_VER_PRODUCT_MT);
+        return CloverManager.CODE_SUCCESS;
+    }
+
+    public List<Map> listSeason(){
+
+        String sql = "SELECT A.P_NAME, A.P_ID, B.P_PRICE_LAST_DT, B.P_PRICE_LAST, B.P_PRICE, C.UNIT_NAME AS P_UNIT_NAME FROM X_P A " +
+                "LEFT JOIN X_P_SEASON B ON A.P_ID = B.P_ID " +
+                "LEFT JOIN X_UNIT C ON A.P_UNIT_ID = C.UNIT_ID WHERE A.P_TAG_SEASON = 1 AND A.P_STATUS = 1 ORDER BY A.P_ID";
+        IQuery query = getQuery();
+        List<Map> list = query.doQuery(sql).tables();
+        query.free();
+        return list;
+    }
+
+    public Map getSeason(String P_ID){
+        String sql = "SELECT A.P_NAME, A.P_ID, B.P_PRICE_LAST_DT, B.P_PRICE_LAST, B.P_PRICE, C.UNIT_NAME AS P_UNIT_NAME FROM X_P A " +
+                "LEFT JOIN X_P_SEASON B ON A.P_ID = B.P_ID " +
+                "LEFT JOIN X_UNIT C ON A.P_UNIT_ID = C.UNIT_ID WHERE A.P_TAG_SEASON = 1 AND A.P_ID = ?";
+        IQuery query = getQuery();
+        Map data = query.doQuery(sql, P_ID).table();
+        query.free();
+        return data;
+    }
+
+    public int setSeason(Form form){
+        Map data = form.getValuesMap();
+        String P_ID = StringUtils.toString(data.get("P_ID"));
+        if(P_ID.length() == 0){
+            return CloverManager.CODE_FAILED;
+        }
+        String sql = "SELECT * FROM X_P_SEASON WHERE P_ID = " + P_ID;
+        IQuery query = getQuery();
+        ITable T = getTable("X_P_SEASON").clearData();
+        Map m = query.doQuery(sql).table();
+        if(m != null){
+            data.put("P_PRICE_DT", DateUtils.getNow());
+            data.put("P_PRICE_LAST_DT", m.get("P_PRICE_DT"));
+            data.put("P_PRICE_LAST", m.get("P_PRICE"));
+            T.data(data).where(T.column("P_ID").eq(P_ID)).update();
+        }
+        else{
+            data.put("P_PRICE_DT", DateUtils.getNow());
+            T.data(data).create();
+        }
+        query.free();
+        return CloverManager.CODE_SUCCESS;
+    }
+}

@@ -1,0 +1,24 @@
+package org.redot.clover.app.common;
+
+import org.redot.clover.core.ext.BaseAction;
+import org.redot.library.db.IQuery;
+
+import java.util.List;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 10-12-21
+ * Time: 下午5:03
+ * To change this template use File | Settings | File Templates.
+ */
+public class TypeAction extends BaseAction {
+
+    public List<String[]> list(String TP_TYPE){
+        String sql = "SELECT TP_ID, TP_NAME, TP_VALUE FROM X_TP WHERE TP_TYPE = "+TP_TYPE+" AND TP_STATUS = 1 ORDER BY TP_SORT";
+        IQuery query = getQuery();
+        List<String[]> list = query.doQuery(sql).list();
+        query.free();
+        return list;
+    }
+}

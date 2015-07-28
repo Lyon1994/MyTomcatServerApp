@@ -1,0 +1,15 @@
+package org.redot.library.dao;
+
+/**
+ * Copyright By Redot.
+ * User: CASH
+ * Date: 2009-10-14
+ * Time: 13:55:34
+ */
+public enum ColumnType {
+    VARCHAR,
+    CHAR,
+    INT,
+    LONG,
+    BLOB;
+}

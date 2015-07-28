@@ -1,0 +1,29 @@
+package org.redot.clover.app.desk.rest;
+
+import org.redot.clover.app.desk.DeskAction;
+import org.redot.clover.core.data.DataPackage;
+import org.redot.clover.core.ext.BaseResource;
+import org.redot.library.lang.NumberUtils;
+import org.restlet.resource.Get;
+import org.restlet.resource.Post;
+import org.restlet.resource.Put;
+
+import java.util.Map;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 10-12-18
+ * Time: 下午3:42
+ * To change this template use File | Settings | File Templates.
+ */
+public class DeskAreaList extends BaseResource {
+
+    @Get("json")
+    public String doGet(){
+        DataPackage dp = new DataPackage();
+        DeskAction a = new DeskAction();
+        dp.addTable("table", a.listX(), null, null);
+        return dp.toJSON();
+    }
+}

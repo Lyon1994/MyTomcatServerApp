@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<clover>
+    <resource class="org.redot.clover.app.common.rest.Upload">/upload</resource>
+    <!--<resource class="org.redot.clover.app.common.rest.CrossDomain">/crossdomain.xml</resource>-->
+
+</clover>

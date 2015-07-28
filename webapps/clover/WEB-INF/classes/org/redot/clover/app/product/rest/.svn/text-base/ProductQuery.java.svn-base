@@ -1,0 +1,39 @@
+package org.redot.clover.app.product.rest;
+
+import org.redot.clover.app.product.ProductAction;
+import org.redot.clover.core.data.DataPackage;
+import org.redot.clover.core.data.SimpleDataPackage;
+import org.redot.clover.core.ext.BaseResource;
+import org.redot.library.lang.StringUtils;
+import org.restlet.resource.Get;
+
+import java.util.List;
+import java.util.Map;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 10-12-21
+ * Time: 下午5:02
+ * To change this template use File | Settings | File Templates.
+ */
+public class ProductQuery extends BaseResource {
+
+    @Get("json")
+    public String doGet() {
+        SimpleDataPackage dp = new SimpleDataPackage();
+        String Q = params.val("query");
+        ProductAction a = new ProductAction();
+        List<Map> list = a.query(Q);
+        String[] suggestions = new String[list.size()];
+        String[] data = new String[list.size()];
+        for (int i = 0; i < list.size(); i++) {
+            suggestions[i] = StringUtils.toString(list.get(i).get("P_NAME"));
+            data[i] = StringUtils.toString(list.get(i).get("P_ID"));
+        }
+        dp.setSuggestions(suggestions);
+        dp.setData(data);
+        dp.setQuery(Q);
+        return dp.toJSON();
+    }
+}

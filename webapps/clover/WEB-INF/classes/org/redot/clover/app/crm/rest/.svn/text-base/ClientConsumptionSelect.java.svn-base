@@ -1,0 +1,24 @@
+package org.redot.clover.app.crm.rest;
+
+import org.redot.clover.app.crm.ClientConsumptionSelectAction;
+import org.redot.clover.core.data.DataPackage;
+import org.redot.clover.core.ext.BaseResource;
+import org.restlet.resource.Get;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: yh_admin
+ * Date: 12-8-15
+ * Time: 上午10:37
+ * To change this template use File | Settings | File Templates.
+ */
+public class ClientConsumptionSelect extends BaseResource {
+    @Get("json")
+    public String doGet(){
+        DataPackage dp = new DataPackage();
+        ClientConsumptionSelectAction a = new ClientConsumptionSelectAction();
+        dp.addTable("table",a.select(params));
+        return dp.toJSON();
+    }
+
+}

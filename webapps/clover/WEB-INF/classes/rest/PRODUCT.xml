@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<clover>
+    <resource class="org.redot.clover.app.product.rest.ProductTree">/product/tree</resource>
+    <resource class="org.redot.clover.app.product.rest.ProductHot">/product/hot</resource>
+    <!-- 菜品图 -->
+    <resource class="org.redot.clover.app.product.rest.ProductPicture">/product/pic/{ID}</resource>
+    <!-- 套餐图 -->
+    <resource class="org.redot.clover.app.product.rest.ProductComboPicture">/product/combo/pic/{ID}</resource>
+    <!-- 菜品小图 -->
+    <resource class="org.redot.clover.app.product.rest.ProductPictureSmall">/product/pic/small/{ID}</resource>
+    <!-- 套餐小图 -->
+    <resource class="org.redot.clover.app.product.rest.ProductComboPictureSmall">/product/combo/pic/small/{ID}</resource>
+    <resource class="org.redot.clover.app.product.rest.ProductPictureUpload">/product/pic</resource>
+    <resource class="org.redot.clover.app.product.rest.ProductComboPictureUpload">/product/combo/pic</resource>
+    <resource class="org.redot.clover.app.product.rest.ProductQuery">/product/query</resource>
+
+    <resource class="org.redot.clover.app.product.rest.ProductMenuTree">/product/menu/tree</resource>
+    <resource class="org.redot.clover.app.product.rest.ProductMenu">/product/menu/info/{ID}</resource>
+    <resource class="org.redot.clover.app.product.rest.ProductMenu">/product/menu</resource>
+    <resource class="org.redot.clover.app.product.rest.ProductMenuDelete">/product/menu/delete</resource>
+    <resource class="org.redot.clover.app.product.rest.ProductMenuShow">/product/menu/show</resource>
+    <resource class="org.redot.clover.app.product.rest.ProductMenuShowReal">/product/menu/show/real</resource>
+
+    <resource class="org.redot.clover.app.product.rest.ProductTypeTree">/product/type/tree</resource>
+    <resource class="org.redot.clover.app.product.rest.ProductTypeList">/product/type/list</resource>
+    <resource class="org.redot.clover.app.product.rest.ProductTypeLargeSelect">/product/type/large/select</resource>
+    <resource class="org.redot.clover.app.product.rest.ProductTypeSmallSelect">/product/type/small/select</resource>
+    <resource class="org.redot.clover.app.product.rest.ProductTypeLarge">/product/type/large</resource>
+    <resource class="org.redot.clover.app.product.rest.ProductTypeLargeSort">/product/type/large/sort</resource>
+    <resource class="org.redot.clover.app.product.rest.ProductTypeSmall">/product/type/small</resource>
+    <resource class="org.redot.clover.app.product.rest.ProductTypeSmallSort">/product/type/small/sort</resource>
+    <resource class="org.redot.clover.app.product.rest.ProductTypeSmallChange">/product/type/small/change</resource>
+    <resource class="org.redot.clover.app.product.rest.ProductTypeSmall">/product/type/small/{PARENT}</resource>
+    <resource class="org.redot.clover.app.product.rest.ProductType">/product/type/info/{ID}</resource>
+    <resource class="org.redot.clover.app.product.rest.ProductType">/product/type</resource>
+    <resource class="org.redot.clover.app.product.rest.ProductTypeDelete">/product/type/delete</resource>
+
+    <resource class="org.redot.clover.app.product.rest.ProductList">/product/list</resource>
+    <resource class="org.redot.clover.app.product.rest.ProductSort">/product/sort</resource>
+    <resource class="org.redot.clover.app.product.rest.ProductChange">/product/change</resource>
+    <resource class="org.redot.clover.app.product.rest.ProductListExt">/product/list/{TYPE}</resource>
+    <resource class="org.redot.clover.app.product.rest.Product">/product/info/{ID}</resource>
+    <resource class="org.redot.clover.app.product.rest.Product">/product</resource>
+    <resource class="org.redot.clover.app.product.rest.ProductDelete">/product/delete</resource>
+    <resource class="org.redot.clover.app.product.rest.ProductConfig">/product/config</resource>
+
+
+    <resource class="org.redot.clover.app.product.rest.ProductMT">/product/mt</resource>
+
+    <resource class="org.redot.clover.app.product.rest.ProductSeasonList">/product/season/list</resource>
+    <resource class="org.redot.clover.app.product.rest.ProductSeason">/product/season/info/{ID}</resource>
+    <resource class="org.redot.clover.app.product.rest.ProductSeason">/product/season</resource>
+
+    <resource class="org.redot.clover.app.product.rest.ProductComboList">/product/combo/list</resource>
+    <resource class="org.redot.clover.app.product.rest.ProductCombo">/product/combo/info/{ID}</resource>
+    <resource class="org.redot.clover.app.product.rest.ProductCombo">/product/combo</resource>
+</clover>

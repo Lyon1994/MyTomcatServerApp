@@ -1,0 +1,177 @@
+package org.redot.clover.app.product.rest;
+
+import org.apache.commons.fileupload.FileItem;
+import org.apache.commons.fileupload.disk.DiskFileItemFactory;
+import org.redot.clover.core.CloverManager;
+import org.redot.clover.core.data.DataPackage;
+import org.redot.library.db.IQuery;
+import org.redot.library.image.ImageUtils;
+import org.redot.library.io.FileUtils;
+import org.redot.library.lang.NumberUtils;
+import org.restlet.data.Form;
+import org.restlet.data.MediaType;
+import org.restlet.data.Status;
+import org.restlet.ext.fileupload.RestletFileUpload;
+import org.restlet.representation.Representation;
+import org.restlet.resource.Options;
+import org.restlet.resource.Post;
+import org.restlet.resource.ResourceException;
+import org.restlet.resource.ServerResource;
+
+import java.io.File;
+import java.util.Hashtable;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 11-4-24
+ * Time: 下午10:02
+ * To change this template use File | Settings | File Templates.
+ */
+public class ProductPictureUpload extends ServerResource {
+
+    @Override
+    protected void doInit() throws ResourceException {
+     //   if(DateUtils.getDateMinusDays(new Date(), DateUtils.toDate("2011-03-08")) > 0){
+         //   System.out.println("系统授权过期");
+         //   System.exit(0);
+      //  }
+        super.doInit();
+//        System.out.println(this.getMethod().getName());
+//        System.out.println(this.getRequest().getAttributes());
+//        System.out.println(this.getRequest().getAttributes().get("org.restlet.http.headers"));
+        Form responseHeaders = (Form) getResponse().getAttributes().get("org.restlet.http.headers");
+        if (responseHeaders == null) {
+            responseHeaders = new Form();
+            getResponse().getAttributes().put("org.restlet.http.headers", responseHeaders);
+        }
+
+        responseHeaders.add("Access-Control-Allow-Origin", "*");
+        responseHeaders.add("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
+        responseHeaders.add("Access-Control-Allow-Headers", "Content-Type, X-Requested-With, X-File-Name");
+        responseHeaders.add("Access-Control-Allow-Credentials", "true");
+        responseHeaders.add("Access-Control-Max-Age", "60000");
+//        System.out.println(this.getRequestEntity().getMediaType());
+    }
+
+    @Post
+    public String doPost(Representation entity) throws Exception {
+        String fileName = "";
+        String P_ID = "";
+        String P_PIC = "";
+        if (entity != null) {
+            System.out.println(entity.getMediaType());
+            if (MediaType.MULTIPART_FORM_DATA.equals(entity.getMediaType(),
+                    true)) {
+                DiskFileItemFactory factory = new DiskFileItemFactory();
+                factory.setSizeThreshold(1000240);
+                RestletFileUpload upload = new RestletFileUpload(factory);
+                upload.setHeaderEncoding("UTF-8");
+                List<FileItem> items = upload.parseRequest(getRequest());
+
+                String path = this.getClass().getResource("/").getPath() + "product/images/";
+//                System.out.println("PATH = " + path);
+                if(!FileUtils.isDir(path)){
+                    FileUtils.mkdir(path);
+                }
+                for(int i=0;i<items.size();i++){
+                    FileItem fileItem = items.get(i);
+//                    System.out.println(fileItem.getFieldName());
+                    if(fileItem.getFieldName().equals("P_ID")){
+                        P_ID =  fileItem.getString();
+                    }
+                    if(P_ID.length() > 0 && fileItem.getFieldName().equals("P_PIC_PATH")){
+                        fileName = fileItem.getName();
+//                        System.out.println("fileName="+fileItem.getContentType());
+//                        System.out.println("fileName="+fileItem.getName());
+                        if(fileName != null && !fileName.equals("")){
+                            long code = System.currentTimeMillis();
+                            fileName = fileName.substring(fileName.lastIndexOf(File.separator) + 1);
+                            fileName =  code + fileName.substring(fileName.lastIndexOf("."));
+                            File file = new File(path + File.separator + fileName);
+                            fileItem.write(file);
+
+                            IQuery query = CloverManager.getInstance().getQuery();
+                            String sql = "SELECT BASIC_SHOW_TYPE FROM X_BASIC_CONFIG";
+                            int BASIC_SHOW_TYPE = NumberUtils.toInt(query.doQuery(sql).getValue());
+                            if(BASIC_SHOW_TYPE == 1){
+                                ImageUtils.compressJPEG(file, file, 637, 650, 0.7F);
+                                File smallFile = new File(path + File.separator + code + "-s" + fileName.substring(fileName.lastIndexOf(".")));
+                                ImageUtils.compressJPEG(file, smallFile, 88, 90, 0.7F);
+                            }
+                            else{
+                                sql = "SELECT P_TYPE_ID, P_PIC FROM X_P WHERE P_ID = "+P_ID;
+                                String[] P_ARR = query.doQuery(sql).get();
+                                if(P_ARR.length == 0){
+                                    query.free();
+                                    DataPackage dp = new DataPackage();
+                                    dp.setStatus(CloverManager.CODE_FAILED);
+                                    return dp.toJSON();
+                                }
+                                if(P_ARR[1].length() > 0){
+                                    FileUtils.delete(path + File.separator + P_ARR[1]);
+                                }
+                                sql = "SELECT P_TYPE_SHOW FROM X_P_TYPE WHERE P_TYPE_ID = (SELECT P_TYPE_PARENT FROM X_P_TYPE WHERE P_TYPE_ID = "+P_ARR[0]+")";
+                                String P_TYPE_SHOW = query.doQuery(sql).getValue();
+                                if(P_TYPE_SHOW.equals("4")){
+                                    ImageUtils.compressJPEG(file, file, 210, 150, 0.7F);
+                                }
+                                else{
+                                    sql = "SELECT SHOW_WIDTH, SHOW_HEIGHT FROM X_SHOW WHERE SHOW_TYPE = " + P_TYPE_SHOW;
+                                    String[] arr = query.doQuery(sql).get();
+                                    if(arr.length != 2){
+                                        ImageUtils.compressJPEG(file, file, 210, 150, 0.7F);
+                                    }
+                                    else{
+                                        int w = Math.max(NumberUtils.toInt(arr[0]), 210);
+                                        int h = Math.max(NumberUtils.toInt(arr[1]), 150);
+                                        ImageUtils.compressJPEG(file, file, w, h, 0.7F);
+                                    }
+                                }
+                            }
+
+//                            if(P_TYPE_SHOW.equals("0")){
+//                                ImageUtils.compressJPEG(file, file, 210, 150, 0.7F);
+//                            }
+//                            else if(P_TYPE_SHOW.equals("1")){
+//                                ImageUtils.compressJPEG(file, file, 300, 256, 0.7F);
+//                            }
+//                            else if(P_TYPE_SHOW.equals("2")){
+//                                ImageUtils.compressJPEG(file, file, 316, 316, 0.7F);
+//                            }
+//                            else if(P_TYPE_SHOW.equals("3")){
+//                                ImageUtils.compressJPEG(file, file, 635, 635, 0.7F);
+//                            }
+//                            else{
+//                                ImageUtils.compressJPEG(file, file, 210, 150, 0.7F);
+//                            }
+
+                            P_PIC =  fileName;
+
+                            sql = "UPDATE X_P SET P_PIC = '"+P_PIC+"' WHERE P_ID =" + P_ID;
+                            query.doExec(sql);
+                            query.free();
+                        }
+                    }
+                }
+            }
+        } else {
+            setStatus(Status.CLIENT_ERROR_BAD_REQUEST);
+        }
+        DataPackage dp = new DataPackage();
+        if(P_ID == null || P_ID.length() == 0 || P_PIC == null || P_PIC.length() == 0){
+            dp.setStatus(CloverManager.CODE_FAILED);
+        }
+        dp.getData().put("P_PIC", P_PIC);
+        dp.setStatus(CloverManager.CODE_SUCCESS);
+        return dp.toJSON();
+    }
+
+    @Options
+    public String doOption() {
+        System.out.println("DO OPTION");
+         return "{}";
+    }
+}

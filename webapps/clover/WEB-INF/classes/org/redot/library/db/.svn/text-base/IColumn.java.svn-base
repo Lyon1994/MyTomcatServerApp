@@ -1,0 +1,117 @@
+package org.redot.library.db;
+
+/**
+ * Copyright By Redot.
+ * User: CASH
+ * Date: 2009-10-16
+ * Time: 17:08:52
+ */
+public class IColumn {
+
+    private String name = null;
+
+    private String type = "VARCHAR";
+
+    private ITable table = null;
+
+    public IColumn(String name, ITable table) {
+        this.name = name;
+        this.table = table;
+    }
+
+    public IColumn(String name, String type, ITable table) {
+        this.name = name;
+        this.type = type;
+        this.table = table;
+    }
+
+    public String toString(){
+        return this.name;
+    }
+
+    public String alias(){
+        if(getTable().getAliasName().length() == 0){
+            return getName();
+        }
+        return getTable().getAliasName() + "." + getName();
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    public void setType(String type) {
+        this.type = type;
+    }
+
+    public ITable getTable() {
+        return table;
+    }
+
+    public void setTable(ITable table) {
+        this.table = table;
+    }
+
+    public IClause eq(Object...values){
+        IClause clause = new IClause(this, IClause.COND_EQ, values);
+        return clause;
+    }
+
+    public IClause ne(Object...values){
+        IClause clause = new IClause(this, IClause.COND_NE, values);
+        return clause;
+    }
+
+    public IClause gt(Object...values){
+        IClause clause = new IClause(this, IClause.COND_GT, values);
+        return clause;
+    }
+
+    public IClause lt(Object...values){
+        IClause clause = new IClause(this, IClause.COND_LT, values);
+        return clause;
+    }
+
+    public IClause ge(Object...values){
+        IClause clause = new IClause(this, IClause.COND_GE, values);
+        return clause;
+    }
+
+    public IClause le(Object...values){
+        IClause clause = new IClause(this, IClause.COND_LE, values);
+        return clause;
+    }
+
+    public IClause in(Object...values){
+        IClause clause = new IClause(this, IClause.COND_IN, values);
+        return clause;
+    }
+
+    public IClause ni(Object...values){
+        IClause clause = new IClause(this, IClause.COND_NI, values);
+        return clause;
+    }
+
+    public IClause lk(Object...values){
+        IClause clause = new IClause(this, IClause.COND_LIKE, values);
+        return clause;
+    }
+
+    public IClause lks(Object...values){
+        IClause clause = new IClause(this, IClause.COND_LIKE_S, values);
+        return clause;
+    }
+
+    public IClause lke(Object...values){
+        IClause clause = new IClause(this, IClause.COND_LIKE_E, values);
+        return clause;
+    }
+}

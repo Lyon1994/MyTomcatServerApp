@@ -1,0 +1,13 @@
+package org.redot.library.dao;
+
+/**
+ * Copyright By Redot.
+ * User: CASH
+ * Date: 2009-10-14
+ * Time: 13:43:58
+ */
+public interface IDAO extends IDAOHandler {
+
+    public boolean save();
+    public boolean delete();
+}

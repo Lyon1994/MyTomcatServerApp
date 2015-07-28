@@ -1,0 +1,125 @@
+package org.redot.clover.app.product;
+
+import org.redot.clover.app.message.MessageManager;
+import org.redot.clover.core.CloverManager;
+import org.redot.clover.core.ext.BaseAction;
+import org.redot.clover.core.ext.Params;
+import org.redot.library.db.IQuery;
+import org.redot.library.db.ITable;
+import org.redot.library.lang.NumberUtils;
+import org.redot.library.lang.StringUtils;
+import org.restlet.data.Form;
+
+import java.util.ArrayList;
+import java.util.Hashtable;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 11-4-26
+ * Time: 下午4:48
+ * To change this template use File | Settings | File Templates.
+ */
+public class ProductComboAction extends BaseAction{
+
+    public List<Map> list(){
+        String sql = "SELECT A.*, B.STATUS_NAME AS P_COMBO_STATUS_NAME FROM X_P_COMBO A " +
+                "LEFT JOIN X_STATUS B ON A.P_COMBO_STATUS = B.STATUS " +
+                "WHERE A.P_COMBO_STATUS <> 2 ORDER BY A.P_COMBO_ID";
+        IQuery query = getQuery();
+        List<Map> list = query.doQuery(sql).tables();
+
+        for(Map m : list){
+            String P_COMBO_MT = StringUtils.toString(m.get("P_COMBO_MT"));
+            String P_COMBO_ID = StringUtils.toString(m.get("P_COMBO_ID"));
+            String P_COMBO_MT_NAME = "";
+            if(P_COMBO_MT.length() > 0){
+                sql = "SELECT MT_NAME FROM X_MT WHERE MT_ID IN ("+P_COMBO_MT+")";
+                P_COMBO_MT_NAME = query.doQuery(sql).getValueString();
+            }
+            sql = "SELECT A.P_COMBO_P_ID, B.P_ID, B.P_NAME, B.P_PRICE FROM X_P_COMBO_P A LEFT JOIN X_P B ON A.P_COMBO_P_ID = B.P_ID WHERE A.P_COMBO_ID = " + P_COMBO_ID;
+            m.put("P_COMBO_PS", query.doQuery(sql).tables());
+            m.put("P_COMBO_MT_NAME", P_COMBO_MT_NAME);
+        }
+        query.free();
+        return list;
+    }
+
+    public Map get(String P_COMBO_ID){
+        String sql = "SELECT A.* FROM X_P_COMBO A WHERE A.P_COMBO_ID = ?";
+        IQuery query = getQuery();
+        Map data = new Hashtable();
+        Map m = query.doQuery(sql, P_COMBO_ID).table();
+        if(m == null){
+            List<Map> P_COMBO_P = new ArrayList<Map>();
+            data.put("P_COMBO_P", P_COMBO_P);
+            query.free();
+            return data;
+        }
+        data.putAll(m);
+        sql = "SELECT A.*, B.P_ID, B.P_NAME, B.P_PRICE FROM X_P_COMBO_P A " +
+                "LEFT JOIN X_P B ON A.P_COMBO_P_ID = B.P_ID " +
+                "WHERE A.P_COMBO_ID = " + P_COMBO_ID;
+        data.put("P_COMBO_P", query.doQuery(sql).tables());
+        query.free();
+        return data;
+    }
+
+    public int set(Form form){
+        Map data = form.getValuesMap();
+        String P_COMBO_ID = StringUtils.toString(data.get("P_COMBO_ID"));
+        String P_COMBO_PS = StringUtils.toString(data.get("P_COMBO_PS"));
+        String P_COMBO_MT = form.getValues("P_COMBO_MT");
+        data.put("P_COMBO_MT", P_COMBO_MT);
+        if(P_COMBO_PS.length() == 0){
+            return CloverManager.CODE_FAILED;
+        }
+        ITable T = getTable("X_P_COMBO").clearData();
+        int result;
+        if(P_COMBO_ID.length() == 0){
+            P_COMBO_ID = T.getMaxID("P_COMBO_ID") + "";
+            data.put("P_COMBO_ID", P_COMBO_ID);
+            result = T.data(data).create();
+        }
+        else{
+            result = T.data(data).where(T.column("P_COMBO_ID").eq(P_COMBO_ID)).update();
+        }
+        if(result < 0){
+            return CloverManager.CODE_FAILED;
+        }
+        ITable TX = getTable("X_P_COMBO_P").clearData();
+        TX.where(TX.column("P_COMBO_ID").eq(P_COMBO_ID)).delete();
+//        System.out.println("P_COMBO_PS = " + P_COMBO_PS);
+        String[] P_COMBO_PSX = StringUtils.split(P_COMBO_PS, ",");
+        for(String P_COMBO_P : P_COMBO_PSX){
+            Map m = new Hashtable();
+            m.put("P_COMBO_ID", P_COMBO_ID);
+            m.put("P_COMBO_P_ID", P_COMBO_P);
+            TX.data(m).create();
+            TX.clearData();
+        }
+        MessageManager.getInstance().setVersion(MessageManager.MSG_VER_PRODUCT_COMBO);
+        return CloverManager.CODE_SUCCESS;
+    }
+
+    public int delete(Form form) {
+        Map data = form.getValuesMap();
+        String P_COMBO_ID = StringUtils.toString(data.get("P_COMBO_ID"));
+        if(P_COMBO_ID.length() == 0){
+            return CloverManager.CODE_FAILED;
+        }
+        IQuery query = getQuery();
+
+//        String sql = "DELETE FROM X_P WHERE P_COMBO_ID = " + P_COMBO_ID;
+        String sql = "UPDATE X_P_COMBO SET P_COMBO_STATUS = 2 WHERE P_COMBO_ID = " + P_COMBO_ID;
+        int result = query.doExec(sql);
+        query.free();
+        if(result < 0){
+            return CloverManager.CODE_FAILED;
+        }
+        MessageManager.getInstance().setVersion(MessageManager.MSG_VER_PRODUCT_COMBO);
+        return CloverManager.CODE_SUCCESS;
+    }
+}

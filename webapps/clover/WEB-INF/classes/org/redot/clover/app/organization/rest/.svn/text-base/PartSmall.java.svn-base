@@ -1,0 +1,45 @@
+package org.redot.clover.app.organization.rest;
+
+import org.redot.clover.app.organization.PartAction;
+import org.redot.clover.core.data.DataPackage;
+import org.redot.clover.core.ext.BaseResource;
+import org.redot.library.lang.NumberUtils;
+import org.redot.library.lang.StringUtils;
+import org.restlet.resource.Get;
+import org.restlet.resource.Post;
+import org.restlet.resource.Put;
+
+import java.util.Map;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 12-11-21
+ * Time: 下午4:38
+ * To change this template use File | Settings | File Templates.
+ */
+public class PartSmall extends BaseResource{
+    @Get("json")
+    public String doGet(){
+        DataPackage dp = new DataPackage();
+        PartAction a = new PartAction();
+        dp.addTable("table", a.listSmall(null, StringUtils.toString(getRequestAttributes().get("DEPT_ID"))), null, null);
+        return dp.toJSON();
+    }
+
+    @Post("json")
+    public String doPost(){
+        DataPackage dp = new DataPackage();
+        PartAction a = new PartAction();
+        dp.setStatus(a.setSmall(form));
+        return dp.toJSON();
+    }
+
+//    @Put("json")
+//    public String doDelete(){
+//        DataPackage dp = new DataPackage();
+//        PartAction a = new PartAction();
+//        dp.setStatus(a.deleteSmall(form));
+//        return dp.toJSON();
+//    }
+}

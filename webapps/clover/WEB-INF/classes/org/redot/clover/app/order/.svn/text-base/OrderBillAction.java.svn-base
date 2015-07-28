@@ -1,0 +1,1392 @@
+package org.redot.clover.app.order;
+
+import org.redot.clover.app.inventory.SaleAction;
+import org.redot.clover.app.system.LogAction;
+import org.redot.clover.app.system.MarketTypeAction;
+import org.redot.clover.app.system.SystemAction;
+import org.redot.clover.core.CloverManager;
+import org.redot.clover.core.ext.BaseAction;
+import org.redot.clover.core.ext.Params;
+import org.redot.clover.print.PrintJob;
+import org.redot.clover.print.PrintManager;
+import org.redot.library.db.IQuery;
+import org.redot.library.db.ITable;
+import org.redot.library.lang.ArrayUtils;
+import org.redot.library.lang.DateUtils;
+import org.redot.library.lang.NumberUtils;
+import org.redot.library.lang.StringUtils;
+import org.restlet.data.Form;
+
+import java.util.*;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 11-4-10
+ * Time: 下午12:36
+ * To change this template use File | Settings | File Templates.
+ */
+public class OrderBillAction extends BaseAction{
+
+    public Map detail(Form form){
+        Map data = form.getValuesMap();
+        String O_ID = StringUtils.toString(data.get("O_ID"));
+        data.clear();
+        OrderAction a = new OrderAction();
+        String O_IDS = O_ID;
+        String BILL_UNION = "0";
+        if(a.isUnionBill(O_ID)){
+            O_IDS = a.getUnion(O_ID);
+            BILL_UNION = "2";
+        }
+        else{
+            if(a.isUnion(O_ID)){
+                BILL_UNION = "1";
+            }
+        }
+        IQuery query = getQuery();
+        String sql = "SELECT A.O_P_NAME, A.O_P_PRICE, A.O_P_NUM, A.O_P_DISCOUNT, D.P_RATE_SC, C.UNIT_NAME FROM X_O_P A " +
+                "LEFT JOIN X_P B ON A.O_P_ID = B.P_ID " +
+                "LEFT JOIN X_UNIT C ON B.P_UNIT_ID = C.UNIT_ID " +
+                "LEFT JOIN X_P_COST D ON D.P_ID = B.P_ID " +
+                "WHERE O_P_STATUS IN (1, 3) AND O_ID IN ("+O_IDS+")";
+        List<Map> PS = query.doQuery(sql).tables();
+        float BILL_AMOUNT_P = 0;
+        float BILL_AMOUNT_SC = 0;
+        float BILL_AMOUNT_DESK_FEE = 0;
+        float BILL_AMOUNT_DESK_FEE_MIN = 0;
+        float BILL_AMOUNT_DP = 0;
+        for(int i=0; i<PS.size(); i++){
+            Map P = PS.get(i);
+            float O_P_PRICE = NumberUtils.toFloat(P.get("O_P_PRICE"));
+            float O_P_NUM = NumberUtils.toFloat(P.get("O_P_NUM"));
+            float P_AMOUNT = O_P_PRICE * O_P_NUM;
+            float O_P_DISCOUNT = NumberUtils.toFloat(P.get("O_P_DISCOUNT"));
+            if(O_P_DISCOUNT >= 0){
+                P_AMOUNT = P_AMOUNT * O_P_DISCOUNT / 10;
+            }
+
+            P.put("O_P_AMOUNT", P_AMOUNT);
+            //P.put("O_P_UNIT_NAME", StringUtils.toString(P.get("UNIT_NAME")));
+            BILL_AMOUNT_P += P_AMOUNT;
+            BILL_AMOUNT_SC += O_P_PRICE * NumberUtils.toFloat(P.get("P_RATE_SC")) / 100;
+        }
+        data.put("BILL_P", PS);
+        sql = "SELECT A.O_DESK_ID, A.O_DINE_DT, A.O_DP,B.DESK_NAME FROM X_O A LEFT JOIN X_DESK B ON A.O_DESK_ID=B.DESK_ID WHERE O_ID IN ("+O_IDS+")";
+        List<Map> OS = query.doQuery(sql).tables();
+        String DESK_NAME = "";
+        for(int i=0; i<OS.size(); i++){
+            Map o = OS.get(i);
+            String O_DESK_ID = StringUtils.toString(o.get("O_DESK_ID"));
+            String O_DINE_DT = StringUtils.toString(o.get("O_DINE_DT"));
+            BILL_AMOUNT_DESK_FEE += a.getDeskFee(O_DESK_ID, O_DINE_DT, BILL_AMOUNT_P);
+            BILL_AMOUNT_DESK_FEE_MIN += a.getDeskFeeMin(O_DESK_ID, O_DINE_DT);
+            BILL_AMOUNT_DP += NumberUtils.toFloat(o.get("O_DP"));
+            if(i > 0){
+                DESK_NAME += ",";
+            }
+            DESK_NAME += StringUtils.toString(o.get("DESK_NAME"));
+        }
+        data.put("BILL_DESK_NAME", DESK_NAME);
+        query.free();
+
+        BILL_AMOUNT_DESK_FEE_MIN = BILL_AMOUNT_DESK_FEE_MIN -  BILL_AMOUNT_P > 0 ? BILL_AMOUNT_DESK_FEE_MIN -  BILL_AMOUNT_P : 0;
+
+        data.put("BILL_AMOUNT_P", NumberUtils.clearZero(BILL_AMOUNT_P));
+        data.put("BILL_AMOUNT_SC", BILL_AMOUNT_SC);
+        data.put("BILL_AMOUNT_DESK_FEE", NumberUtils.clearZero(BILL_AMOUNT_DESK_FEE));
+        data.put("BILL_AMOUNT_DESK_FEE_MIN", NumberUtils.clearZero(BILL_AMOUNT_DESK_FEE_MIN));
+        data.put("BILL_AMOUNT_DP", NumberUtils.clearZero(BILL_AMOUNT_DP));
+        data.put("BILL_UNION", BILL_UNION);
+        String BILL_FAVORABLE = "";
+        float BILL_AMOUNT_FAVORABLE = 0;
+        data.put("BILL_FAVORABLE", BILL_FAVORABLE);
+        data.put("BILL_AMOUNT_FAVORABLE", BILL_AMOUNT_FAVORABLE);
+        float BILL_AMOUNT = BILL_AMOUNT_P + BILL_AMOUNT_SC + BILL_AMOUNT_DESK_FEE + BILL_AMOUNT_DESK_FEE_MIN - BILL_AMOUNT_DP - BILL_AMOUNT_FAVORABLE;
+        data.put("BILL_AMOUNT", NumberUtils.clearZero(BILL_AMOUNT));
+        return data;
+    }
+
+    public Map prepare(Form form){
+        Map data = form.getValuesMap();
+        String O_ID = StringUtils.toString(data.get("O_ID"));
+        OrderAction a = new OrderAction();
+        String O_IDS = O_ID;
+        String BILL_UNION = "0";
+        if(a.isUnionBill(O_ID)){
+            O_IDS = a.getUnion(O_ID);
+            BILL_UNION = "1";
+        }
+        IQuery query = getQuery();
+//        String sql = "SELECT A.*, B.P_RATE_SC FROM X_O_P A " +
+//                "LEFT JOIN X_P_COST B ON B.P_ID = A.O_P_ID " +
+//                "WHERE A.O_P_STATUS > 0 AND A.O_ID IN ("+O_IDS+") ORDER BY A.O_P_STATUS, A.O_P_DT_ORDER";
+        String sql = "SELECT A.*, B.P_TYPE_NAME, B.P_TYPE_PARENT, C.O_P_STATUS_NAME, D.O_P_EXT_STATUS_NAME, E.P_TAG_SEASON, E.P_TAG_WEIGHT, E.P_RATE_SC, E.P_DEF_TYPE " +
+                "FROM X_O_P A " +
+                "LEFT JOIN X_P_TYPE B ON A.O_P_TYPE_ID=B.P_TYPE_ID " +
+                "LEFT JOIN X_O_P_STATUS C ON A.O_P_STATUS=C.O_P_STATUS " +
+                "LEFT JOIN X_O_P_EXT_STATUS D ON A.O_P_EXT_STATUS=D.O_P_EXT_STATUS " +
+                "LEFT JOIN X_P E ON A.O_P_ID=E.P_ID " +
+//                "LEFT JOIN X_P_COST F ON F.P_ID = A.O_P_ID " +
+                "WHERE A.O_ID IN ("+O_IDS+") AND A.O_P_PARENT = 0 ORDER BY A.O_P_STATUS, A.O_P_NO ";
+        List<Map> OPS = query.doQuery(sql).tables();
+        float BILL_AMOUNT_P = 0;
+        float BILL_AMOUNT_SC = 0;
+        float BILL_AMOUNT_DESK_FEE = 0;
+        float BILL_AMOUNT_DESK_FEE_MIN = 0;
+        float BILL_AMOUNT_DP = 0;
+        float BILL_AMOUNT_ALL = 0;
+        float BILL_AMOUNT = 0;
+        float BILL_AMOUNT_FAVORABLE_ALL = 0;
+        float BILL_AMOUNT_FAVORABLE_P = 0;
+        float BILL_AMOUNT_FAVORABLE_CASE = 0;
+        float BILL_AMOUNT_FAVORABLE_CLIENT = 0;
+        float BILL_AMOUNT_FAVORABLE_DISCOUNT = 0;
+        for(Map OP : OPS){
+            int O_P_STATUS = NumberUtils.toInt(OP.get("O_P_STATUS"));
+            if(O_P_STATUS < 1){
+                continue;
+            }
+            float O_P_PRICE = NumberUtils.toFloat(OP.get("O_P_PRICE"));
+            float O_P_NUM = NumberUtils.toFloat(OP.get("O_P_NUM"));
+            float O_P_WAY_PRICE = NumberUtils.toFloat(OP.get("O_P_WAY_PRICE"));
+            String O_P_TAG_WEIGHT = StringUtils.toString(OP.get("O_P_TAG_WEIGHT"));
+            float P_AMOUNT = 0;
+            if(O_P_TAG_WEIGHT.equals("1")){
+                O_P_NUM = NumberUtils.toFloat(OP.get("O_P_WEIGHT"));
+                P_AMOUNT = O_P_PRICE * O_P_NUM + O_P_WAY_PRICE;
+            }
+             else{
+                P_AMOUNT = (O_P_PRICE + O_P_WAY_PRICE) * O_P_NUM;
+            }
+            BILL_AMOUNT += P_AMOUNT;
+            float O_P_DISCOUNT = NumberUtils.toFloat(OP.get("O_P_DISCOUNT"));
+            if(O_P_DISCOUNT >= 0){
+                BILL_AMOUNT_FAVORABLE_P +=   P_AMOUNT * (1-(O_P_DISCOUNT / 10));
+                //P_AMOUNT = P_AMOUNT * O_P_DISCOUNT / 10;
+                //sql = "UPDATE X_O_P SET O_P_AMOUNT_REAL = " + (P_AMOUNT * (O_P_DISCOUNT / 10)) + " WHERE O_P_NO = " + StringUtils.toString(OP.get("O_P_NO"));
+                //query.doExec(sql);
+            }
+
+
+            BILL_AMOUNT_P += P_AMOUNT;
+            BILL_AMOUNT_SC += P_AMOUNT * NumberUtils.toFloat(OP.get("P_RATE_SC")) / 100;
+            BILL_AMOUNT += BILL_AMOUNT_SC;
+
+            String O_P_TASTE = StringUtils.toString(OP.get("O_P_TASTE"));
+            String O_P_WAY = StringUtils.toString(OP.get("O_P_WAY"));
+            String O_P_PACK = StringUtils.toString(OP.get("O_P_PACK"));
+            String O_P_REQUIRE = StringUtils.toString(OP.get("O_P_REQUIRE"));
+            String O_P_MEMO = StringUtils.toString(OP.get("O_P_MEMO"));
+            List<String> memos = new ArrayList<String>();
+            if(O_P_PACK.equals("1")){
+                memos.add("打包");
+            }
+            if(O_P_DISCOUNT >= 0){
+                if(O_P_DISCOUNT == 0){
+                    memos.add("赠送");
+                }
+                else{
+                    memos.add(O_P_DISCOUNT + "折");
+                }
+            }
+            if(O_P_WAY.length() > 0){
+                if(O_P_WAY_PRICE > 0){
+                    O_P_WAY += ""+O_P_WAY_PRICE+"元";
+                }
+                memos.add(O_P_WAY);
+            }
+            if(O_P_TASTE.length() > 0){
+                memos.add(O_P_TASTE);
+            }
+            if(O_P_REQUIRE.length() > 0){
+                memos.add(O_P_REQUIRE);
+            }
+            if(O_P_MEMO.length() > 0){
+                memos.add(O_P_MEMO);
+            }
+
+            OP.put("O_P_MEMOS", ArrayUtils.join(",", memos));
+        }
+
+        sql = "SELECT * FROM X_O WHERE O_ID IN ("+O_IDS+")";
+        List<Map> OS = query.doQuery(sql).tables();
+        boolean isNew = true;
+        String BILL_ID = "";
+        for(Map O : OS){
+            if(StringUtils.toString(O.get("O_ID")).equals(O_ID)){
+                BILL_ID = StringUtils.toString(O.get("O_BILL_ID"));
+                //data.put("BILL_O", O);
+            }
+
+            String O_DESK_ID = StringUtils.toString(O.get("O_DESK_ID"));
+            String O_DINE_DT = StringUtils.toString(O.get("O_DINE_DT"));
+            BILL_AMOUNT_DESK_FEE += a.getDeskFee(O_DESK_ID, O_DINE_DT, BILL_AMOUNT_P);
+            BILL_AMOUNT_DESK_FEE_MIN += a.getDeskFeeMin(O_DESK_ID, O_DINE_DT);
+//            System.out.println(BILL_AMOUNT_DESK_FEE_MIN);
+            BILL_AMOUNT_DP += NumberUtils.toFloat(O.get("O_DP"));
+        }
+        BILL_AMOUNT_DP = NumberUtils.clearZero(BILL_AMOUNT_DP);
+        BILL_AMOUNT_P = NumberUtils.clearZero(BILL_AMOUNT_P);
+        BILL_AMOUNT_SC = NumberUtils.clearZero(BILL_AMOUNT_SC);
+        BILL_AMOUNT_DESK_FEE = NumberUtils.clearZero(BILL_AMOUNT_DESK_FEE);
+        BILL_AMOUNT_DESK_FEE_MIN = BILL_AMOUNT_DESK_FEE_MIN -  BILL_AMOUNT_P > 0 ? BILL_AMOUNT_DESK_FEE_MIN -  BILL_AMOUNT_P : 0;
+        BILL_AMOUNT_DESK_FEE_MIN = NumberUtils.clearZero(BILL_AMOUNT_DESK_FEE_MIN);
+
+        BILL_AMOUNT_ALL = BILL_AMOUNT_P + BILL_AMOUNT_SC + BILL_AMOUNT_DESK_FEE + BILL_AMOUNT_DESK_FEE_MIN;
+        BILL_AMOUNT_FAVORABLE_P =   NumberUtils.clearZero(BILL_AMOUNT_FAVORABLE_P);
+        BILL_AMOUNT_FAVORABLE_ALL =  BILL_AMOUNT_FAVORABLE_P;
+        BILL_AMOUNT = BILL_AMOUNT_ALL -  BILL_AMOUNT_DP - BILL_AMOUNT_FAVORABLE_ALL;
+
+        if(BILL_ID.length() > 0){isNew = false;}
+        ITable B = getTable("X_BILL").clearData();
+        ITable BF = getTable("X_BILL_FEE").clearData();
+
+        Map BILL = new HashMap();
+        BILL.put("BILL_AMOUNT_DP", BILL_AMOUNT_DP);
+        BILL.put("BILL_AMOUNT_P", BILL_AMOUNT_P);
+        BILL.put("BILL_AMOUNT_SC",BILL_AMOUNT_SC);
+        BILL.put("BILL_AMOUNT_ALL", BILL_AMOUNT_ALL);
+        BILL.put("BILL_AMOUNT", BILL_AMOUNT);
+        BILL.put("BILL_AMOUNT_FAVORABLE_ALL", BILL_AMOUNT_FAVORABLE_ALL);
+        BILL.put("BILL_AMOUNT_FAVORABLE_P", BILL_AMOUNT_FAVORABLE_P);
+        BILL.put("BILL_UNION", BILL_UNION);
+
+        if(isNew){
+            BILL_ID = B.getMaxID("BILL_ID") + "";
+            BILL.put("BILL_ID", BILL_ID);
+            BILL.put("BILL_DT", DateUtils.getNow());
+            BILL.put("BILL_NO", SystemAction.makeBSN());
+            BILL.put("BILL_STATUS", 0);
+            B.data(BILL).create();
+            sql = "UPDATE X_O SET O_BILL_ID = " + BILL_ID + " WHERE O_ID IN ("+O_IDS+")";
+            query.doExec(sql);
+        }
+        else{
+            sql = "SELECT BILL_DISCOUNT, BILL_AMOUNT_ZERO,BILL_FAVORABLE_CLIENT FROM X_BILL WHERE BILL_ID = " + BILL_ID;
+            String[] ARR = query.doQuery(sql).get();
+            if(ARR.length > 0){
+                float BILL_DISCOUNT = NumberUtils.toFloat(ARR[0]);
+                if(BILL_DISCOUNT > -1 && BILL_DISCOUNT <10){
+                    BILL_AMOUNT_FAVORABLE_DISCOUNT = NumberUtils.clearZero(BILL_AMOUNT_ALL * (10 - BILL_DISCOUNT) / 10);
+                    BILL_AMOUNT_FAVORABLE_P = 0;
+                    BILL_AMOUNT_FAVORABLE_ALL = BILL_AMOUNT_FAVORABLE_DISCOUNT;
+                    BILL_AMOUNT = BILL_AMOUNT_ALL -  BILL_AMOUNT_DP - BILL_AMOUNT_FAVORABLE_ALL;
+                    sql = "UPDATE X_O_P SET O_P_AMOUNT_REAL = (O_P_AMOUNT * "+BILL_DISCOUNT+"/10) WHERE O_ID IN (SELECT O_ID FROM X_O WHERE O_BILL_ID="+BILL_ID+") ";
+                    query.doExec(sql);
+                }
+                else{
+                    String BILL_FAVORABLE_CLIENT = ARR[2];
+                    float CLIENT_TYPE_DISCOUNT = -1;
+                    String CLIENT_TYPE_DISCOUNT_PS = "";
+                    String CASE_TYPE = "";
+                    float CASE_DISCOUNT = -1;
+                    String CASE_DISCOUNT_PS = "";
+                    Map<String, Float> CASE_SO = null;
+                    sql = "SELECT CASE_ID FROM X_BILL_FAVORABLE_CASE WHERE BILL_ID = " + BILL_ID;
+                    String CASE_ID = query.doQuery(sql).getValue();
+                    if(CASE_ID.length() > 0){
+                        sql = "SELECT CASE_TYPE FROM X_FAVORABLE_CASE WHERE CASE_ID = " + CASE_ID;
+                        CASE_TYPE = query.doQuery(sql).getValue();
+                        if(CASE_TYPE.equals("1")){
+                            sql = "SELECT CASE_DISCOUNT, CASE_DISCOUNT_PS FROM X_FAVORABLE_CASE_DISCOUNT WHERE CASE_ID = " + CASE_ID;
+                            String[] CASE_ARR = query.doQuery(sql).get();
+                            if(CASE_ARR.length > 0){
+
+                                if(CASE_ARR[0].length() > 0){
+                                    CASE_DISCOUNT = NumberUtils.toFloat(CASE_ARR[0]);
+                                }
+                                //System.out.println("CASE_DISCOUNT_PS==" + CASE_ARR[1]);
+                                CASE_DISCOUNT_PS = "," + CASE_ARR[1] + ",";
+                            }
+                        }
+                        else if(CASE_TYPE.equals("2")){
+                            sql = "SELECT CASE_SO_P_ID, CASE_SO_P_PRICE FROM X_FAVORABLE_CASE_SO WHERE CASE_ID = " + CASE_ID;
+                            List<Map> listSO = query.doQuery(sql).tables();
+                            if(listSO.size() > 0){
+                                CASE_SO = new Hashtable<String, Float>();
+                                for(Map SO : listSO){
+                                    CASE_SO.put(StringUtils.toString(SO.get("CASE_SO_P_ID")), NumberUtils.toFloat(SO.get("CASE_SO_P_PRICE")));
+                                }
+                            }
+                        }
+                    }
+                    if(BILL_FAVORABLE_CLIENT.length() > 0){
+                        sql = "SELECT CLIENT_TYPE_DISCOUNT, CLIENT_TYPE_DISCOUNT_PS FROM X_CLIENT_TYPE WHERE CLIENT_TYPE_DISCOUNT IS NOT NULL AND CLIENT_TYPE_ID IN (SELECT CLIENT_TYPE_ID FROM X_CLIENT WHERE CLIENT_ID = " + BILL_FAVORABLE_CLIENT + ")";
+                        String[] CLIENT_TYPE_ARR = query.doQuery(sql).get();
+                        if(CLIENT_TYPE_ARR.length > 0){
+                            if(CLIENT_TYPE_ARR[0].length() > 0){
+                                CLIENT_TYPE_DISCOUNT = NumberUtils.toFloat(CLIENT_TYPE_ARR[0]);
+                                CLIENT_TYPE_DISCOUNT_PS = "," + CLIENT_TYPE_ARR[1] + ",";
+                            }
+                        }
+                    }
+                    if(CLIENT_TYPE_DISCOUNT != -1 || CASE_DISCOUNT != -1 || CASE_SO != null){
+                        BILL_AMOUNT_FAVORABLE_P = 0;
+                        for(Map OP : OPS){
+                            String O_P_ID = StringUtils.toString(OP.get("O_P_ID"));
+                            int O_P_STATUS = NumberUtils.toInt(OP.get("O_P_STATUS"));
+                            if(O_P_STATUS < 1){
+                                continue;
+                            }
+                            float O_P_PRICE = NumberUtils.toFloat(OP.get("O_P_PRICE"));
+                            float O_P_NUM = NumberUtils.toFloat(OP.get("O_P_NUM"));
+                            float O_P_WAY_PRICE = NumberUtils.toFloat(OP.get("O_P_WAY_PRICE"));
+                            String O_P_TAG_WEIGHT = StringUtils.toString(OP.get("O_P_TAG_WEIGHT"));
+                            float P_AMOUNT = O_P_PRICE * O_P_NUM;
+                            if(O_P_TAG_WEIGHT.equals("1")){
+                                O_P_NUM = NumberUtils.toFloat(OP.get("O_P_WEIGHT"));
+                                P_AMOUNT = O_P_PRICE * O_P_NUM + O_P_WAY_PRICE;
+                            }
+                            else{
+                                P_AMOUNT = (O_P_PRICE + O_P_WAY_PRICE) * O_P_NUM;
+                            }
+                            float P_AMOUNT_DISCOUNT = 0;
+                            float P_AMOUNT_CLIENT = 0;
+                            float P_AMOUNT_FAVORABLE = 0;
+                            float O_P_DISCOUNT = NumberUtils.toFloat(OP.get("O_P_DISCOUNT"));
+                            if(O_P_DISCOUNT >= 0){
+                                P_AMOUNT_DISCOUNT = P_AMOUNT * (1-O_P_DISCOUNT/10);
+                            }
+                            if(CLIENT_TYPE_DISCOUNT != -1 &&  CLIENT_TYPE_DISCOUNT_PS.indexOf("," + O_P_ID + ",") > -1){
+                                P_AMOUNT_CLIENT = P_AMOUNT * (1-CLIENT_TYPE_DISCOUNT/10);
+                                //P_AMOUNT_CLIENT = P_AMOUNT - P_AMOUNT * CLIENT_TYPE_DISCOUNT / 10;
+                            }
+                            if(CASE_DISCOUNT != -1 || CASE_SO != null){
+                                if(CASE_DISCOUNT != -1){
+
+                                    if(CASE_DISCOUNT_PS.indexOf("," + O_P_ID + ",") > -1){
+                                        P_AMOUNT_FAVORABLE = P_AMOUNT * (1-CASE_DISCOUNT/10);
+//                                            P_AMOUNT_FAVORABLE = P_AMOUNT - P_AMOUNT * CASE_DISCOUNT / 10;
+                                    }
+                                }
+                                else if(CASE_SO != null){
+                                    if(CASE_SO.containsKey(O_P_ID)){
+                                        P_AMOUNT_FAVORABLE = P_AMOUNT - CASE_SO.get(O_P_ID);
+                                    }
+                                }
+                            }
+                            if(P_AMOUNT_DISCOUNT > P_AMOUNT_CLIENT && P_AMOUNT_DISCOUNT > P_AMOUNT_FAVORABLE){
+                                BILL_AMOUNT_FAVORABLE_P += P_AMOUNT_DISCOUNT;
+                                sql = "UPDATE X_O_P SET O_P_AMOUNT_REAL = " + (P_AMOUNT - P_AMOUNT_DISCOUNT) + " WHERE O_P_NO = " + StringUtils.toString(OP.get("O_P_NO"));
+                                query.doExec(sql);
+                            }
+                            else if(P_AMOUNT_CLIENT > P_AMOUNT_DISCOUNT && P_AMOUNT_CLIENT >P_AMOUNT_FAVORABLE){
+                                BILL_AMOUNT_FAVORABLE_CLIENT += P_AMOUNT_CLIENT;
+                                sql = "UPDATE X_O_P SET O_P_AMOUNT_REAL = " + (P_AMOUNT - P_AMOUNT_CLIENT) + " WHERE O_P_NO = " + StringUtils.toString(OP.get("O_P_NO"));
+                                query.doExec(sql);
+                            }
+                            else if(P_AMOUNT_FAVORABLE > P_AMOUNT_DISCOUNT && P_AMOUNT_FAVORABLE >P_AMOUNT_CLIENT){
+                                BILL_AMOUNT_FAVORABLE_CASE += P_AMOUNT_FAVORABLE;
+                                sql = "UPDATE X_O_P SET O_P_AMOUNT_REAL = " + (P_AMOUNT - P_AMOUNT_FAVORABLE) + " WHERE O_P_NO = " + StringUtils.toString(OP.get("O_P_NO"));
+                                query.doExec(sql);
+                            }
+                        }
+                        BILL_AMOUNT_FAVORABLE_CLIENT = NumberUtils.clearZero(BILL_AMOUNT_FAVORABLE_CLIENT);
+                        BILL_AMOUNT_FAVORABLE_P = NumberUtils.clearZero(BILL_AMOUNT_FAVORABLE_P);
+                        BILL_AMOUNT_FAVORABLE_CASE = NumberUtils.clearZero(BILL_AMOUNT_FAVORABLE_CASE);
+                        BILL_AMOUNT_FAVORABLE_ALL =  BILL_AMOUNT_FAVORABLE_P + BILL_AMOUNT_FAVORABLE_CLIENT + BILL_AMOUNT_FAVORABLE_CASE;
+                        BILL_AMOUNT = BILL_AMOUNT_ALL -  BILL_AMOUNT_DP - BILL_AMOUNT_FAVORABLE_ALL;
+                    }
+                }
+                float BILL_AMOUNT_ZERO = NumberUtils.toFloat(ARR[1]);
+                if(BILL_AMOUNT_ZERO > 0){
+                    BILL_AMOUNT -= BILL_AMOUNT_ZERO;
+                    BILL_AMOUNT_FAVORABLE_ALL += BILL_AMOUNT_ZERO;
+                }
+                BILL.put("BILL_AMOUNT", BILL_AMOUNT);
+                BILL.put("BILL_AMOUNT_FAVORABLE_P", BILL_AMOUNT_FAVORABLE_P);
+                BILL.put("BILL_AMOUNT_FAVORABLE_CLIENT", BILL_AMOUNT_FAVORABLE_CLIENT);
+                BILL.put("BILL_AMOUNT_FAVORABLE_CASE", BILL_AMOUNT_FAVORABLE_CASE);
+                BILL.put("BILL_AMOUNT_FAVORABLE_DISCOUNT", BILL_AMOUNT_FAVORABLE_DISCOUNT);
+                BILL.put("BILL_AMOUNT_FAVORABLE_ALL", BILL_AMOUNT_FAVORABLE_ALL);
+            }
+            B.data(BILL).where(B.column("BILL_ID").eq(BILL_ID)).update();
+        }
+        Map<Integer, Float> BILL_FEE = new HashMap<Integer, Float>();
+        if(BILL_AMOUNT_SC > 0){BILL_FEE.put(1, BILL_AMOUNT_SC);}
+        if(BILL_AMOUNT_DESK_FEE > 0){BILL_FEE.put(2, BILL_AMOUNT_DESK_FEE);}
+        if(BILL_AMOUNT_DESK_FEE_MIN > 0){BILL_FEE.put(3, BILL_AMOUNT_DESK_FEE_MIN);}
+        if(isNew){
+            for(int i=1;i<5;i++){
+                if(!BILL_FEE.containsKey(i)){continue;}
+                Map m = new Hashtable();
+                m.put("BILL_ID", BILL_ID);
+                m.put("BILL_FEE_ID", BF.getMaxID("BILL_FEE_ID"));
+                m.put("BILL_FEE_TYPE", i);
+                m.put("BILL_FEE", BILL_FEE.get(i));
+                BF.data(m).create();
+            }
+        }
+        else{
+            for(int i=1;i<5;i++){
+                if(!BILL_FEE.containsKey(i)){
+                    sql = "DELETE FROM X_BILL_FEE WHERE BILL_ID = "+BILL_ID+" AND BILL_FEE_TYPE =" + i;
+                    query.doExec(sql);
+                }
+                else{
+                    sql = "SELECT * FROM X_BILL_FEE WHERE BILL_ID = " + BILL_ID + " AND BILL_FEE_TYPE = " + i;
+                    if(query.rowCount(sql) > 0){
+                        sql = "UPDATE X_BILL_FEE SET BILL_FEE = "+BILL_FEE.get(i)+" WHERE BILL_ID = " + BILL_ID + " AND BILL_FEE_TYPE = " + i;
+                        query.doExec(sql);
+                    }
+                    else{
+                        Map m = new Hashtable();
+                        m.put("BILL_ID", BILL_ID);
+                        m.put("BILL_FEE_ID", BF.getMaxID("BILL_FEE_ID"));
+                        m.put("BILL_FEE_TYPE", i);
+                        m.put("BILL_FEE", BILL_FEE.get(i));
+                        BF.data(m).create();
+                    }
+                }
+            }
+        }
+        sql = "SELECT * FROM X_BILL WHERE BILL_ID = " + BILL_ID;
+        BILL = query.doQuery(sql).table();
+        sql = "SELECT A.*, B.PAY_TYPE_NAME AS BILL_PAY_TYPE_NAME FROM X_BILL_PAY A LEFT JOIN X_PAY_TYPE B ON A.BILL_PAY_TYPE = B.PAY_TYPE_ID WHERE A.BILL_ID = " + BILL_ID + " ORDER BY A.BILL_PAY_TYPE";
+        List<Map> BILL_PAY = query.doQuery(sql).tables();
+        sql = "SELECT A.* FROM X_BILL_UNDERTAKE A WHERE A.BILL_ID = " + BILL_ID + " ORDER BY A.UNDERTAKE_TYPE";
+        List<Map> BILL_UNDERTAKE = query.doQuery(sql).tables();
+        sql = "SELECT A.* FROM X_BILL_FAVORABLE_CASE A WHERE A.BILL_ID = " + BILL_ID + " ORDER BY A.CASE_ID";
+        List<Map> BILL_FAVORABLE_CASE = query.doQuery(sql).tables();
+        sql = "SELECT A.* FROM X_BILL_FEE A WHERE A.BILL_ID = " + BILL_ID + " ORDER BY A.BILL_FEE_TYPE";
+        List<Map> BILL_FEES = query.doQuery(sql).tables();
+        query.free();
+        data.clear();
+        data.putAll(BILL);
+        data.put("BILL_PAY", BILL_PAY);
+        data.put("BILL_UNDERTAKE", BILL_UNDERTAKE);
+        data.put("BILL_FAVORABLE_CASE", BILL_FAVORABLE_CASE);
+        data.put("BILL_FEE", BILL_FEES);
+        data.put("BILL_OP", OPS);
+        return data;
+    }
+
+    public int addPay(Form form){
+        Map data = form.getValuesMap();
+        String BILL_ID = StringUtils.toString(data.get("BILL_ID"));
+        String BILL_PAY_TYPE = StringUtils.toString(data.get("BILL_PAY_TYPE"));
+        String BILL_PAY_CLIENT_ID = StringUtils.toString(data.get("BILL_PAY_CLIENT_ID"));
+         if(BILL_ID.length() == 0 || BILL_PAY_TYPE.length() == 0){
+            return CloverManager.CODE_FAILED;
+        }
+        if(BILL_PAY_TYPE.equals("0") && BILL_PAY_CLIENT_ID.length() == 0){
+            return  CloverManager.CODE_FAILED;
+        }
+        String BILL_PAY_AMOUNT = StringUtils.toString(data.get("BILL_PAY_AMOUNT"));
+        IQuery query = getQuery();
+        String sql = "";
+        if(BILL_PAY_TYPE.equals("0")){
+            sql = "SELECT * FROM X_BILL_PAY WHERE BILL_ID = " + BILL_ID + " AND BILL_PAY_TYPE = " + BILL_PAY_TYPE + " AND BILL_PAY_CLIENT_ID = " + BILL_PAY_CLIENT_ID;
+        }
+        else{
+            sql = "SELECT * FROM X_BILL_PAY WHERE BILL_ID = " + BILL_ID + " AND BILL_PAY_TYPE = " + BILL_PAY_TYPE;
+        }
+
+        if(query.rowCount(sql) > 0){
+            sql = "UPDATE X_BILL_PAY SET BILL_PAY_AMOUNT = BILL_PAY_AMOUNT + " + BILL_PAY_AMOUNT + " WHERE BILL_ID = " + BILL_ID + " AND BILL_PAY_TYPE = " + BILL_PAY_TYPE;
+        }
+        else{
+            if(BILL_PAY_TYPE.equals("0")){
+                sql = "INSERT INTO X_BILL_PAY (BILL_ID, BILL_PAY_TYPE, BILL_PAY_AMOUNT,BILL_PAY_CLIENT_ID) VALUES ("+BILL_ID+", "+BILL_PAY_TYPE+", "+BILL_PAY_AMOUNT+", "+BILL_PAY_CLIENT_ID+")";
+            }
+            else{
+                sql = "INSERT INTO X_BILL_PAY (BILL_ID, BILL_PAY_TYPE, BILL_PAY_AMOUNT) VALUES ("+BILL_ID+", "+BILL_PAY_TYPE+", "+BILL_PAY_AMOUNT+")";
+            }
+
+        }
+        int result = query.doExec(sql);
+        if(result < 0){
+            query.free();
+            return CloverManager.CODE_FAILED;
+        }
+        sql = "UPDATE X_BILL SET BILL_DT_FINISH=NULL, BILL_AMOUNT_PAY = (SELECT SUM(BILL_PAY_AMOUNT) FROM X_BILL_PAY WHERE BILL_ID = "+BILL_ID+") WHERE BILL_ID = " + BILL_ID;
+        result = query.doExec(sql);
+        query.free();
+        if(result < 0){
+            return CloverManager.CODE_FAILED;
+        }
+//        if(BILL_PAY_TYPE.equals("1")){
+//            PrintManager.getInstance().openMoneyBox();
+//        }
+        return CloverManager.CODE_SUCCESS;
+    }
+
+    public int addPay( String BILL_ID, String BILL_PAY_TYPE, String BILL_PAY_AMOUNT, String BILL_PAY_CLIENT_ID){
+
+        IQuery query = getQuery();
+        String sql = "";
+        if(BILL_PAY_TYPE.equals("0")){
+            sql = "SELECT * FROM X_BILL_PAY WHERE BILL_ID = " + BILL_ID + " AND BILL_PAY_TYPE = " + BILL_PAY_TYPE + " AND BILL_PAY_CLIENT_ID = " + BILL_PAY_CLIENT_ID;
+        }
+        else{
+            sql = "SELECT * FROM X_BILL_PAY WHERE BILL_ID = " + BILL_ID + " AND BILL_PAY_TYPE = " + BILL_PAY_TYPE;
+        }
+
+        if(query.rowCount(sql) > 0){
+            sql = "UPDATE X_BILL_PAY SET BILL_PAY_AMOUNT = BILL_PAY_AMOUNT + " + BILL_PAY_AMOUNT + " WHERE BILL_ID = " + BILL_ID + " AND BILL_PAY_TYPE = " + BILL_PAY_TYPE;
+        }
+        else{
+            if(BILL_PAY_TYPE.equals("0")){
+                sql = "INSERT INTO X_BILL_PAY (BILL_ID, BILL_PAY_TYPE, BILL_PAY_AMOUNT,BILL_PAY_CLIENT_ID) VALUES ("+BILL_ID+", "+BILL_PAY_TYPE+", "+BILL_PAY_AMOUNT+", "+BILL_PAY_CLIENT_ID+")";
+            }
+            else{
+                sql = "INSERT INTO X_BILL_PAY (BILL_ID, BILL_PAY_TYPE, BILL_PAY_AMOUNT) VALUES ("+BILL_ID+", "+BILL_PAY_TYPE+", "+BILL_PAY_AMOUNT+")";
+            }
+        }
+        int result = query.doExec(sql);
+        if(result < 0){
+            query.free();
+            return CloverManager.CODE_FAILED;
+        }
+        sql = "UPDATE X_BILL SET BILL_DT_FINISH=NULL, BILL_AMOUNT_PAY = (SELECT SUM(BILL_PAY_AMOUNT) FROM X_BILL_PAY WHERE BILL_ID = "+BILL_ID+") WHERE BILL_ID = " + BILL_ID;
+        result = query.doExec(sql);
+        query.free();
+        if(result < 0){
+            return CloverManager.CODE_FAILED;
+        }
+        return CloverManager.CODE_SUCCESS;
+    }
+
+    public int deletePay(Form form){
+        Map data = form.getValuesMap();
+        String BILL_ID = StringUtils.toString(data.get("BILL_ID"));
+        String BILL_PAY_TYPE = StringUtils.toString(data.get("BILL_PAY_TYPE"));
+         if(BILL_ID.length() == 0 || BILL_PAY_TYPE.length() == 0){
+            return CloverManager.CODE_FAILED;
+        }
+        IQuery query = getQuery();
+        String sql = "SELECT BILL_PAY_AMOUNT FROM X_BILL_PAY WHERE BILL_ID = " + BILL_ID + " AND BILL_PAY_TYPE = " + BILL_PAY_TYPE;
+        String BILL_PAY_AMOUNT = query.doQuery(sql).getValue();
+        if(BILL_PAY_AMOUNT.length() == 0){
+            query.free();
+            return CloverManager.CODE_FAILED;
+        }
+        sql = "DELETE FROM X_BILL_PAY WHERE BILL_ID = " + BILL_ID + " AND BILL_PAY_TYPE = " + BILL_PAY_TYPE;
+        int result = query.doExec(sql);
+        if(result < 0){
+            query.free();
+            return CloverManager.CODE_FAILED;
+        }
+        sql = "UPDATE X_BILL SET BILL_DT_FINISH=NULL, BILL_AMOUNT_PAY = BILL_AMOUNT_PAY - "+BILL_PAY_AMOUNT+" WHERE BILL_ID = " + BILL_ID;
+        result = query.doExec(sql);
+        query.free();
+        if(result < 0){
+            return CloverManager.CODE_FAILED;
+        }
+        return CloverManager.CODE_SUCCESS;
+    }
+
+    public int invoice(Form form){
+
+        Map data = form.getValuesMap();
+        String BILL_ID = StringUtils.toString(data.get("BILL_ID"));
+        String BILL_AMOUNT_INVOICE = StringUtils.toString(data.get("BILL_AMOUNT_INVOICE"));
+         if(BILL_ID.length() == 0 || BILL_AMOUNT_INVOICE.length() == 0){
+            return CloverManager.CODE_FAILED;
+        }
+        IQuery query = getQuery();
+
+        String sql = "UPDATE X_BILL SET BILL_AMOUNT_INVOICE = "+BILL_AMOUNT_INVOICE+" WHERE BILL_ID = " + BILL_ID;
+        int result = query.doExec(sql);
+        query.free();
+        if(result < 0){
+            return CloverManager.CODE_FAILED;
+        }
+        return CloverManager.CODE_SUCCESS;
+    }
+
+    public int clearZero(Form form){
+        if(!isLogin()){
+            return CloverManager.CODE_FAILED;
+        }
+        Map data = form.getValuesMap();
+        String BILL_ID = StringUtils.toString(data.get("BILL_ID"));
+        String BILL_AMOUNT_ZERO = StringUtils.toString(data.get("BILL_AMOUNT_ZERO"));
+         if(BILL_ID.length() == 0 || BILL_AMOUNT_ZERO.length() == 0){
+            return CloverManager.CODE_FAILED;
+        }
+        IQuery query = getQuery();
+
+        String sql = "UPDATE X_BILL SET BILL_DT_FINISH=NULL, BILL_AMOUNT_ZERO = "+BILL_AMOUNT_ZERO+" WHERE BILL_ID = " + BILL_ID;
+        int result = query.doExec(sql);
+        query.free();
+        if(result < 0){
+            return CloverManager.CODE_FAILED;
+        }
+        LogAction.add(getClient(), 41, null, null, BILL_ID, BILL_AMOUNT_ZERO);
+        return CloverManager.CODE_SUCCESS;
+    }
+
+    public int discount(Form form){
+        if(!isLogin()){
+            return CloverManager.CODE_FAILED;
+        }
+        Map data = form.getValuesMap();
+        String BILL_ID = StringUtils.toString(data.get("BILL_ID"));
+        String BILL_REASON = StringUtils.toString(data.get("BILL_REASON"));
+        float BILL_DISCOUNT = NumberUtils.toFloat(data.get("BILL_DISCOUNT"));
+         if(BILL_ID.length() == 0 || BILL_DISCOUNT < 0){
+            return CloverManager.CODE_FAILED;
+        }
+        IQuery query = getQuery();
+        String sql = "UPDATE X_BILL SET BILL_DT_FINISH=NULL, BILL_REASON='"+BILL_REASON+"', BILL_DISCOUNT = "+BILL_DISCOUNT+" WHERE BILL_ID = " + BILL_ID;
+        int result = query.doExec(sql);
+        if(result < 0){
+            query.free();
+            return CloverManager.CODE_FAILED;
+        }
+        LogAction.add(getClient(), 43, null, null, BILL_ID, BILL_DISCOUNT + "");
+        String[] UNDERTAKE_ACCOUNT = StringUtils.toString(data.get("UNDERTAKE_ACCOUNT")).split(",");
+        String[] UNDERTAKE_ACCOUNT_NAME = StringUtils.toString(data.get("UNDERTAKE_ACCOUNT_NAME")).split(",");
+        String[] UNDERTAKE_RATE = StringUtils.toString(data.get("UNDERTAKE_RATE")).split(",");
+        if(UNDERTAKE_ACCOUNT.length > 0){
+            ITable T = getTable("X_BILL_UNDERTAKE").clearData();
+            sql = "DELETE FROM X_BILL_UNDERTAKE WHERE BILL_ID = " + BILL_ID + " AND UNDERTAKE_TYPE = 3";
+            query.doExec(sql);
+            for(int i=0;i<UNDERTAKE_ACCOUNT.length;i++){
+                Map m = new HashMap();
+                m.put("BILL_ID", BILL_ID);
+                m.put("UNDERTAKE_TYPE", 3);
+                m.put("UNDERTAKE_ACCOUNT", UNDERTAKE_ACCOUNT[i]);
+                if(i< UNDERTAKE_ACCOUNT_NAME.length){
+                    m.put("UNDERTAKE_ACCOUNT_NAME", UNDERTAKE_ACCOUNT_NAME[i]);
+                }
+                if(i< UNDERTAKE_RATE.length){
+                    m.put("UNDERTAKE_RATE", NumberUtils.toFloat(UNDERTAKE_RATE[i]));
+                }
+                T.data(m).create();
+            }
+        }
+        sql = "UPDATE X_O_P SET O_P_DISCOUNT = -1 WHERE O_ID IN (SELECT O_ID FROM X_O WHERE O_BILL_ID = "+BILL_ID+")";
+        query.doExec(sql);
+        query.free();
+        return CloverManager.CODE_SUCCESS;
+    }
+
+    public int discountCancel(Form form){
+        Map data = form.getValuesMap();
+        String BILL_ID = StringUtils.toString(data.get("BILL_ID"));
+
+        IQuery query = getQuery();
+        String sql = "UPDATE X_BILL SET BILL_DT_FINISH=NULL, BILL_REASON=NULL, BILL_DISCOUNT = -1 WHERE BILL_ID = " + BILL_ID;
+        int result = query.doExec(sql);
+        if(result < 0){
+            query.free();
+            return CloverManager.CODE_FAILED;
+        }
+        sql = "UPDATE X_O_P SET O_P_AMOUNT_REAL = O_P_AMOUNT WHERE O_P_STATUS > 0 AND O_P_DISCOUNT = -1 AND O_ID IN (SELECT O_ID FROM X_O WHERE O_BILL_ID = "+BILL_ID+")";
+        query.doExec(sql);
+        sql = "DELETE FROM X_BILL_UNDERTAKE WHERE BILL_ID = " + BILL_ID + " AND UNDERTAKE_TYPE = 3";
+        query.doExec(sql);
+        query.free();
+        return CloverManager.CODE_SUCCESS;
+    }
+
+    public int free(Form form){
+        if(!isLogin()){
+            return CloverManager.CODE_FAILED;
+        }
+        Map data = form.getValuesMap();
+        String BILL_ID = StringUtils.toString(data.get("BILL_ID"));
+        String BILL_REASON = StringUtils.toString(data.get("BILL_REASON"));
+         if(BILL_ID.length() == 0){
+            return CloverManager.CODE_FAILED;
+        }
+        String ACCOUNT_ID = StringUtils.toString(getClient().getCookies().get("ACCOUNT_ID"));
+        String ACCOUNT_NAME = StringUtils.toString(getClient().getCookies().get("ACCOUNT_NAME"));
+        if(ACCOUNT_ID.length() == 0 || ACCOUNT_NAME.length() == 0){
+            return CloverManager.CODE_FAILED;
+        }
+        IQuery query = getQuery();
+        String NOW = DateUtils.getNow();
+        String sql = "UPDATE X_BILL SET BILL_MAKER='"+ACCOUNT_NAME+"', BILL_MAKER_ID="+ACCOUNT_ID+",BILL_REASON='"+BILL_REASON+"', BILL_STATUS = 4, BILL_DT_FINISH = '"+NOW+"' WHERE BILL_ID = " + BILL_ID;
+        int result = query.doExec(sql);
+        if(result < 0){
+            query.free();
+            return CloverManager.CODE_FAILED;
+        }
+        sql = "UPDATE X_O SET O_STATUS = 6, O_DT_BILL = '"+NOW+"' WHERE O_BILL_ID = " + BILL_ID;
+        result = query.doExec(sql);
+        if(result < 0){
+            query.free();
+            return CloverManager.CODE_FAILED;
+        }
+        checkUnion(BILL_ID);
+        String[] UNDERTAKE_ACCOUNT = StringUtils.toString(data.get("UNDERTAKE_ACCOUNT")).split(",");
+        String[] UNDERTAKE_ACCOUNT_NAME = StringUtils.toString(data.get("UNDERTAKE_ACCOUNT_NAME")).split(",");
+        String[] UNDERTAKE_RATE = StringUtils.toString(data.get("UNDERTAKE_RATE")).split(",");
+        if(UNDERTAKE_ACCOUNT.length > 0){
+            ITable T = getTable("X_BILL_UNDERTAKE").clearData();
+            sql = "DELETE FROM X_BILL_UNDERTAKE WHERE BILL_ID = " + BILL_ID + " AND UNDERTAKE_TYPE = 2";
+            query.doExec(sql);
+            for(int i=0;i<UNDERTAKE_ACCOUNT.length;i++){
+                Map m = new HashMap();
+                m.put("BILL_ID", BILL_ID);
+                m.put("UNDERTAKE_TYPE", 2);
+                m.put("UNDERTAKE_ACCOUNT", UNDERTAKE_ACCOUNT[i]);
+                if(i< UNDERTAKE_ACCOUNT_NAME.length){
+                    m.put("UNDERTAKE_ACCOUNT_NAME", UNDERTAKE_ACCOUNT_NAME[i]);
+                }
+                if(i< UNDERTAKE_RATE.length){
+                    m.put("UNDERTAKE_RATE", NumberUtils.toFloat(UNDERTAKE_RATE[i]));
+                }
+                T.data(m).create();
+            }
+        }
+        LogAction.add(getClient(), 42, null, null, BILL_ID);
+        SaleAction.sale(BILL_ID, NOW);
+
+        Map params = new Hashtable();
+        params.put("BILL_ID", BILL_ID);
+        params.put("MAKER", ACCOUNT_ID);
+        PrintManager.getInstance().addJob(PrintJob.COMMAND_ORDER_BILL_FREE,params);
+        query.free();
+        return CloverManager.CODE_SUCCESS;
+    }
+
+    public int lost(Form form){
+        if(!isLogin()){
+            return CloverManager.CODE_FAILED;
+        }
+        Map data = form.getValuesMap();
+        String BILL_ID = StringUtils.toString(data.get("BILL_ID"));
+        String BILL_MEMO = StringUtils.toString(data.get("BILL_MEMO"));
+         if(BILL_ID.length() == 0){
+            return CloverManager.CODE_FAILED;
+        }
+        String ACCOUNT_ID = StringUtils.toString(getClient().getCookies().get("ACCOUNT_ID"));
+        String ACCOUNT_NAME = StringUtils.toString(getClient().getCookies().get("ACCOUNT_NAME"));
+        if(ACCOUNT_ID.length() == 0 || ACCOUNT_NAME.length() == 0){
+            return CloverManager.CODE_FAILED;
+        }
+        IQuery query = getQuery();
+        String NOW = DateUtils.getNow();
+        String sql = "UPDATE X_BILL SET BILL_MAKER='"+ACCOUNT_NAME+"', BILL_MAKER_ID="+ACCOUNT_ID+",BILL_MEMO='"+BILL_MEMO+"', BILL_STATUS = 3, BILL_DT_FINISH = '"+NOW+"' WHERE BILL_ID = " + BILL_ID;
+        int result = query.doExec(sql);
+        if(result < 0){
+            query.free();
+            return CloverManager.CODE_FAILED;
+        }
+        sql = "UPDATE X_O SET O_STATUS = 10, O_DT_FINISH = '"+NOW+"' WHERE O_BILL_ID = " + BILL_ID;
+        result = query.doExec(sql);
+        query.doExec("UPDATE X_O_P SET O_P_STATUS=10 WHERE O_P_STATUS > 0 AND O_ID IN (SELECT O_ID FROM X_O WHERE O_BILL_ID = " + BILL_ID + ")");
+        if(result < 0){
+            query.free();
+            return CloverManager.CODE_FAILED;
+        }
+        checkUnion(BILL_ID);
+        String[] UNDERTAKE_ACCOUNT = StringUtils.toString(data.get("UNDERTAKE_ACCOUNT")).split(",");
+        String[] UNDERTAKE_ACCOUNT_NAME = StringUtils.toString(data.get("UNDERTAKE_ACCOUNT_NAME")).split(",");
+        String[] UNDERTAKE_RATE = StringUtils.toString(data.get("UNDERTAKE_RATE")).split(",");
+        if(UNDERTAKE_ACCOUNT.length > 0){
+            ITable T = getTable("X_BILL_UNDERTAKE").clearData();
+            sql = "DELETE FROM X_BILL_UNDERTAKE WHERE BILL_ID = " + BILL_ID + " AND UNDERTAKE_TYPE = 1";
+            query.doExec(sql);
+            for(int i=0;i<UNDERTAKE_ACCOUNT.length;i++){
+                Map m = new HashMap();
+                m.put("BILL_ID", BILL_ID);
+                m.put("UNDERTAKE_TYPE", 1);
+                m.put("UNDERTAKE_ACCOUNT", UNDERTAKE_ACCOUNT[i]);
+                if(i< UNDERTAKE_ACCOUNT_NAME.length){
+                    m.put("UNDERTAKE_ACCOUNT_NAME", UNDERTAKE_ACCOUNT_NAME[i]);
+                }
+                if(i< UNDERTAKE_RATE.length){
+                    m.put("UNDERTAKE_RATE", NumberUtils.toFloat(UNDERTAKE_RATE[i]));
+                }
+                T.data(m).create();
+            }
+        }
+        LogAction.add(getClient(), 48, null, null, BILL_ID);
+        SaleAction.sale(BILL_ID, NOW);
+        Map params = new Hashtable();
+        params.put("BILL_ID", BILL_ID);
+        PrintManager.getInstance().addJob(PrintJob.COMMAND_ORDER_BILL_LOST,params);
+        query.free();
+        return CloverManager.CODE_SUCCESS;
+    }
+
+    public int checkout(Form form){
+        if(!isLogin()){
+            return CloverManager.CODE_FAILED;
+        }
+        Map data = form.getValuesMap();
+        String BILL_ID = StringUtils.toString(data.get("BILL_ID"));
+        String IS_CLEAR = StringUtils.toString(data.get("IS_CLEAR"));
+        if(BILL_ID.length() == 0){
+            return CloverManager.CODE_FAILED;
+        }
+        String ACCOUNT_ID = StringUtils.toString(getClient().getCookies().get("ACCOUNT_ID"));
+        String ACCOUNT_NAME = StringUtils.toString(getClient().getCookies().get("ACCOUNT_NAME"));
+        if(ACCOUNT_ID.length() == 0 || ACCOUNT_NAME.length() == 0){
+            return CloverManager.CODE_FAILED;
+        }
+        IQuery query = getQuery();
+        String NOW = DateUtils.getNow();
+        String sql = "UPDATE X_BILL SET BILL_ARREAR_CLIENT = NULL, " +
+                "BILL_ARREAR_CLIENT_SIGN = NULL, " +
+                "BILL_ARREAR_PROCESS_DT= NULL, " +
+                "BILL_ARREAR_PROCESSOR = NULL, " +
+                "BILL_ARREAR_PROCESSOR_ID = NULL, " +
+                "BILL_MAKER = '"+ACCOUNT_NAME+"', " +
+                "BILL_MAKER_ID = "+ACCOUNT_ID+", " +
+                "BILL_STATUS = 10, " +
+                "BILL_DT_FINISH = '"+NOW+"' " +
+                "WHERE BILL_ID = " + BILL_ID;
+        int result = query.doExec(sql);
+        if(result < 0){
+            query.free();
+            return CloverManager.CODE_FAILED;
+        }
+        if(IS_CLEAR.equals("1")){
+            sql = "UPDATE X_O SET O_STATUS = 10, O_DT_BILL = '"+NOW+"', O_DT_FINISH = '"+NOW+"' WHERE O_BILL_ID = " + BILL_ID;
+            query.doExec(sql);
+            query.doExec("UPDATE X_O_P SET O_P_STATUS=10 WHERE O_P_STATUS > 0 AND O_ID IN (SELECT O_ID FROM X_O WHERE O_BILL_ID = " + BILL_ID + ")");
+        }
+        else{
+            sql = "UPDATE X_O SET O_STATUS = 6, O_DT_BILL = '"+NOW+"' WHERE O_BILL_ID = " + BILL_ID;
+            query.doExec(sql);
+        }
+        checkUnion(BILL_ID);
+        query.free();
+        LogAction.add(getClient(), 40, null, null, BILL_ID);
+        SaleAction.sale(BILL_ID, NOW);
+        Map params = new Hashtable();
+        params.put("BILL_ID", BILL_ID);
+        PrintManager.getInstance().addJob(PrintJob.COMMAND_ORDER_BILL,params);
+        return CloverManager.CODE_SUCCESS;
+    }
+
+    public void checkUnion(String BILL_ID){
+        IQuery query = getQuery();
+        String sql = "SELECT * FROM X_O WHERE O_BILL_ID = " + BILL_ID + " AND O_UNION_ID IS NOT NULL";
+        if(query.rowCount(sql) == 1){
+            sql = "SELECT O_ID FROM X_O WHERE O_BILL_ID = " + BILL_ID + " AND O_UNION_ID IS NOT NULL";
+            String O_ID = query.doQuery(sql).getValue();
+            OrderAction a = new OrderAction();
+            a.breakUnion(O_ID);
+        }
+        query.free();
+    }
+
+    public int hang(Form form){
+        if(!isLogin()){
+            return CloverManager.CODE_FAILED;
+        }
+        Map data = form.getValuesMap();
+        String BILL_ID = StringUtils.toString(data.get("BILL_ID"));
+         if(BILL_ID.length() == 0){
+            return CloverManager.CODE_FAILED;
+        }
+        String ACCOUNT_ID = StringUtils.toString(getClient().getCookies().get("ACCOUNT_ID"));
+        String ACCOUNT_NAME = StringUtils.toString(getClient().getCookies().get("ACCOUNT_NAME"));
+        if(ACCOUNT_ID.length() == 0 || ACCOUNT_NAME.length() == 0){
+            return CloverManager.CODE_FAILED;
+        }
+        IQuery query = getQuery();
+        String NOW = DateUtils.getNow();
+        String sql = "UPDATE X_BILL SET BILL_MAKER='"+ACCOUNT_NAME+"', BILL_MAKER_ID="+ACCOUNT_ID+", BILL_STATUS = 1,BILL_DT_FINISH = '"+NOW+"' WHERE BILL_ID = " + BILL_ID;
+        int result = query.doExec(sql);
+        if(result < 0){
+            query.free();
+            return CloverManager.CODE_FAILED;
+        }
+        sql = "UPDATE X_O SET O_STATUS = 10, O_DT_FINISH = '"+NOW+"' WHERE O_BILL_ID = " + BILL_ID;
+        result = query.doExec(sql);
+        query.doExec("UPDATE X_O_P SET O_P_STATUS=10 WHERE O_P_STATUS > 0 AND O_ID IN (SELECT O_ID FROM X_O WHERE O_BILL_ID = " + BILL_ID + ")");
+        if(result < 0){
+            query.free();
+            return CloverManager.CODE_FAILED;
+        }
+        checkUnion(BILL_ID);
+        query.free();
+        LogAction.add(getClient(), 47, null, null, BILL_ID);
+        SaleAction.sale(BILL_ID, NOW);
+        return CloverManager.CODE_SUCCESS;
+    }
+
+    public int arrear(Form form){
+        if(!isLogin()){
+            return CloverManager.CODE_FAILED;
+        }
+        Map data = form.getValuesMap();
+        String BILL_ID = StringUtils.toString(data.get("BILL_ID"));
+        String BILL_ARREAR_CLIENT = StringUtils.toString(data.get("BILL_ARREAR_CLIENT"));
+        String BILL_ARREAR_CLIENT_SIGN = StringUtils.toString(data.get("BILL_ARREAR_CLIENT_SIGN"));
+         if(BILL_ID.length() == 0 || BILL_ARREAR_CLIENT.length() == 0 || BILL_ARREAR_CLIENT_SIGN.length() == 0){
+            return CloverManager.CODE_FAILED;
+        }
+        String ACCOUNT_ID = StringUtils.toString(getClient().getCookies().get("ACCOUNT_ID"));
+        String ACCOUNT_NAME = StringUtils.toString(getClient().getCookies().get("ACCOUNT_NAME"));
+        if(ACCOUNT_ID.length() == 0 || ACCOUNT_NAME.length() == 0){
+            return CloverManager.CODE_FAILED;
+        }
+        IQuery query = getQuery();
+        String NOW = DateUtils.getNow();
+
+        String sql = "UPDATE X_BILL SET BILL_MAKER='"+ACCOUNT_NAME+"', " +
+                "BILL_MAKER_ID="+ACCOUNT_ID+", " +
+                "BILL_STATUS = 2, " +
+                "BILL_DT_FINISH = '"+NOW+"', " +
+                "BILL_ARREAR_CLIENT = "+BILL_ARREAR_CLIENT+", " +
+                "BILL_ARREAR_CLIENT_SIGN = '"+BILL_ARREAR_CLIENT_SIGN+"', " +
+                "BILL_AMOUNT_ARREAR = BILL_AMOUNT - BILL_AMOUNT_PAY " +
+                "WHERE BILL_ID = " + BILL_ID;
+        int result = query.doExec(sql);
+        if(result < 0){
+            query.free();
+            return CloverManager.CODE_FAILED;
+        }
+       sql = "UPDATE X_O SET O_STATUS = 6, O_DT_BILL = '"+NOW+"' WHERE O_BILL_ID = " + BILL_ID;
+        result = query.doExec(sql);
+        if(result < 0){
+            query.free();
+            return CloverManager.CODE_FAILED;
+        }
+        checkUnion(BILL_ID);
+        LogAction.add(getClient(), 46, null, null, BILL_ID);
+        SaleAction.sale(BILL_ID, NOW);
+        Map params = new Hashtable();
+        params.put("BILL_ID", BILL_ID);
+        PrintManager.getInstance().addJob(PrintJob.COMMAND_ORDER_BILL_ARREAR,params);
+        query.free();
+        return CloverManager.CODE_SUCCESS;
+    }
+
+    public int favorableClient(Form form){
+        if(!isLogin()){
+            return CloverManager.CODE_FAILED;
+        }
+        Map data = form.getValuesMap();
+        String BILL_ID = StringUtils.toString(data.get("BILL_ID"));
+        String BILL_FAVORABLE_CLIENT = StringUtils.toString(data.get("BILL_FAVORABLE_CLIENT"));
+         if(BILL_ID.length() == 0 || BILL_FAVORABLE_CLIENT.length() == 0){
+            return CloverManager.CODE_FAILED;
+        }
+        IQuery query = getQuery();
+        String sql = "UPDATE X_BILL SET BILL_DT_FINISH=NULL, BILL_FAVORABLE_CLIENT = "+BILL_FAVORABLE_CLIENT+" WHERE BILL_ID = " + BILL_ID;
+        int result = query.doExec(sql);
+        if(result < 0){
+            query.free();
+            return CloverManager.CODE_FAILED;
+        }
+        query.free();
+        LogAction.add(getClient(), 44, null, null, BILL_ID, BILL_FAVORABLE_CLIENT);
+        return CloverManager.CODE_SUCCESS;
+    }
+
+    public int favorableClientCancel(Form form){
+        Map data = form.getValuesMap();
+        String BILL_ID = StringUtils.toString(data.get("BILL_ID"));
+         if(BILL_ID.length() == 0){
+            return CloverManager.CODE_FAILED;
+        }
+        IQuery query = getQuery();
+        String sql = "UPDATE X_BILL SET BILL_DT_FINISH=NULL, BILL_FAVORABLE_CLIENT = NULL WHERE BILL_ID = " + BILL_ID;
+        int result = query.doExec(sql);
+        if(result < 0){
+            query.free();
+            return CloverManager.CODE_FAILED;
+        }
+        query.free();
+        return CloverManager.CODE_SUCCESS;
+    }
+
+    public int favorableCase(Form form){
+        if(!isLogin()){
+            return CloverManager.CODE_FAILED;
+        }
+        Map data = form.getValuesMap();
+        String BILL_ID = StringUtils.toString(data.get("BILL_ID"));
+        String CASE_ID = StringUtils.toString(data.get("CASE_ID"));
+        String CASE_NAME = StringUtils.toString(data.get("CASE_NAME"));
+         if(BILL_ID.length() == 0 || CASE_ID.length() == 0){
+            return CloverManager.CODE_FAILED;
+        }
+        IQuery query = getQuery();
+        String sql = "DELETE FROM X_BILL_FAVORABLE_CASE WHERE BILL_ID = " + BILL_ID;
+        query.doExec(sql);
+        sql = "INSERT INTO X_BILL_FAVORABLE_CASE (BILL_ID, CASE_ID, CASE_NAME) VALUES ("+BILL_ID+", "+CASE_ID+", '"+CASE_NAME+"')";
+        int result = query.doExec(sql);
+        if(result < 0){
+            query.free();
+            return CloverManager.CODE_FAILED;
+        }
+         sql = "UPDATE X_BILL SET BILL_DT_FINISH=NULL WHERE BILL_ID = " + BILL_ID;
+       query.doExec(sql);
+        query.free();
+        LogAction.add(getClient(), 45, null, null, BILL_ID, CASE_ID);
+        return CloverManager.CODE_SUCCESS;
+    }
+
+    public int favorableCaseCancel(Form form){
+        Map data = form.getValuesMap();
+        String BILL_ID = StringUtils.toString(data.get("BILL_ID"));
+         if(BILL_ID.length() == 0){
+            return CloverManager.CODE_FAILED;
+        }
+        IQuery query = getQuery();
+        String sql = "DELETE FROM X_BILL_FAVORABLE_CASE WHERE BILL_ID = " + BILL_ID;
+        int result = query.doExec(sql);
+        if(result < 0){
+            query.free();
+            return CloverManager.CODE_FAILED;
+        }
+        sql = "UPDATE X_BILL SET BILL_DT_FINISH=NULL WHERE BILL_ID = " + BILL_ID;
+        query.doExec(sql);
+        sql = "UPDATE X_O_P SET O_P_AMOUNT_REAL = O_P_AMOUNT WHERE O_P_STATUS > 0 AND O_P_DISCOUNT = -1 AND O_ID IN (SELECT O_ID FROM X_O WHERE O_BILL_ID = "+BILL_ID+")";
+        query.doExec(sql);
+        query.free();
+        return CloverManager.CODE_SUCCESS;
+    }
+
+    public int billUnion(Form form){
+        if(!isLogin()){
+            return CloverManager.CODE_FAILED;
+        }
+        Map data = form.getValuesMap();
+        String O_ID = StringUtils.toString(data.get("O_ID"));
+        if(O_ID.length() == 0){
+            return CloverManager.CODE_FAILED;
+        }
+        OrderAction a = new OrderAction();
+        if(!a.isUnion(O_ID)){
+            return CloverManager.CODE_FAILED;
+        }
+        String O_IDS = a.getUnion(O_ID);
+        ITable B = getTable("X_BILL").clearData();
+        Map BILL = new HashMap();
+        String BILL_ID = B.getMaxID("BILL_ID") + "";
+        BILL.put("BILL_ID", BILL_ID);
+        BILL.put("BILL_DT", DateUtils.getNow());
+        BILL.put("BILL_NO", SystemAction.makeBSN());
+        BILL.put("BILL_STATUS", 0);
+        BILL.put("BILL_UNION", 1);
+        int result = B.data(BILL).create();
+        if (result < 0){
+             return CloverManager.CODE_FAILED;
+        }
+        IQuery query = getQuery();
+        String sql = "SELECT O_BILL_ID FROM X_O WHERE O_ID IN ("+O_IDS+")";
+        String BILL_IDS = query.doQuery(sql).getValueString();
+        if(BILL_IDS.length() > 0){
+            sql = "INSERT INTO X_BILL_PAY (BILL_ID, BILL_PAY_TYPE, BILL_PAY_AMOUNT) " +
+                "SELECT "+BILL_ID+" AS BILL_ID, BILL_PAY_TYPE, SUM(BILL_PAY_AMOUNT) AS BILL_PAY_AMOUNT " +
+                "FROM X_BILL_PAY WHERE BILL_ID IN ("+BILL_IDS+") GROUP BY BILL_PAY_TYPE";
+            query.doExec(sql);
+            sql = "DELETE FROM X_BILL_PAY WHERE BILL_ID IN ("+BILL_IDS+")";
+            query.doExec(sql);
+            sql = "DELETE FROM X_BILL_FEE WHERE BILL_ID IN ("+BILL_IDS+")";
+            query.doExec(sql);
+            sql = "SELECT SUM(BILL_PAY_AMOUNT) FROM X_BILL_PAY WHERE BILL_ID = " + BILL_ID;
+            float AMOUNT = NumberUtils.toFloat(query.doQuery(sql).getValue());
+            sql = "UPDATE X_BILL SET BILL_AMOUNT_PAY = " + AMOUNT + " WHERE BILL_ID = " + BILL_ID;
+            query.doExec(sql);
+        }
+        sql = "UPDATE X_O SET O_BILL_ID = "+BILL_ID+" WHERE O_ID IN ("+O_IDS+")";
+        query.doExec(sql);
+        sql = "UPDATE X_O_UNION SET O_UNION_BILL = 1 WHERE O_UNION_ID IN (SELECT O_UNION_ID FROM X_O WHERE O_ID="+O_ID+")";
+        query.doExec(sql);
+        query.free();
+        return CloverManager.CODE_SUCCESS;
+    }
+
+    public int billBreak(Form form){
+        if(!isLogin()){
+            return CloverManager.CODE_FAILED;
+        }
+        Map data = form.getValuesMap();
+        String O_ID = StringUtils.toString(data.get("O_ID"));
+        if(O_ID.length() == 0){
+            return CloverManager.CODE_FAILED;
+        }
+        OrderAction a = new OrderAction();
+        if(!a.isUnionBill(O_ID)){
+            return CloverManager.CODE_FAILED;
+        }
+        IQuery query = getQuery();
+        String sql = "SELECT O_UNION_ID, O_BILL_ID FROM X_O WHERE O_ID="+O_ID;
+        String[] ARR = query.doQuery(sql).get();
+        String O_UNION_ID =  ARR[0];
+        String O_BILL_ID =  ARR[1];
+        sql =  "UPDATE X_O SET O_BILL_ID = NULL WHERE O_UNION_ID = "+O_UNION_ID+" AND O_ID <> " + O_ID;
+        query.doExec(sql);
+        sql = "UPDATE X_O_UNION SET O_UNION_BILL = 0 WHERE O_UNION_ID = " + O_UNION_ID;
+        query.doExec(sql);
+        sql = "UPDATE X_BILL SET BILL_DT_FINISH=NULL, BILL_UNION = 0 WHERE BILL_ID = " + O_BILL_ID;
+        query.doExec(sql);
+        query.free();
+        return CloverManager.CODE_SUCCESS;
+    }
+
+    public List<Map> list(Params params){
+        List<Map> data = new ArrayList<Map>();
+        String DINE_DATE_S = StringUtils.toString(params.val("DINE_DATE_S"));
+        String DINE_DATE_E = StringUtils.toString(params.val("DINE_DATE_E"));
+        String MT_ID = StringUtils.toString(params.val("MT_ID"));
+        if (DINE_DATE_S.length() == 0) {
+            DINE_DATE_S = DateUtils.getNowDate();
+        }
+        if (DINE_DATE_E.length() == 0) {
+            DINE_DATE_E = DateUtils.getNowDate();
+        }
+        if(DINE_DATE_S.compareTo(DINE_DATE_E) > 0){
+            DINE_DATE_S = DateUtils.getNowDate();
+            DINE_DATE_E = DateUtils.getNowDate();
+        }
+        if(MT_ID.length() == 0){
+            MT_ID = "0";
+        }
+        String[] MT = new MarketTypeAction().getMTX(DINE_DATE_S, DINE_DATE_E, MT_ID);
+        if(MT.length == 0){
+            return data;
+        }
+        String MT_DT_S = MT[2];
+        String MT_DT_E = MT[3];
+        String STATUS = StringUtils.toString(params.val("STATUS"));
+        if(STATUS.length() == 0){
+            STATUS = "0";
+        }
+        String MAKER = StringUtils.toString(params.val("MAKER"));
+        String DESK_ID = StringUtils.toString(params.val("DESK_ID"));
+        String CS = " AND A.BILL_STATUSX = 0";
+        if(STATUS.equals("0")){
+            CS += " AND A.BILL_STATUS > 0";
+        }
+        else{
+            CS += " AND A.BILL_STATUS = " + STATUS;
+        }
+        if(DESK_ID.length() > 0){
+            CS += " AND CONCAT(',', B.BILL_DESK_ID,',') LIKE '%,"+DESK_ID+",%'";
+        }
+        if(MAKER.length() > 0){
+            CS += " AND A.BILL_MAKER LIKE '%"+MAKER+"%'";
+        }
+        String DT_CS = "";
+        if(MT_ID.equals("0")){
+            DT_CS = "B.BILL_DINE_DT >= '" + MT_DT_S + "' AND B.BILL_DINE_DT <= '" + MT_DT_E + "'";
+        }
+        else{
+            DT_CS = "SUBSTRING(B.BILL_DINE_DT, 1, 10) >= '" + MT_DT_S.substring(0, 10)
+                             + "' AND SUBSTRING(B.BILL_DINE_DT, 12) >= '"+ MT_DT_S.substring(11)
+                             + "' AND SUBSTRING(B.BILL_DINE_DT, 1, 10) <= '" + MT_DT_E.substring(0, 10)
+                             + "' AND SUBSTRING(B.BILL_DINE_DT, 12) <= '"+MT_DT_E.substring(11)+"'";
+        }
+        String sql = "SELECT A.*, B.*, C.BILL_STATUS_NAME FROM X_BILL A " +
+                "LEFT JOIN (" +
+                "SELECT O_BILL_ID,SUM(O_DINE_NOP) AS BILL_DINE_NOP,MIN(O_DINE_DT) AS BILL_DINE_DT, GROUP_CONCAT(DESK_NAME) AS BILL_DESK_NAME, GROUP_CONCAT(DESK_ID) AS BILL_DESK_ID " +
+                "FROM X_O LEFT JOIN X_DESK ON O_DESK_ID=DESK_ID " +
+                "WHERE O_BILL_ID <> 0 GROUP BY O_BILL_ID) B ON A.BILL_ID = B.O_BILL_ID " +
+                 "LEFT JOIN X_BILL_STATUS C ON A.BILL_STATUS = C.BILL_STATUS " +
+                "WHERE " + DT_CS + CS + " ORDER BY A.BILL_DT";
+        System.out.println(sql);
+//        String sql = "SELECT A.*, B.BILL_STATUS_NAME, " +
+//                "(SELECT SUM(O_DINE_NOP) FROM X_O WHERE O_BILL_ID = A.BILL_ID) AS BILL_DINE_NOP, " +
+//                "(SELECT MIN(O_DINE_DT) FROM) FROM X_BILL A " +
+//                "LEFT JOIN X_BILL_STATUS B ON A.BILL_STATUS = B.BILL_STATUS " +
+//                "WHERE A.BILL_DT >= '" + MT_DT_S + "' AND A.BILL_DT <= '" + MT_DT_E + CS + " ORDER BY A.BILL_DT";
+        IQuery query = getQuery();
+        List<Map> list = query.doQuery(sql).tables();
+        for(Map m : list){
+            String BILL_ID = StringUtils.toString(m.get("BILL_ID"));
+            sql = "SELECT A.*, B.PAY_TYPE_NAME AS BILL_PAY_TYPE_NAME FROM X_BILL_PAY A LEFT JOIN X_PAY_TYPE B ON A.BILL_PAY_TYPE = B.PAY_TYPE_ID WHERE A.BILL_ID = " + BILL_ID + " ORDER BY A.BILL_PAY_TYPE";
+                List<Map> BILL_PAY = query.doQuery(sql).tables();
+            m.put("BILL_PAY", BILL_PAY);
+        }
+        data.addAll(list);
+        query.free();
+        return data;
+    }
+
+    public List<Map> listArrear(Params params){
+        List<Map> data = new ArrayList<Map>();
+        String DINE_DATE_S = StringUtils.toString(params.val("DINE_DATE_S"));
+        String DINE_DATE_E = StringUtils.toString(params.val("DINE_DATE_E"));
+        String MT_ID = StringUtils.toString(params.val("MT_ID"));
+        if (DINE_DATE_S.length() == 0) {
+            DINE_DATE_S = DateUtils.getNowDate();
+        }
+        if (DINE_DATE_E.length() == 0) {
+            DINE_DATE_E = DateUtils.getNowDate();
+        }
+        if(DINE_DATE_S.compareTo(DINE_DATE_E) > 0){
+            DINE_DATE_S = DateUtils.getNowDate();
+            DINE_DATE_E = DateUtils.getNowDate();
+        }
+
+        String STATUS = StringUtils.toString(params.val("STATUS"));
+        if(STATUS.length() == 0){
+            STATUS = "0";
+        }
+        String CLIENT_INFO = StringUtils.toString(params.val("CLIENT_INFO"));
+        String CS = "";
+        if(STATUS.equals("0")){
+            CS += " AND A.BILL_STATUS IN (2, 10)";
+        }
+        else{
+            CS += " AND A.BILL_STATUS = " + STATUS;
+        }
+
+        if(CLIENT_INFO.length() > 0){
+            CS += " AND A.BILL_ARREAR_CLIENT = " + CLIENT_INFO;
+        }
+        String DT_CS = "SUBSTRING(A.BILL_DT_FINISH, 1, 10) >= '" + DINE_DATE_S.substring(0, 10)+ "' AND SUBSTRING(A.BILL_DT_FINISH, 1, 10) <= '" + DINE_DATE_E.substring(0, 10) + "'";
+
+        String sql = "SELECT A.*, B.*, C.BILL_STATUS_NAME FROM X_BILL A " +
+                "LEFT JOIN (" +
+                "SELECT O_BILL_ID,SUM(O_DINE_NOP) AS BILL_DINE_NOP,MIN(O_DINE_DT) AS BILL_DINE_DT, GROUP_CONCAT(DESK_NAME) AS BILL_DESK_NAME, GROUP_CONCAT(DESK_ID) AS BILL_DESK_ID " +
+                "FROM X_O LEFT JOIN X_DESK ON O_DESK_ID=DESK_ID " +
+                "WHERE O_BILL_ID <> 0 GROUP BY O_BILL_ID) B ON A.BILL_ID = B.O_BILL_ID " +
+                 "LEFT JOIN X_BILL_STATUS C ON A.BILL_STATUS = C.BILL_STATUS " +
+                "WHERE A.BILL_ARREAR_CLIENT IS NOT NULL AND " + DT_CS + CS + " ORDER BY A.BILL_DT";
+        IQuery query = getQuery();
+        List<Map> list = query.doQuery(sql).tables();
+        for(Map m : list){
+            String BILL_ID = StringUtils.toString(m.get("BILL_ID"));
+            sql = "SELECT A.*, B.PAY_TYPE_NAME AS BILL_PAY_TYPE_NAME FROM X_BILL_PAY A LEFT JOIN X_PAY_TYPE B ON A.BILL_PAY_TYPE = B.PAY_TYPE_ID WHERE A.BILL_ID = " + BILL_ID + " ORDER BY A.BILL_PAY_TYPE";
+                List<Map> BILL_PAY = query.doQuery(sql).tables();
+            m.put("BILL_PAY", BILL_PAY);
+        }
+        data.addAll(list);
+        query.free();
+        return data;
+    }
+
+    public int activation(Form form){
+        if(!isLogin()){
+            return CloverManager.CODE_FAILED;
+        }
+        Map data = form.getValuesMap();
+        String BILL_ID = StringUtils.toString(data.get("BILL_ID"));
+        if(BILL_ID.length() == 0){
+            return CloverManager.CODE_FAILED;
+        }
+        IQuery query = getQuery();
+        String sql = "DELETE FROM X_BILL_ACTIVATION WHERE BILL_ID IN ("+BILL_ID+")";
+        query.doExec(sql);
+        sql = "SELECT BILL_ID, BILL_STATUS FROM X_BILL WHERE BILL_ID IN ("+BILL_ID+")";
+        List<Map> list = query.doQuery(sql).tables();
+        if(list.size() == 0){
+            query.free();
+            return CloverManager.CODE_FAILED;
+        }
+        String NOW = DateUtils.getNow();
+        ITable t = getTable("X_BILL_ACTIVATION").clearData();
+        for(Map m : list){
+            m.put("BILL_ACTIVATION_DT", NOW);
+            t.data(m).create();
+        }
+        sql = "UPDATE X_BILL SET BILL_STATUS = 0 WHERE BILL_ID IN ("+BILL_ID+")";
+        int result = query.doExec(sql);
+        if(result < 0){
+            query.free();
+            return CloverManager.CODE_FAILED;
+        }
+        sql = "UPDATE X_O SET O_STATUS = 4 WHERE O_BILL_ID IN ("+BILL_ID+")";
+        result = query.doExec(sql);
+        if(result < 0){
+            query.free();
+            return CloverManager.CODE_FAILED;
+        }
+        query.free();
+        return CloverManager.CODE_SUCCESS;
+    }
+
+    public int delete(Form form){
+        if(!isLogin()){
+            return CloverManager.CODE_FAILED;
+        }
+        Map data = form.getValuesMap();
+        String BILL_ID = StringUtils.toString(data.get("BILL_ID"));
+        if(BILL_ID.length() == 0){
+            return CloverManager.CODE_FAILED;
+        }
+        IQuery query = getQuery();
+
+        String sql = "UPDATE X_BILL SET BILL_STATUSX = 1 WHERE BILL_ID IN ("+BILL_ID+")";
+        int result = query.doExec(sql);
+        query.free();
+        if(result < 0){
+
+            return CloverManager.CODE_FAILED;
+        }
+
+//        query.free();
+        return CloverManager.CODE_SUCCESS;
+    }
+
+    public int activationCancel(Form form){
+        if(!isLogin()){
+            return CloverManager.CODE_FAILED;
+        }
+        Map data = form.getValuesMap();
+        String BILL_ID = StringUtils.toString(data.get("BILL_ID"));
+        if(BILL_ID.length() == 0){
+            return CloverManager.CODE_FAILED;
+        }
+        IQuery query = getQuery();
+        String sql = "SELECT BILL_STATUS FROM X_BILL_ACTIVATION WHERE BILL_ID = " + BILL_ID;
+        String BILL_STATUS = query.doQuery(sql).getValue();
+        if(BILL_STATUS.length() == 0){
+            query.free();
+            return CloverManager.CODE_FAILED;
+        }
+        sql = "UPDATE X_BILL SET BILL_STATUS = "+BILL_STATUS+" WHERE BILL_ID IN ("+BILL_ID+")";
+        int result = query.doExec(sql);
+        if(result < 0){
+            query.free();
+            return CloverManager.CODE_FAILED;
+        }
+        sql = "UPDATE X_O SET O_STATUS = 10 WHERE O_BILL_ID IN ("+BILL_ID+")";
+        result = query.doExec(sql);
+        if(result < 0){
+            query.free();
+            return CloverManager.CODE_FAILED;
+        }
+        sql = "DELETE FROM X_BILL_ACTIVATION WHERE BILL_ID IN ("+BILL_ID+")";
+        result = query.doExec(sql);
+        query.free();
+        return CloverManager.CODE_SUCCESS;
+    }
+
+    public int checkoutArrear(Form form){
+        if(!isLogin()){
+            return CloverManager.CODE_FAILED;
+        }
+        Map data = form.getValuesMap();
+        String BILL_ID = StringUtils.toString(data.get("BILL_ID"));
+        String BILL_PAY_TYPE = StringUtils.toString(data.get("BILL_PAY_TYPE"));
+        String BILL_PAY_AMOUNT = StringUtils.toString(data.get("BILL_PAY_AMOUNT"));
+        String BILL_PAY_CLIENT_ID = StringUtils.toString(data.get("BILL_PAY_CLIENT_ID"));
+        if(BILL_ID.length() == 0 || BILL_PAY_TYPE.length() == 0 || BILL_PAY_AMOUNT.length() == 0){
+            return CloverManager.CODE_FAILED;
+        }
+        String ACCOUNT_ID = StringUtils.toString(getClient().getCookies().get("ACCOUNT_ID"));
+        String ACCOUNT_NAME = StringUtils.toString(getClient().getCookies().get("ACCOUNT_NAME"));
+        if(ACCOUNT_ID.length() == 0 || ACCOUNT_NAME.length() == 0){
+            return CloverManager.CODE_FAILED;
+        }
+
+        String NOW = DateUtils.getNow();
+        IQuery query = getQuery();
+        String sql = "UPDATE X_BILL SET BILL_AMOUNT_PAY= BILL_AMOUNT_PAY + "+BILL_PAY_AMOUNT+", " +
+                "BILL_ARREAR_PROCESS_DT = '"+NOW+"', " +
+                "BILL_ARREAR_PROCESSOR = '"+ACCOUNT_NAME+"', " +
+                "BILL_ARREAR_PROCESSOR_ID = '"+ACCOUNT_ID+"',  " +
+                "BILL_ARREAR_PAY_TYPE = "+BILL_PAY_TYPE+",  " +
+                "BILL_ARREAR_PAY_AMOUNT = "+BILL_PAY_AMOUNT+",  " +
+                "BILL_STATUS = 10 WHERE BILL_ID IN ("+BILL_ID+")";
+        int result = query.doExec(sql);
+        if(result < 0){
+            query.free();
+            return CloverManager.CODE_FAILED;
+        }
+        addPay(BILL_ID, BILL_PAY_TYPE, BILL_PAY_AMOUNT, BILL_PAY_CLIENT_ID);
+        query.free();
+        return CloverManager.CODE_SUCCESS;
+    }
+
+
+
+
+}

@@ -1,0 +1,23 @@
+package org.redot.clover.app.system.rest;
+
+import org.redot.clover.app.system.TasteAction;
+import org.redot.clover.core.data.DataPackage;
+import org.redot.clover.core.ext.BaseResource;
+import org.restlet.resource.Get;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 10-12-31
+ * Time: 上午2:35
+ * To change this template use File | Settings | File Templates.
+ */
+public class TasteList extends BaseResource {
+    @Get("json")
+    public String doGet() {
+        DataPackage dp = new DataPackage();
+        TasteAction a = new TasteAction();
+        dp.addTable("table", a.list());
+        return dp.toJSON();
+    }
+}

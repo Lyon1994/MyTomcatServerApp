@@ -1,0 +1,158 @@
+package org.redot.clover.print;
+
+import org.redot.clover.core.CloverManager;
+import org.redot.clover.core.ext.BaseAction;
+import org.redot.library.db.IQuery;
+import org.redot.library.db.ITable;
+import org.redot.library.lang.StringUtils;
+import org.restlet.data.Form;
+
+import java.util.List;
+import java.util.Map;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 11-4-29
+ * Time: 下午9:01
+ * To change this template use File | Settings | File Templates.
+ */
+public class PrintCaseAction extends BaseAction{
+
+    public List<Map> list(String ID){
+        String sql = "SELECT A.*,B.CASE_STATUS_NAME, C.PRINTER_NAME AS CASE_PRINTER_NAME, D.TEMPLATE_NAME AS CASE_TEMPLATE_NAME,E.PRINT_COMMAND_NAME AS CASE_COMMAND_NAME, F.CASE_TYPE_NAME " +
+                "FROM X_PRINT_CASE A " +
+                "LEFT JOIN X_PRINT_CASE_STATUS B ON A.CASE_STATUS = B.CASE_STATUS " +
+                "LEFT JOIN X_PRINTER C ON A.CASE_PRINTER = C.PRINTER_ID " +
+                "LEFT JOIN X_PRINT_TEMPLATE D ON A.CASE_TEMPLATE = D.TEMPLATE_ID " +
+                "LEFT JOIN X_PRINT_COMMAND E ON A.CASE_COMMAND = E.PRINT_COMMAND " +
+                "LEFT JOIN X_PRINT_CASE_TYPE F ON A.CASE_TYPE = F.CASE_TYPE " +
+                "WHERE A.CASE_STATUS <> 2 AND  A.CASE_ID="+ID+" ORDER BY A.CASE_ID";
+        IQuery query = getQuery();
+        List<Map> list = query.doQuery(sql).tables();
+        query.free();
+        return list;
+    }
+
+    public int set(Form form){
+        Map data = form.getValuesMap();
+        String CASE_ID = StringUtils.toString(data.get("CASE_ID"));
+
+        ITable T = getTable("X_PRINT_CASE").clearData();
+        int result = 0;
+        boolean isNew = true;
+        String CASE_MONEY_BOX = StringUtils.toString(data.get("CASE_MONEY_BOX"));
+        if(CASE_MONEY_BOX.length() == 0){
+            data.put("CASE_MONEY_BOX", 0);
+        }
+        if(CASE_ID.length() == 0){
+            CASE_ID = String.valueOf(T.getMaxID("CASE_ID"));
+            data.put("CASE_ID", CASE_ID);
+            result = T.data(data).create();
+        }
+        else{
+            isNew = false;
+            result = T.data(data).where(T.column("CASE_ID").eq(CASE_ID)).update();
+        }
+        if(result < 0){
+            return CloverManager.CODE_FAILED;
+        }
+
+        return CloverManager.CODE_SUCCESS;
+    }
+
+    public Map get(String CASE_ID) {
+        IQuery query = getQuery();
+        String sql = "SELECT A.*,B.CASE_STATUS_NAME, C.PRINTER_NAME AS CASE_PRINTER_NAME, " +
+                "D.TEMPLATE_NAME AS CASE_TEMPLATE_NAME, E.PRINT_COMMAND_NAME AS CASE_COMMAND_NAME, F.CASE_TYPE_NAME " +
+                "FROM X_PRINT_CASE A " +
+                "LEFT JOIN X_PRINT_CASE_STATUS B ON A.CASE_STATUS = B.CASE_STATUS " +
+                "LEFT JOIN X_PRINTER C ON A.CASE_PRINTER = C.PRINTER_ID " +
+                "LEFT JOIN X_PRINT_TEMPLATE D ON A.CASE_TEMPLATE = D.TEMPLATE_ID " +
+                "LEFT JOIN X_PRINT_COMMAND E ON A.CASE_COMMAND = E.PRINT_COMMAND " +
+                "LEFT JOIN X_PRINT_CASE_TYPE F ON A.CASE_TYPE = F.CASE_TYPE " +
+                "WHERE A.CASE_ID = ?";
+        Map map = query.doQuery(sql, CASE_ID).table();
+        if(map == null){
+            query.free();
+            return map;
+        }
+        String CASE_PS = StringUtils.toString(map.get("CASE_PS"));
+        String CASE_PS_NAME = "";
+        String CASE_PSX = StringUtils.toString(map.get("CASE_PSX"));
+        String CASE_PSX_NAME = "";
+        String CASE_PS_AREA = StringUtils.toString(map.get("CASE_PS_AREA"));
+        String CASE_PS_AREA_NAME = "";
+        if(CASE_PS.length() > 0){
+            sql = "SELECT P_TYPE_NAME FROM X_P_TYPE WHERE P_TYPE_ID IN ("+CASE_PS+")";
+            List<Map> list = query.doQuery(sql).tables();
+            for(int i=0;i<list.size();i++){
+                Map p = list.get(i);
+                if(i > 0){
+                    CASE_PS_NAME += ",";
+                }
+                CASE_PS_NAME += StringUtils.toString(p.get("P_TYPE_NAME"));
+            }
+        }
+        map.put("CASE_PS_NAME", CASE_PS_NAME);
+        if(CASE_PSX.length() > 0){
+            sql = "SELECT P_NAME FROM X_P WHERE P_ID IN ("+CASE_PSX+")";
+            List<Map> list = query.doQuery(sql).tables();
+            for(int i=0;i<list.size();i++){
+                Map p = list.get(i);
+                if(i > 0){
+                    CASE_PSX_NAME += ",";
+                }
+                CASE_PSX_NAME += StringUtils.toString(p.get("P_NAME"));
+            }
+        }
+        map.put("CASE_PSX_NAME", CASE_PSX_NAME);
+        if(CASE_PS_AREA.length() > 0){
+            sql = "SELECT DESK_AREA_NAME FROM X_DESK_AREA WHERE DESK_AREA_ID IN ("+CASE_PS_AREA+")";
+            List<Map> list = query.doQuery(sql).tables();
+            for(int i=0;i<list.size();i++){
+                Map p = list.get(i);
+                if(i > 0){
+                    CASE_PS_AREA_NAME += ",";
+                }
+                CASE_PS_AREA_NAME += StringUtils.toString(p.get("DESK_AREA_NAME"));
+            }
+        }
+        map.put("CASE_PS_AREA_NAME", CASE_PS_AREA_NAME);
+        query.free();
+        return map;
+    }
+
+    public int delete(Form form) {
+        Map data = form.getValuesMap();
+        String CASE_ID = StringUtils.toString(data.get("CASE_ID"));
+        if(CASE_ID.length() == 0){
+            return CloverManager.CODE_FAILED;
+        }
+        String sql = "DELETE FROM X_PRINT_CASE WHERE CASE_ID = " + CASE_ID;
+        IQuery query = getQuery();
+        int result = query.doExec(sql);
+        query.free();
+        if(result < 0){
+            return CloverManager.CODE_FAILED;
+        }
+        return CloverManager.CODE_SUCCESS;
+    }
+
+    public List<Map> selectCommand(){
+        String sql = "SELECT A.*  FROM X_PRINT_COMMAND A WHERE A.PRINT_COMMAND <> 2 " +
+                "ORDER BY PRINT_COMMAND";
+        IQuery query = getQuery();
+        List<Map> list = query.doQuery(sql).tables();
+        query.free();
+        return list;
+    }
+    public List<Map> selectType(){
+        String sql = "SELECT A.*  FROM X_PRINT_CASE_TYPE A  " +
+                "ORDER BY CASE_TYPE";
+        IQuery query = getQuery();
+        List<Map> list = query.doQuery(sql).tables();
+        query.free();
+        return list;
+    }
+}

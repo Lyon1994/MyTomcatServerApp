@@ -1,0 +1,103 @@
+package org.redot.clover.app.inventory;
+
+import org.redot.clover.app.message.MessageManager;
+import org.redot.clover.core.CloverManager;
+import org.redot.clover.core.ext.BaseAction;
+import org.redot.library.db.IQuery;
+import org.redot.library.db.ITable;
+import org.redot.library.lang.StringUtils;
+import org.restlet.data.Form;
+
+import java.util.List;
+import java.util.Map;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 11-4-30
+ * Time: 下午4:44
+ * To change this template use File | Settings | File Templates.
+ */
+public class SubjectAction extends BaseAction{
+
+    public List<Map> listLarge(){
+        String sql = "SELECT A.* FROM X_SUBJECT A WHERE A.SUBJECT_STATUS <> 2 AND A.SUBJECT_PARENT = 0 ORDER BY A.SUBJECT_SORT, A.SUBJECT_ID";
+        IQuery query = getQuery();
+        List<Map> list = query.doQuery(sql).tables();
+        query.free();
+        return list;
+    }
+
+    public List<Map> listSmall(String PARENT){
+        String sql = "SELECT A.* FROM X_SUBJECT A WHERE A.SUBJECT_STATUS <> 2 AND A.SUBJECT_PARENT  <> 0 AND A.SUBJECT_PARENT = " +  PARENT + " ORDER BY A.SUBJECT_SORT, A.SUBJECT_ID";
+        IQuery query = getQuery();
+        List<Map> list = query.doQuery(sql).tables();
+        query.free();
+        return list;
+    }
+
+    public List<Map> list(){
+        String sql = "SELECT A.* FROM X_SUBJECT A " +
+                "WHERE A.SUBJECT_STATUS <> 2 ORDER BY A.SUBJECT_SORT, A.SUBJECT_ID";
+        IQuery query = getQuery();
+        List<Map> list = query.doQuery(sql).tables();
+        for(Map m : list){
+            String SUBJECT_ID = StringUtils.toString(m.get("SUBJECT_ID"));
+                sql = "SELECT * FROM X_SUBJECT_TYPE WHERE SUBJECT_ID = "+SUBJECT_ID;
+                List<String> listx = query.doQuery(sql).listFirst();
+                m.put("SUBJECT_TYPES", listx);
+        }
+        query.free();
+        return list;
+    }
+
+
+    public int set(Form form){
+        Map data = form.getValuesMap();
+        String SUBJECT_ID = StringUtils.toString(data.get("SUBJECT_ID"));
+        String SUBJECT_PARENT = StringUtils.toString(data.get("SUBJECT_PARENT"));
+        if(SUBJECT_PARENT.length() == 0){
+            data.put("SUBJECT_PARENT", "0");
+        }
+
+        ITable t = getTable("X_SUBJECT").clearData();
+        int result;
+        if(SUBJECT_ID.length() == 0){
+            SUBJECT_ID = String.valueOf(t.getMaxID("SUBJECT_ID"));
+            data.put("SUBJECT_ID", SUBJECT_ID);
+            result = t.data(data).create();
+        }
+        else{
+//            if(SUBJECT_PARENT.equals(SUBJECT_ID)){
+//                data.put("SUBJECT_PARENT", "0");
+//            }
+            result = t.data(data).where(t.column("SUBJECT_ID").eq(SUBJECT_ID)).update();
+        }
+        if(result < 0){
+            return CloverManager.CODE_FAILED;
+        }
+        return CloverManager.CODE_SUCCESS;
+    }
+
+    public int delete(Form form) {
+        Map data = form.getValuesMap();
+        String SUBJECT_ID = StringUtils.toString(data.get("SUBJECT_ID"));
+        if(SUBJECT_ID.length() == 0){
+            return CloverManager.CODE_FAILED;
+        }
+        String sql = "SELECT * FROM X_SUBJECT WHERE SUBJECT_STATUS <> 2 AND SUBJECT_PARENT = " + SUBJECT_ID;
+        IQuery query = getQuery();
+        if(query.rowCount(sql) > 0){
+            query.free();
+            return CloverManager.CODE_FAILED;
+        }
+        sql = "UPDATE X_SUBJECT SET SUBJECT_STATUS = 2 WHERE SUBJECT_ID = " + SUBJECT_ID;
+        int result = query.doExec(sql);
+        query.free();
+        if(result < 0){
+            return CloverManager.CODE_FAILED;
+        }
+        return CloverManager.CODE_SUCCESS;
+    }
+
+}

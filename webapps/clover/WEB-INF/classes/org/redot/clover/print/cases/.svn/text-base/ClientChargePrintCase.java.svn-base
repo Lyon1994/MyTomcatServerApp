@@ -1,0 +1,64 @@
+package org.redot.clover.print.cases;
+
+import org.redot.clover.core.CloverManager;
+import org.redot.library.db.IQuery;
+import org.redot.library.lang.NumberUtils;
+import org.redot.library.lang.StringUtils;
+
+import java.util.List;
+import java.util.Map;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 12-11-9
+ * Time: 上午10:14
+ * To change this template use File | Settings | File Templates.
+ */
+public class ClientChargePrintCase extends AbstractPrintCase{
+    @Override
+    public void process() {
+        String CLIENT_CHARGE_ID = StringUtils.toString(getPrams().get("CLIENT_CHARGE_ID"));
+        if(CLIENT_CHARGE_ID.length() == 0){
+            setOK(false);
+            return;
+        }
+
+        IQuery query = CloverManager.getInstance().getQuery();
+        String sql = "SELECT B.CLIENT_NAME,A.CLIENT_CHARGE_AMOUNT,A.CLIENT_CHARGE_GIVE_AMOUNT,C.ACCOUNT_NAME,A.CLIENT_CHARGE_DT FROM X_CLIENT_CHARGE A " +
+                "LEFT JOIN X_CLIENT B ON B.CLIENT_ID = A.CLIENT_ID LEFT JOIN X_ACCOUNT C ON C.ACCOUNT_ID = A.CLIENT_CHARGE_MAKER WHERE A.CLIENT_CHARGE_ID = " + CLIENT_CHARGE_ID;
+        System.out.println(sql);
+        List<Map> CCP = query.doQuery(sql).tables();
+        int count = CCP.size();
+        if(count == 0){
+            setOK(false);
+            query.free();
+            return;
+        }
+        String[] CLIENT_NAME = new String[count];
+        String[] CLIENT_CHARGE_AMOUNT = new String[count];
+        String[] CLIENT_CHARGE_GIVE_AMOUNT = new String[count];
+        String[] ACCOUNT_NAME = new String[count];
+        String[] CLIENT_CHARGE_DT = new String[count];
+        setDataLen(count);
+
+        for(int i=0; i<CCP.size(); i++){
+            Map P = CCP.get(i);
+            CLIENT_NAME[i] = StringUtils.toString(P.get("CLIENT_NAME"));
+            float AMOUNT = NumberUtils.toFloat(P.get("CLIENT_CHARGE_AMOUNT"));
+            CLIENT_CHARGE_AMOUNT[i] = StringUtils.toString(NumberUtils.toDecimal(AMOUNT, 1));
+            float AMOUNT_GIVE = NumberUtils.toFloat(P.get("CLIENT_CHARGE_GIVE_AMOUNT"));
+            CLIENT_CHARGE_GIVE_AMOUNT[i] = StringUtils.toString(NumberUtils.toDecimal(AMOUNT_GIVE,1));
+            ACCOUNT_NAME[i] = StringUtils.toString(P.get("ACCOUNT_NAME"));
+            CLIENT_CHARGE_DT[i] = StringUtils.toString(P.get("CLIENT_CHARGE_DT"));
+        }
+
+        getData().put("会员名称", CLIENT_NAME);
+        getData().put("充值金额", CLIENT_CHARGE_AMOUNT);
+        getData().put("赠送金额", CLIENT_CHARGE_GIVE_AMOUNT);
+        getData().put("操作员", ACCOUNT_NAME);
+        getData().put("充值时间", CLIENT_CHARGE_DT);
+
+        query.free();
+    }
+}

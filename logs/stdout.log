@@ -1,0 +1,398 @@
+2015 七月 16 15:42:54 INFO  org.redot.library.db.IDataSource - databse:clover,set db driver
+2015 七月 16 15:42:54 WARN  com.jolbox.bonecp.BoneCPConfig - Please use setIdleConnectionTestPeriodInMinutes in place of setIdleConnectionTestPeriod. This method has been deprecated.
+2015 七月 16 15:42:54 WARN  com.jolbox.bonecp.BoneCPConfig - Please use setIdleMaxAgeInMinutes in place of setIdleMaxAge. This method has been deprecated.
+2015 七月 16 15:42:55 ERROR org.redot.library.db.IDataSource - databse:clover,can't init
+2015 七月 16 15:42:55 ERROR org.redot.library.db.IDataSource - java.sql.SQLException: Unable to open a test connection to the given database. JDBC url = jdbc:mysql://127.0.0.1:3306/clover?useUnicode=true&characterEncoding=utf8, username = root. Terminating connection pool. Original Exception: ------
+com.mysql.jdbc.exceptions.jdbc4.CommunicationsException: Communications link failure
+
+The last packet sent successfully to the server was 0 milliseconds ago. The driver has not received any packets from the server.
+	at sun.reflect.NativeConstructorAccessorImpl.newInstance0(Native Method)
+	at sun.reflect.NativeConstructorAccessorImpl.newInstance(Unknown Source)
+	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(Unknown Source)
+	at java.lang.reflect.Constructor.newInstance(Unknown Source)
+	at com.mysql.jdbc.Util.handleNewInstance(Util.java:411)
+	at com.mysql.jdbc.SQLError.createCommunicationsException(SQLError.java:1116)
+	at com.mysql.jdbc.MysqlIO.<init>(MysqlIO.java:344)
+	at com.mysql.jdbc.ConnectionImpl.coreConnect(ConnectionImpl.java:2333)
+	at com.mysql.jdbc.ConnectionImpl.connectOneTryOnly(ConnectionImpl.java:2370)
+	at com.mysql.jdbc.ConnectionImpl.createNewIO(ConnectionImpl.java:2154)
+	at com.mysql.jdbc.ConnectionImpl.<init>(ConnectionImpl.java:792)
+	at com.mysql.jdbc.JDBC4Connection.<init>(JDBC4Connection.java:47)
+	at sun.reflect.NativeConstructorAccessorImpl.newInstance0(Native Method)
+	at sun.reflect.NativeConstructorAccessorImpl.newInstance(Unknown Source)
+	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(Unknown Source)
+	at java.lang.reflect.Constructor.newInstance(Unknown Source)
+	at com.mysql.jdbc.Util.handleNewInstance(Util.java:411)
+	at com.mysql.jdbc.ConnectionImpl.getInstance(ConnectionImpl.java:381)
+	at com.mysql.jdbc.NonRegisteringDriver.connect(NonRegisteringDriver.java:305)
+	at java.sql.DriverManager.getConnection(Unknown Source)
+	at java.sql.DriverManager.getConnection(Unknown Source)
+	at com.jolbox.bonecp.BoneCP.obtainRawInternalConnection(BoneCP.java:256)
+	at com.jolbox.bonecp.BoneCP.<init>(BoneCP.java:305)
+	at org.redot.library.db.IDataSource.init(IDataSource.java:55)
+	at org.redot.library.db.IDataBase.init(IDataBase.java:50)
+	at org.redot.library.db.IDataBaseFactory.add(IDataBaseFactory.java:36)
+	at org.redot.clover.core.CloverManager.init(CloverManager.java:83)
+	at org.redot.clover.core.CloverManager.<init>(CloverManager.java:50)
+	at org.redot.clover.core.CloverManager.getInstance(CloverManager.java:114)
+	at org.redot.clover.core.CloverServlet.init(CloverServlet.java:18)
+	at javax.servlet.GenericServlet.init(GenericServlet.java:158)
+	at org.apache.catalina.core.StandardWrapper.initServlet(StandardWrapper.java:1231)
+	at org.apache.catalina.core.StandardWrapper.loadServlet(StandardWrapper.java:1144)
+	at org.apache.catalina.core.StandardWrapper.load(StandardWrapper.java:1031)
+	at org.apache.catalina.core.StandardContext.loadOnStartup(StandardContext.java:4914)
+	at org.apache.catalina.core.StandardContext.startInternal(StandardContext.java:5201)
+	at org.apache.catalina.util.LifecycleBase.start(LifecycleBase.java:150)
+	at org.apache.catalina.core.ContainerBase.addChildInternal(ContainerBase.java:725)
+	at org.apache.catalina.core.ContainerBase.addChild(ContainerBase.java:701)
+	at org.apache.catalina.core.StandardHost.addChild(StandardHost.java:717)
+	at org.apache.catalina.startup.HostConfig.deployWAR(HostConfig.java:945)
+	at org.apache.catalina.startup.HostConfig$DeployWar.run(HostConfig.java:1768)
+	at java.util.concurrent.Executors$RunnableAdapter.call(Unknown Source)
+	at java.util.concurrent.FutureTask.run(Unknown Source)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(Unknown Source)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(Unknown Source)
+	at java.lang.Thread.run(Unknown Source)
+Caused by: java.net.ConnectException: Connection refused: connect
+	at java.net.DualStackPlainSocketImpl.connect0(Native Method)
+	at java.net.DualStackPlainSocketImpl.socketConnect(Unknown Source)
+	at java.net.AbstractPlainSocketImpl.doConnect(Unknown Source)
+	at java.net.AbstractPlainSocketImpl.connectToAddress(Unknown Source)
+	at java.net.AbstractPlainSocketImpl.connect(Unknown Source)
+	at java.net.PlainSocketImpl.connect(Unknown Source)
+	at java.net.SocksSocketImpl.connect(Unknown Source)
+	at java.net.Socket.connect(Unknown Source)
+	at java.net.Socket.connect(Unknown Source)
+	at java.net.Socket.<init>(Unknown Source)
+	at java.net.Socket.<init>(Unknown Source)
+	at com.mysql.jdbc.StandardSocketFactory.connect(StandardSocketFactory.java:257)
+	at com.mysql.jdbc.MysqlIO.<init>(MysqlIO.java:294)
+	... 40 more
+------
+
+2015 七月 16 15:42:55 INFO  org.redot.clover.core.CloverManager - clover added to DataSource
+2015 七月 16 15:42:55 DEBUG org.redot.clover.core.CloverManager - DataSource load success.
+2015 七月 16 15:42:55 INFO  org.redot.clover.demon.DemonService - Start Demon Service...
+2015 七月 16 15:42:55 INFO  org.redot.clover.demon.DemonService - 初始化系統環境變量
+2015 七月 16 15:42:55 INFO  org.redot.clover.demon.DemonService - Add Demo [print]
+2015 七月 16 15:42:55 INFO  org.redot.clover.demon.DemonService - Add Demo [print template initialize]
+2015 七月 16 15:42:56 DEBUG org.redot.clover.core.CloverManager - DataSource can not find! Shutdown Server.
+2015 七月 16 15:42:56 DEBUG org.redot.clover.core.CloverManager - DataSource can not find! Shutdown Server.
+2015 七月 16 16:07:57 INFO  org.redot.library.db.IDataSource - databse:clover,set db driver
+2015 七月 16 16:07:58 WARN  com.jolbox.bonecp.BoneCPConfig - Please use setIdleConnectionTestPeriodInMinutes in place of setIdleConnectionTestPeriod. This method has been deprecated.
+2015 七月 16 16:07:58 WARN  com.jolbox.bonecp.BoneCPConfig - Please use setIdleMaxAgeInMinutes in place of setIdleMaxAge. This method has been deprecated.
+2015 七月 16 16:07:59 ERROR org.redot.library.db.IDataSource - databse:clover,can't init
+2015 七月 16 16:07:59 ERROR org.redot.library.db.IDataSource - java.sql.SQLException: Unable to open a test connection to the given database. JDBC url = jdbc:mysql://127.0.0.1:3306/clover?useUnicode=true&characterEncoding=utf8, username = root. Terminating connection pool. Original Exception: ------
+com.mysql.jdbc.exceptions.jdbc4.CommunicationsException: Communications link failure
+
+The last packet sent successfully to the server was 0 milliseconds ago. The driver has not received any packets from the server.
+	at sun.reflect.NativeConstructorAccessorImpl.newInstance0(Native Method)
+	at sun.reflect.NativeConstructorAccessorImpl.newInstance(Unknown Source)
+	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(Unknown Source)
+	at java.lang.reflect.Constructor.newInstance(Unknown Source)
+	at com.mysql.jdbc.Util.handleNewInstance(Util.java:411)
+	at com.mysql.jdbc.SQLError.createCommunicationsException(SQLError.java:1116)
+	at com.mysql.jdbc.MysqlIO.<init>(MysqlIO.java:344)
+	at com.mysql.jdbc.ConnectionImpl.coreConnect(ConnectionImpl.java:2333)
+	at com.mysql.jdbc.ConnectionImpl.connectOneTryOnly(ConnectionImpl.java:2370)
+	at com.mysql.jdbc.ConnectionImpl.createNewIO(ConnectionImpl.java:2154)
+	at com.mysql.jdbc.ConnectionImpl.<init>(ConnectionImpl.java:792)
+	at com.mysql.jdbc.JDBC4Connection.<init>(JDBC4Connection.java:47)
+	at sun.reflect.NativeConstructorAccessorImpl.newInstance0(Native Method)
+	at sun.reflect.NativeConstructorAccessorImpl.newInstance(Unknown Source)
+	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(Unknown Source)
+	at java.lang.reflect.Constructor.newInstance(Unknown Source)
+	at com.mysql.jdbc.Util.handleNewInstance(Util.java:411)
+	at com.mysql.jdbc.ConnectionImpl.getInstance(ConnectionImpl.java:381)
+	at com.mysql.jdbc.NonRegisteringDriver.connect(NonRegisteringDriver.java:305)
+	at java.sql.DriverManager.getConnection(Unknown Source)
+	at java.sql.DriverManager.getConnection(Unknown Source)
+	at com.jolbox.bonecp.BoneCP.obtainRawInternalConnection(BoneCP.java:256)
+	at com.jolbox.bonecp.BoneCP.<init>(BoneCP.java:305)
+	at org.redot.library.db.IDataSource.init(IDataSource.java:55)
+	at org.redot.library.db.IDataBase.init(IDataBase.java:50)
+	at org.redot.library.db.IDataBaseFactory.add(IDataBaseFactory.java:36)
+	at org.redot.clover.core.CloverManager.init(CloverManager.java:83)
+	at org.redot.clover.core.CloverManager.<init>(CloverManager.java:50)
+	at org.redot.clover.core.CloverManager.getInstance(CloverManager.java:114)
+	at org.redot.clover.core.CloverServlet.init(CloverServlet.java:18)
+	at javax.servlet.GenericServlet.init(GenericServlet.java:158)
+	at org.apache.catalina.core.StandardWrapper.initServlet(StandardWrapper.java:1231)
+	at org.apache.catalina.core.StandardWrapper.loadServlet(StandardWrapper.java:1144)
+	at org.apache.catalina.core.StandardWrapper.load(StandardWrapper.java:1031)
+	at org.apache.catalina.core.StandardContext.loadOnStartup(StandardContext.java:4914)
+	at org.apache.catalina.core.StandardContext.startInternal(StandardContext.java:5201)
+	at org.apache.catalina.util.LifecycleBase.start(LifecycleBase.java:150)
+	at org.apache.catalina.core.ContainerBase.addChildInternal(ContainerBase.java:725)
+	at org.apache.catalina.core.ContainerBase.addChild(ContainerBase.java:701)
+	at org.apache.catalina.core.StandardHost.addChild(StandardHost.java:717)
+	at org.apache.catalina.startup.HostConfig.deployWAR(HostConfig.java:945)
+	at org.apache.catalina.startup.HostConfig$DeployWar.run(HostConfig.java:1768)
+	at java.util.concurrent.Executors$RunnableAdapter.call(Unknown Source)
+	at java.util.concurrent.FutureTask.run(Unknown Source)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(Unknown Source)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(Unknown Source)
+	at java.lang.Thread.run(Unknown Source)
+Caused by: java.net.ConnectException: Connection refused: connect
+	at java.net.DualStackPlainSocketImpl.connect0(Native Method)
+	at java.net.DualStackPlainSocketImpl.socketConnect(Unknown Source)
+	at java.net.AbstractPlainSocketImpl.doConnect(Unknown Source)
+	at java.net.AbstractPlainSocketImpl.connectToAddress(Unknown Source)
+	at java.net.AbstractPlainSocketImpl.connect(Unknown Source)
+	at java.net.PlainSocketImpl.connect(Unknown Source)
+	at java.net.SocksSocketImpl.connect(Unknown Source)
+	at java.net.Socket.connect(Unknown Source)
+	at java.net.Socket.connect(Unknown Source)
+	at java.net.Socket.<init>(Unknown Source)
+	at java.net.Socket.<init>(Unknown Source)
+	at com.mysql.jdbc.StandardSocketFactory.connect(StandardSocketFactory.java:257)
+	at com.mysql.jdbc.MysqlIO.<init>(MysqlIO.java:294)
+	... 40 more
+------
+
+2015 七月 16 16:07:59 INFO  org.redot.clover.core.CloverManager - clover added to DataSource
+2015 七月 16 16:07:59 DEBUG org.redot.clover.core.CloverManager - DataSource load success.
+2015 七月 16 16:07:59 INFO  org.redot.clover.demon.DemonService - Start Demon Service...
+2015 七月 16 16:07:59 INFO  org.redot.clover.demon.DemonService - 初始化系統環境變量
+2015 七月 16 16:07:59 INFO  org.redot.clover.demon.DemonService - Add Demo [print]
+2015 七月 16 16:07:59 INFO  org.redot.clover.demon.DemonService - Add Demo [print template initialize]
+2015 七月 16 16:08:00 DEBUG org.redot.clover.core.CloverManager - DataSource can not find! Shutdown Server.
+2015 七月 16 16:13:53 INFO  org.redot.library.db.IDataSource - databse:clover,set db driver
+2015 七月 16 16:13:53 WARN  com.jolbox.bonecp.BoneCPConfig - Please use setIdleConnectionTestPeriodInMinutes in place of setIdleConnectionTestPeriod. This method has been deprecated.
+2015 七月 16 16:13:53 WARN  com.jolbox.bonecp.BoneCPConfig - Please use setIdleMaxAgeInMinutes in place of setIdleMaxAge. This method has been deprecated.
+2015 七月 16 16:13:54 ERROR org.redot.library.db.IDataSource - databse:clover,can't init
+2015 七月 16 16:13:54 ERROR org.redot.library.db.IDataSource - java.sql.SQLException: Unable to open a test connection to the given database. JDBC url = jdbc:mysql://127.0.0.1:3306/clover?useUnicode=true&characterEncoding=utf8, username = root. Terminating connection pool. Original Exception: ------
+com.mysql.jdbc.exceptions.jdbc4.CommunicationsException: Communications link failure
+
+The last packet sent successfully to the server was 0 milliseconds ago. The driver has not received any packets from the server.
+	at sun.reflect.NativeConstructorAccessorImpl.newInstance0(Native Method)
+	at sun.reflect.NativeConstructorAccessorImpl.newInstance(Unknown Source)
+	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(Unknown Source)
+	at java.lang.reflect.Constructor.newInstance(Unknown Source)
+	at com.mysql.jdbc.Util.handleNewInstance(Util.java:411)
+	at com.mysql.jdbc.SQLError.createCommunicationsException(SQLError.java:1116)
+	at com.mysql.jdbc.MysqlIO.<init>(MysqlIO.java:344)
+	at com.mysql.jdbc.ConnectionImpl.coreConnect(ConnectionImpl.java:2333)
+	at com.mysql.jdbc.ConnectionImpl.connectOneTryOnly(ConnectionImpl.java:2370)
+	at com.mysql.jdbc.ConnectionImpl.createNewIO(ConnectionImpl.java:2154)
+	at com.mysql.jdbc.ConnectionImpl.<init>(ConnectionImpl.java:792)
+	at com.mysql.jdbc.JDBC4Connection.<init>(JDBC4Connection.java:47)
+	at sun.reflect.NativeConstructorAccessorImpl.newInstance0(Native Method)
+	at sun.reflect.NativeConstructorAccessorImpl.newInstance(Unknown Source)
+	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(Unknown Source)
+	at java.lang.reflect.Constructor.newInstance(Unknown Source)
+	at com.mysql.jdbc.Util.handleNewInstance(Util.java:411)
+	at com.mysql.jdbc.ConnectionImpl.getInstance(ConnectionImpl.java:381)
+	at com.mysql.jdbc.NonRegisteringDriver.connect(NonRegisteringDriver.java:305)
+	at java.sql.DriverManager.getConnection(Unknown Source)
+	at java.sql.DriverManager.getConnection(Unknown Source)
+	at com.jolbox.bonecp.BoneCP.obtainRawInternalConnection(BoneCP.java:256)
+	at com.jolbox.bonecp.BoneCP.<init>(BoneCP.java:305)
+	at org.redot.library.db.IDataSource.init(IDataSource.java:55)
+	at org.redot.library.db.IDataBase.init(IDataBase.java:50)
+	at org.redot.library.db.IDataBaseFactory.add(IDataBaseFactory.java:36)
+	at org.redot.clover.core.CloverManager.init(CloverManager.java:83)
+	at org.redot.clover.core.CloverManager.<init>(CloverManager.java:50)
+	at org.redot.clover.core.CloverManager.getInstance(CloverManager.java:114)
+	at org.redot.clover.core.CloverServlet.init(CloverServlet.java:18)
+	at javax.servlet.GenericServlet.init(GenericServlet.java:158)
+	at org.apache.catalina.core.StandardWrapper.initServlet(StandardWrapper.java:1231)
+	at org.apache.catalina.core.StandardWrapper.loadServlet(StandardWrapper.java:1144)
+	at org.apache.catalina.core.StandardWrapper.load(StandardWrapper.java:1031)
+	at org.apache.catalina.core.StandardContext.loadOnStartup(StandardContext.java:4914)
+	at org.apache.catalina.core.StandardContext.startInternal(StandardContext.java:5201)
+	at org.apache.catalina.util.LifecycleBase.start(LifecycleBase.java:150)
+	at org.apache.catalina.core.ContainerBase.addChildInternal(ContainerBase.java:725)
+	at org.apache.catalina.core.ContainerBase.addChild(ContainerBase.java:701)
+	at org.apache.catalina.core.StandardHost.addChild(StandardHost.java:717)
+	at org.apache.catalina.startup.HostConfig.deployWAR(HostConfig.java:945)
+	at org.apache.catalina.startup.HostConfig$DeployWar.run(HostConfig.java:1768)
+	at java.util.concurrent.Executors$RunnableAdapter.call(Unknown Source)
+	at java.util.concurrent.FutureTask.run(Unknown Source)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(Unknown Source)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(Unknown Source)
+	at java.lang.Thread.run(Unknown Source)
+Caused by: java.net.ConnectException: Connection refused: connect
+	at java.net.DualStackPlainSocketImpl.connect0(Native Method)
+	at java.net.DualStackPlainSocketImpl.socketConnect(Unknown Source)
+	at java.net.AbstractPlainSocketImpl.doConnect(Unknown Source)
+	at java.net.AbstractPlainSocketImpl.connectToAddress(Unknown Source)
+	at java.net.AbstractPlainSocketImpl.connect(Unknown Source)
+	at java.net.PlainSocketImpl.connect(Unknown Source)
+	at java.net.SocksSocketImpl.connect(Unknown Source)
+	at java.net.Socket.connect(Unknown Source)
+	at java.net.Socket.connect(Unknown Source)
+	at java.net.Socket.<init>(Unknown Source)
+	at java.net.Socket.<init>(Unknown Source)
+	at com.mysql.jdbc.StandardSocketFactory.connect(StandardSocketFactory.java:257)
+	at com.mysql.jdbc.MysqlIO.<init>(MysqlIO.java:294)
+	... 40 more
+------
+
+2015 七月 16 16:13:54 INFO  org.redot.clover.core.CloverManager - clover added to DataSource
+2015 七月 16 16:13:54 DEBUG org.redot.clover.core.CloverManager - DataSource load success.
+2015 七月 16 16:13:54 INFO  org.redot.clover.demon.DemonService - Start Demon Service...
+2015 七月 16 16:13:54 INFO  org.redot.clover.demon.DemonService - 初始化系統環境變量
+2015 七月 16 16:13:54 INFO  org.redot.clover.demon.DemonService - Add Demo [print]
+2015 七月 16 16:13:54 INFO  org.redot.clover.demon.DemonService - Add Demo [print template initialize]
+2015 七月 16 16:13:55 DEBUG org.redot.clover.core.CloverManager - DataSource can not find! Shutdown Server.
+2015 七月 16 16:15:06 INFO  org.redot.library.db.IDataSource - databse:clover,set db driver
+2015 七月 16 16:15:06 WARN  com.jolbox.bonecp.BoneCPConfig - Please use setIdleConnectionTestPeriodInMinutes in place of setIdleConnectionTestPeriod. This method has been deprecated.
+2015 七月 16 16:15:06 WARN  com.jolbox.bonecp.BoneCPConfig - Please use setIdleMaxAgeInMinutes in place of setIdleMaxAge. This method has been deprecated.
+2015 七月 16 16:15:08 ERROR org.redot.library.db.IDataSource - databse:clover,can't init
+2015 七月 16 16:15:08 ERROR org.redot.library.db.IDataSource - java.sql.SQLException: Unable to open a test connection to the given database. JDBC url = jdbc:mysql://127.0.0.1:3306/clover?useUnicode=true&characterEncoding=utf8, username = root. Terminating connection pool. Original Exception: ------
+com.mysql.jdbc.exceptions.jdbc4.CommunicationsException: Communications link failure
+
+The last packet sent successfully to the server was 0 milliseconds ago. The driver has not received any packets from the server.
+	at sun.reflect.NativeConstructorAccessorImpl.newInstance0(Native Method)
+	at sun.reflect.NativeConstructorAccessorImpl.newInstance(Unknown Source)
+	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(Unknown Source)
+	at java.lang.reflect.Constructor.newInstance(Unknown Source)
+	at com.mysql.jdbc.Util.handleNewInstance(Util.java:411)
+	at com.mysql.jdbc.SQLError.createCommunicationsException(SQLError.java:1116)
+	at com.mysql.jdbc.MysqlIO.<init>(MysqlIO.java:344)
+	at com.mysql.jdbc.ConnectionImpl.coreConnect(ConnectionImpl.java:2333)
+	at com.mysql.jdbc.ConnectionImpl.connectOneTryOnly(ConnectionImpl.java:2370)
+	at com.mysql.jdbc.ConnectionImpl.createNewIO(ConnectionImpl.java:2154)
+	at com.mysql.jdbc.ConnectionImpl.<init>(ConnectionImpl.java:792)
+	at com.mysql.jdbc.JDBC4Connection.<init>(JDBC4Connection.java:47)
+	at sun.reflect.NativeConstructorAccessorImpl.newInstance0(Native Method)
+	at sun.reflect.NativeConstructorAccessorImpl.newInstance(Unknown Source)
+	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(Unknown Source)
+	at java.lang.reflect.Constructor.newInstance(Unknown Source)
+	at com.mysql.jdbc.Util.handleNewInstance(Util.java:411)
+	at com.mysql.jdbc.ConnectionImpl.getInstance(ConnectionImpl.java:381)
+	at com.mysql.jdbc.NonRegisteringDriver.connect(NonRegisteringDriver.java:305)
+	at java.sql.DriverManager.getConnection(Unknown Source)
+	at java.sql.DriverManager.getConnection(Unknown Source)
+	at com.jolbox.bonecp.BoneCP.obtainRawInternalConnection(BoneCP.java:256)
+	at com.jolbox.bonecp.BoneCP.<init>(BoneCP.java:305)
+	at org.redot.library.db.IDataSource.init(IDataSource.java:55)
+	at org.redot.library.db.IDataBase.init(IDataBase.java:50)
+	at org.redot.library.db.IDataBaseFactory.add(IDataBaseFactory.java:36)
+	at org.redot.clover.core.CloverManager.init(CloverManager.java:83)
+	at org.redot.clover.core.CloverManager.<init>(CloverManager.java:50)
+	at org.redot.clover.core.CloverManager.getInstance(CloverManager.java:114)
+	at org.redot.clover.core.CloverServlet.init(CloverServlet.java:18)
+	at javax.servlet.GenericServlet.init(GenericServlet.java:158)
+	at org.apache.catalina.core.StandardWrapper.initServlet(StandardWrapper.java:1231)
+	at org.apache.catalina.core.StandardWrapper.loadServlet(StandardWrapper.java:1144)
+	at org.apache.catalina.core.StandardWrapper.load(StandardWrapper.java:1031)
+	at org.apache.catalina.core.StandardContext.loadOnStartup(StandardContext.java:4914)
+	at org.apache.catalina.core.StandardContext.startInternal(StandardContext.java:5201)
+	at org.apache.catalina.util.LifecycleBase.start(LifecycleBase.java:150)
+	at org.apache.catalina.core.ContainerBase.addChildInternal(ContainerBase.java:725)
+	at org.apache.catalina.core.ContainerBase.addChild(ContainerBase.java:701)
+	at org.apache.catalina.core.StandardHost.addChild(StandardHost.java:717)
+	at org.apache.catalina.startup.HostConfig.deployDirectory(HostConfig.java:1101)
+	at org.apache.catalina.startup.HostConfig$DeployDirectory.run(HostConfig.java:1786)
+	at java.util.concurrent.Executors$RunnableAdapter.call(Unknown Source)
+	at java.util.concurrent.FutureTask.run(Unknown Source)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(Unknown Source)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(Unknown Source)
+	at java.lang.Thread.run(Unknown Source)
+Caused by: java.net.ConnectException: Connection refused: connect
+	at java.net.DualStackPlainSocketImpl.connect0(Native Method)
+	at java.net.DualStackPlainSocketImpl.socketConnect(Unknown Source)
+	at java.net.AbstractPlainSocketImpl.doConnect(Unknown Source)
+	at java.net.AbstractPlainSocketImpl.connectToAddress(Unknown Source)
+	at java.net.AbstractPlainSocketImpl.connect(Unknown Source)
+	at java.net.PlainSocketImpl.connect(Unknown Source)
+	at java.net.SocksSocketImpl.connect(Unknown Source)
+	at java.net.Socket.connect(Unknown Source)
+	at java.net.Socket.connect(Unknown Source)
+	at java.net.Socket.<init>(Unknown Source)
+	at java.net.Socket.<init>(Unknown Source)
+	at com.mysql.jdbc.StandardSocketFactory.connect(StandardSocketFactory.java:257)
+	at com.mysql.jdbc.MysqlIO.<init>(MysqlIO.java:294)
+	... 40 more
+------
+
+2015 七月 16 16:15:08 INFO  org.redot.clover.core.CloverManager - clover added to DataSource
+2015 七月 16 16:15:08 DEBUG org.redot.clover.core.CloverManager - DataSource load success.
+2015 七月 16 16:15:08 INFO  org.redot.clover.demon.DemonService - Start Demon Service...
+2015 七月 16 16:15:08 INFO  org.redot.clover.demon.DemonService - 初始化系統環境變量
+2015 七月 16 16:15:08 INFO  org.redot.clover.demon.DemonService - Add Demo [print]
+2015 七月 16 16:15:08 INFO  org.redot.clover.demon.DemonService - Add Demo [print template initialize]
+2015 七月 16 16:15:09 DEBUG org.redot.clover.core.CloverManager - DataSource can not find! Shutdown Server.
+2015 七月 16 16:15:09 DEBUG org.redot.clover.core.CloverManager - DataSource can not find! Shutdown Server.
+2015 七月 16 16:23:36 INFO  org.redot.library.db.IDataSource - databse:clover,set db driver
+2015 七月 16 16:23:36 WARN  com.jolbox.bonecp.BoneCPConfig - Please use setIdleConnectionTestPeriodInMinutes in place of setIdleConnectionTestPeriod. This method has been deprecated.
+2015 七月 16 16:23:36 WARN  com.jolbox.bonecp.BoneCPConfig - Please use setIdleMaxAgeInMinutes in place of setIdleMaxAge. This method has been deprecated.
+2015 七月 16 16:23:38 ERROR org.redot.library.db.IDataSource - databse:clover,can't init
+2015 七月 16 16:23:38 ERROR org.redot.library.db.IDataSource - java.sql.SQLException: Unable to open a test connection to the given database. JDBC url = jdbc:mysql://127.0.0.1:3306/clover?useUnicode=true&characterEncoding=utf8, username = root. Terminating connection pool. Original Exception: ------
+com.mysql.jdbc.exceptions.jdbc4.CommunicationsException: Communications link failure
+
+The last packet sent successfully to the server was 0 milliseconds ago. The driver has not received any packets from the server.
+	at sun.reflect.NativeConstructorAccessorImpl.newInstance0(Native Method)
+	at sun.reflect.NativeConstructorAccessorImpl.newInstance(Unknown Source)
+	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(Unknown Source)
+	at java.lang.reflect.Constructor.newInstance(Unknown Source)
+	at com.mysql.jdbc.Util.handleNewInstance(Util.java:411)
+	at com.mysql.jdbc.SQLError.createCommunicationsException(SQLError.java:1116)
+	at com.mysql.jdbc.MysqlIO.<init>(MysqlIO.java:344)
+	at com.mysql.jdbc.ConnectionImpl.coreConnect(ConnectionImpl.java:2333)
+	at com.mysql.jdbc.ConnectionImpl.connectOneTryOnly(ConnectionImpl.java:2370)
+	at com.mysql.jdbc.ConnectionImpl.createNewIO(ConnectionImpl.java:2154)
+	at com.mysql.jdbc.ConnectionImpl.<init>(ConnectionImpl.java:792)
+	at com.mysql.jdbc.JDBC4Connection.<init>(JDBC4Connection.java:47)
+	at sun.reflect.NativeConstructorAccessorImpl.newInstance0(Native Method)
+	at sun.reflect.NativeConstructorAccessorImpl.newInstance(Unknown Source)
+	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(Unknown Source)
+	at java.lang.reflect.Constructor.newInstance(Unknown Source)
+	at com.mysql.jdbc.Util.handleNewInstance(Util.java:411)
+	at com.mysql.jdbc.ConnectionImpl.getInstance(ConnectionImpl.java:381)
+	at com.mysql.jdbc.NonRegisteringDriver.connect(NonRegisteringDriver.java:305)
+	at java.sql.DriverManager.getConnection(Unknown Source)
+	at java.sql.DriverManager.getConnection(Unknown Source)
+	at com.jolbox.bonecp.BoneCP.obtainRawInternalConnection(BoneCP.java:256)
+	at com.jolbox.bonecp.BoneCP.<init>(BoneCP.java:305)
+	at org.redot.library.db.IDataSource.init(IDataSource.java:55)
+	at org.redot.library.db.IDataBase.init(IDataBase.java:50)
+	at org.redot.library.db.IDataBaseFactory.add(IDataBaseFactory.java:36)
+	at org.redot.clover.core.CloverManager.init(CloverManager.java:83)
+	at org.redot.clover.core.CloverManager.<init>(CloverManager.java:50)
+	at org.redot.clover.core.CloverManager.getInstance(CloverManager.java:114)
+	at org.redot.clover.core.CloverServlet.init(CloverServlet.java:18)
+	at javax.servlet.GenericServlet.init(GenericServlet.java:158)
+	at org.apache.catalina.core.StandardWrapper.initServlet(StandardWrapper.java:1231)
+	at org.apache.catalina.core.StandardWrapper.loadServlet(StandardWrapper.java:1144)
+	at org.apache.catalina.core.StandardWrapper.load(StandardWrapper.java:1031)
+	at org.apache.catalina.core.StandardContext.loadOnStartup(StandardContext.java:4914)
+	at org.apache.catalina.core.StandardContext.startInternal(StandardContext.java:5201)
+	at org.apache.catalina.util.LifecycleBase.start(LifecycleBase.java:150)
+	at org.apache.catalina.core.ContainerBase.addChildInternal(ContainerBase.java:725)
+	at org.apache.catalina.core.ContainerBase.addChild(ContainerBase.java:701)
+	at org.apache.catalina.core.StandardHost.addChild(StandardHost.java:717)
+	at org.apache.catalina.startup.HostConfig.deployDirectory(HostConfig.java:1101)
+	at org.apache.catalina.startup.HostConfig$DeployDirectory.run(HostConfig.java:1786)
+	at java.util.concurrent.Executors$RunnableAdapter.call(Unknown Source)
+	at java.util.concurrent.FutureTask.run(Unknown Source)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(Unknown Source)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(Unknown Source)
+	at java.lang.Thread.run(Unknown Source)
+Caused by: java.net.ConnectException: Connection refused: connect
+	at java.net.DualStackPlainSocketImpl.connect0(Native Method)
+	at java.net.DualStackPlainSocketImpl.socketConnect(Unknown Source)
+	at java.net.AbstractPlainSocketImpl.doConnect(Unknown Source)
+	at java.net.AbstractPlainSocketImpl.connectToAddress(Unknown Source)
+	at java.net.AbstractPlainSocketImpl.connect(Unknown Source)
+	at java.net.PlainSocketImpl.connect(Unknown Source)
+	at java.net.SocksSocketImpl.connect(Unknown Source)
+	at java.net.Socket.connect(Unknown Source)
+	at java.net.Socket.connect(Unknown Source)
+	at java.net.Socket.<init>(Unknown Source)
+	at java.net.Socket.<init>(Unknown Source)
+	at com.mysql.jdbc.StandardSocketFactory.connect(StandardSocketFactory.java:257)
+	at com.mysql.jdbc.MysqlIO.<init>(MysqlIO.java:294)
+	... 40 more
+------
+
+2015 七月 16 16:23:38 INFO  org.redot.clover.core.CloverManager - clover added to DataSource
+2015 七月 16 16:23:38 DEBUG org.redot.clover.core.CloverManager - DataSource load success.
+2015 七月 16 16:23:38 INFO  org.redot.clover.demon.DemonService - Start Demon Service...
+2015 七月 16 16:23:38 INFO  org.redot.clover.demon.DemonService - 初始化系統環境變量
+2015 七月 16 16:23:38 INFO  org.redot.clover.demon.DemonService - Add Demo [print]
+2015 七月 16 16:23:38 INFO  org.redot.clover.demon.DemonService - Add Demo [print template initialize]
+2015 七月 16 16:23:39 DEBUG org.redot.clover.core.CloverManager - DataSource can not find! Shutdown Server.
+2015 七月 16 16:23:39 DEBUG org.redot.clover.core.CloverManager - DataSource can not find! Shutdown Server.

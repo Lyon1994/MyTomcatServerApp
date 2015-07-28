@@ -1,0 +1,24 @@
+package org.redot.clover.core;
+
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 11-5-9
+ * Time: 下午4:28
+ * To change this template use File | Settings | File Templates.
+ */
+public class CloverServlet extends HttpServlet{
+
+    public void init() throws ServletException {
+        CloverManager.getInstance();
+    }
+
+    @Override
+    public void destroy() {
+        super.destroy();
+        CloverManager.getInstance().destroy();
+    }
+}

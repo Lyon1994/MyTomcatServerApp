@@ -1,0 +1,109 @@
+package org.redot.library.lang;
+
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.text.NumberFormat;
+
+/**
+ * Copyright By Redot.
+ * User: CASH
+ * Date: 2009-10-10
+ * Time: 17:13:06
+ */
+public class NumberUtils {
+
+    public static int toInt(Object obj){
+        try{
+            return Integer.parseInt(String.valueOf(obj));
+        }
+        catch(Exception e){
+            //e.printStackTrace();
+        }
+        return 0;
+    }
+
+    public static long toLong(Object obj){
+        try{
+            return Long.parseLong(String.valueOf(obj));
+        }
+        catch(Exception e){
+            //e.printStackTrace();
+        }
+        return 0L;
+    }
+
+    public static float toFloat(Object obj){
+        try{
+            float f = Float.parseFloat(String.valueOf(obj));
+            if(Float.isNaN(f)){
+                return 0;
+            }
+            return f;
+        }
+        catch(Exception e){
+            //e.printStackTrace();
+        }
+        return 0F;
+    }
+
+    public static double toDouble(Object obj){
+        try{
+            return Double.parseDouble(String.valueOf(obj));
+        }
+        catch(Exception e){
+            //e.printStackTrace();
+        }
+        return 0D;
+    }
+
+    public static boolean isInt(Object obj){
+        try{
+            Integer.parseInt(String.valueOf(obj));
+            return true;
+        }
+        catch(Exception e){
+            //e.printStackTrace();
+        }
+        return false;
+    }
+
+    public static String toDecimal(double d, int weishu, boolean half_up){
+		BigDecimal bd = new BigDecimal(d);
+	    if(half_up){
+	    	return bd.setScale(weishu, 4).toString();
+		}
+	    else{
+	    	return bd.setScale(weishu, RoundingMode.DOWN).toString();
+		}
+	}
+
+    public static String toDecimal(double d, int weishu){
+		return toDecimal(d, weishu, true);
+	}
+
+	public static String toPercent(double d, int weishu){
+        if(Double.isNaN(d)){
+            return "";
+        }
+		NumberFormat format = NumberFormat.getPercentInstance();
+	    format.setMinimumFractionDigits(weishu);
+	    return format.format(d);
+	}
+
+    public static int clearZero(double d){
+		BigDecimal bd = new BigDecimal(d);
+	    return Integer.valueOf(bd.setScale(0, RoundingMode.HALF_UP).toString());
+	}
+
+    public static void main(String[] args){
+
+        double f = 651.5;
+        //BigDecimal bd = new BigDecimal(f);
+        //String s =  bd.setScale(0).toString();
+        //System.out.println(s);
+	    //int x = Integer.valueOf(bd.setScale(0).toString());
+        //System.out.println(x);
+        System.out.println(toDecimal(f, 0, false));
+        //System.out.println(clearZero(f));
+    }
+}

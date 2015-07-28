@@ -1,0 +1,267 @@
+package org.redot.clover.app.product;
+
+import org.redot.clover.core.CloverManager;
+import org.redot.clover.core.ext.BaseAction;
+import org.redot.library.db.IQuery;
+import org.redot.library.db.ITable;
+import org.redot.library.lang.ArrayUtils;
+import org.redot.library.lang.StringUtils;
+import org.restlet.data.Form;
+
+import java.util.ArrayList;
+import java.util.Hashtable;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 11-4-26
+ * Time: 下午4:48
+ * To change this template use File | Settings | File Templates.
+ */
+public class ProductMenuAction extends BaseAction {
+
+    public List<Map> tree(String P_MENU_ID) {
+        P_MENU_ID = P_MENU_ID == null || P_MENU_ID.equals("") ? "0" : P_MENU_ID;
+        String sql = "SELECT * FROM X_P_MENU WHERE P_MENU_STATUS <> 2 AND P_MENU_PARENT= " + P_MENU_ID + " ORDER BY P_MENU_SORT, P_MENU_ID";
+        IQuery query = getQuery();
+        List<Map> list = query.doQuery(sql).tables();
+        List<Map> data = new ArrayList<Map>();
+        for (int i = 0; i < list.size(); i++) {
+            Map m = list.get(i);
+            Map d = new Hashtable();
+            String P_MENU_ID_ = StringUtils.toString(m.get("P_MENU_ID"));
+            d.put("ID", P_MENU_ID_);
+            d.put("NAME", StringUtils.toString(m.get("P_MENU_NAME")));
+            d.put("EXT", m);
+            sql = "SELECT * FROM X_P_MENU WHERE P_MENU_STATUS <> 2 AND P_MENU_PARENT=" + P_MENU_ID_;
+            if (query.rowCount(sql) > 0) {
+                d.put("ITEM", tree(P_MENU_ID_));
+            } else {
+                d.put("ITEM", new ArrayList<Map>());
+            }
+            data.add(d);
+        }
+        query.free();
+        return data;
+    }
+
+    public List<Map> show(String P_MENU_ID) {
+        P_MENU_ID = P_MENU_ID == null || P_MENU_ID.equals("") ? "0" : P_MENU_ID;
+        String sql = "SELECT P_MENU_ID, P_MENU_NAME, P_MENU_PARENT,P_MENU_PS FROM X_P_MENU WHERE P_MENU_STATUS <> 2 AND P_MENU_PARENT= " + P_MENU_ID + " ORDER BY P_MENU_SORT, P_MENU_ID";
+        //System.out.println(sql);
+        IQuery query = getQuery();
+        List<Map> list = query.doQuery(sql).tables();
+        sql = "SELECT P_ID FROM";
+        List<Map> data = new ArrayList<Map>();
+        for (int i = 0; i < list.size(); i++) {
+            Map m = list.get(i);
+            Map d = new Hashtable();
+            String P_MENU_ID_ = StringUtils.toString(m.get("P_MENU_ID"));
+            d.put("ID", P_MENU_ID_);
+            d.put("NAME", StringUtils.toString(m.get("P_MENU_NAME")));
+            d.put("EXT", m);
+            m.put("P_TYPE_ID", P_MENU_ID_);
+            m.put("P_TYPE_NAME", StringUtils.toString(m.get("P_MENU_NAME")));
+            List<Map> items = new ArrayList<Map>();
+            String P_MENU_PS = StringUtils.toString(m.get("P_MENU_PS"));
+            if (P_MENU_PS.length() > 0) {
+                sql = "SELECT A.P_ID, A.P_NAME, A.P_CODE, A.P_TYPE_ID, A.P_NAME_EN, A.P_NAME_EXT, A.P_PRICE, A.P_PIC, B.UNIT_NAME AS P_UNIT_NAME, A.P_TAG_SEASON, A.P_TAG_WEIGHT " +
+                        "FROM X_P A " +
+                        "LEFT JOIN X_UNIT B ON A.P_UNIT_ID = B.UNIT_ID " +
+                        "WHERE A.P_STATUS = 0 AND A.P_ID IN (" + P_MENU_PS + ") AND A.P_ID NOT IN (SELECT P_ID FROM X_P_STOCK WHERE P_NUM = 0 AND P_STOCK_STATUS = 1) ORDER BY A.P_SORT, A.P_ID";
+                List<Map> PS = query.doQuery(sql).tables();
+                if (PS.size() > 0) {
+                    List<Map> PSX = new ArrayList<Map>();
+                    for (int j = 0; j < PS.size(); j++) {
+                        Map mx = PS.get(j);
+                        Map dx = new Hashtable();
+                        String P_ID = StringUtils.toString(mx.get("P_ID"));
+                        dx.put("ID", P_ID);
+                        dx.put("NAME", StringUtils.toString(mx.get("P_NAME")));
+                        sql = "SELECT A.* FROM X_P_TASTE A WHERE A.P_ID = " + P_ID;
+                        List<Map> P_TASTES = query.doQuery(sql).tables();
+                        mx.put("P_TASTES", P_TASTES);
+                        sql = "SELECT A.* FROM X_P_DETAIL A WHERE A.P_ID = " + P_ID + " ORDER BY A.P_DETAIL_SORT";
+                        List<Map> P_DETAILS = query.doQuery(sql).tables();
+                        mx.put("P_DETAILS", P_DETAILS);
+                        String P_PIC = StringUtils.toString(mx.get("P_PIC"));
+                        if (P_PIC.length() > 0) {
+                            P_PIC = "/product/pic/" + P_ID;
+                        }
+                        mx.put("P_PIC", P_PIC);
+                        dx.put("EXT", mx);
+                        dx.put("ITEM", new ArrayList());
+                        PSX.add(dx);
+                    }
+                    if (P_MENU_ID.equals("0")) {
+                        Map dd = new Hashtable();
+                        dd.put("ID", P_MENU_ID_);
+                        dd.put("NAME", StringUtils.toString(m.get("P_MENU_NAME")));
+                        dd.put("EXT", m);
+                        dd.put("ITEM", PSX);
+                        items.add(dd);
+                    } else {
+                        items.addAll(PSX);
+                    }
+                }
+            }
+            sql = "SELECT * FROM X_P_MENU WHERE P_MENU_STATUS <> 2 AND P_MENU_PARENT=" + P_MENU_ID_ + " ORDER BY P_MENU_SORT, P_MENU_ID";
+            if (query.rowCount(sql) > 0) {
+                items.addAll(show(P_MENU_ID_));
+            }
+            d.put("ITEM", items);
+            data.add(d);
+        }
+        query.free();
+        return data;
+    }
+
+    public List<Map> showReal(String P_TYPE_ID) {
+        P_TYPE_ID = P_TYPE_ID == null || P_TYPE_ID.equals("") ? "0" : P_TYPE_ID;
+        String sql = "SELECT P_TYPE_ID, P_TYPE_NAME, P_TYPE_PARENT FROM X_P_TYPE WHERE P_TYPE_STATUS <> 2 AND P_TYPE_PARENT= " + P_TYPE_ID + " ORDER BY P_TYPE_SORT, P_TYPE_ID";
+//        System.out.println(sql);
+        IQuery query = getQuery();
+        List<Map> list = query.doQuery(sql).tables();
+        List<Map> data = new ArrayList<Map>();
+        for (int i = 0; i < list.size(); i++) {
+            Map m = list.get(i);
+            Map d = new Hashtable();
+            String P_TYPE_ID_ = StringUtils.toString(m.get("P_TYPE_ID"));
+            d.put("ID", P_TYPE_ID_);
+            d.put("NAME", StringUtils.toString(m.get("P_TYPE_NAME")));
+            d.put("EXT", m);
+            m.put("P_TYPE_ID", P_TYPE_ID_);
+            m.put("P_TYPE_NAME", StringUtils.toString(m.get("P_TYPE_NAME")));
+            List<Map> items = new ArrayList<Map>();
+
+
+            sql = "SELECT A.P_ID, A.P_NAME, A.P_CODE, A.P_TYPE_ID, A.P_NAME_EN, A.P_NAME_EXT, A.P_PRICE, A.P_PIC, B.UNIT_NAME AS P_UNIT_NAME, A.P_TAG_SEASON " +
+                    "FROM X_P A " +
+                    "LEFT JOIN X_UNIT B ON A.P_UNIT_ID = B.UNIT_ID " +
+                    "WHERE A.P_STATUS = 0 AND A.P_TYPE_ID =" + P_TYPE_ID_ + " AND A.P_ID NOT IN (SELECT P_ID FROM X_P_STOCK WHERE P_NUM = 0 AND P_STOCK_STATUS = 1) ORDER BY A.P_SORT, A.P_ID";
+            List<Map> PS = query.doQuery(sql).tables();
+            if (PS.size() > 0) {
+                List<Map> PSX = new ArrayList<Map>();
+                for (int j = 0; j < PS.size(); j++) {
+                    Map mx = PS.get(j);
+                    Map dx = new Hashtable();
+                    String P_ID = StringUtils.toString(mx.get("P_ID"));
+                    dx.put("ID", P_ID);
+                    dx.put("NAME", StringUtils.toString(mx.get("P_NAME")));
+                    sql = "SELECT A.* FROM X_P_TASTE A WHERE A.P_ID = " + P_ID;
+                    List<Map> P_TASTES = query.doQuery(sql).tables();
+                    mx.put("P_TASTES", P_TASTES);
+                    sql = "SELECT A.* FROM X_P_DETAIL A WHERE A.P_ID = " + P_ID + " ORDER BY A.P_DETAIL_SORT";
+                    List<Map> P_DETAILS = query.doQuery(sql).tables();
+                    mx.put("P_DETAILS", P_DETAILS);
+                    String P_PIC = StringUtils.toString(mx.get("P_PIC"));
+                    if (P_PIC.length() > 0) {
+                        P_PIC = "/product/pic/" + P_ID;
+                    }
+                    mx.put("P_PIC", P_PIC);
+                    dx.put("EXT", mx);
+                    dx.put("ITEM", new ArrayList());
+                    PSX.add(dx);
+                }
+                if (P_TYPE_ID.equals("0")) {
+                    Map dd = new Hashtable();
+                    dd.put("ID", P_TYPE_ID);
+                    dd.put("NAME", StringUtils.toString(m.get("P_TYPE_NAME")));
+                    dd.put("EXT", m);
+                    dd.put("ITEM", PSX);
+                    items.add(dd);
+                } else {
+                    items.addAll(PSX);
+                }
+            }
+
+            sql = "SELECT * FROM X_P_TYPE WHERE P_TYPE_STATUS <> 2 AND P_TYPE_PARENT=" + P_TYPE_ID_ + " ORDER BY P_TYPE_SORT, P_TYPE_ID";
+            int count = query.rowCount(sql);
+//            System.out.println(sql);
+//            System.out.println(count);
+            if ( count> 0) {
+                items.addAll(showReal(P_TYPE_ID_));
+            }
+            d.put("ITEM", items);
+            data.add(d);
+        }
+        query.free();
+        return data;
+    }
+
+    public Map get(String P_MENU_ID) {
+        if (P_MENU_ID == null || P_MENU_ID.equals("")) {
+            return null;
+        }
+        String sql = "SELECT A.* FROM X_P_MENU A WHERE A.P_MENU_ID=" + P_MENU_ID;
+        IQuery query = getQuery();
+        Map m = query.doQuery(sql).table();
+        if (m == null) {
+            query.free();
+            return m;
+        }
+        String P_MENU_PS = StringUtils.toString(m.get("P_MENU_PS"));
+        if (P_MENU_PS.length() == 0) {
+            query.free();
+            return m;
+        }
+        sql = "SELECT P_NAME FROM X_P WHERE P_ID IN (" + P_MENU_PS + ")";
+        List<Map> P_NAMES = query.doQuery(sql).tables();
+        String P_MENU_PS_NAME = "";
+        for (int i = 0; i < P_NAMES.size(); i++) {
+            Map mx = P_NAMES.get(i);
+            if (i > 0) {
+                P_MENU_PS_NAME += ",";
+            }
+            P_MENU_PS_NAME += StringUtils.toString(mx.get("P_NAME"));
+        }
+        m.put("P_MENU_PS_NAME", P_MENU_PS_NAME);
+        query.free();
+        return m;
+    }
+
+    public int set(Form form) {
+        Map data = form.getValuesMap();
+        String P_MENU_ID = StringUtils.toString(data.get("P_MENU_ID"));
+        String P_MENU_PARENT = StringUtils.toString(data.get("P_MENU_PARENT"));
+        if (P_MENU_PARENT.length() == 0) {
+            data.put("P_MENU_PARENT", "0");
+        }
+        ITable t = getTable("X_P_MENU").clearData();
+        int result;
+        if (P_MENU_ID.length() == 0) {
+            P_MENU_ID = String.valueOf(t.getMaxID("P_MENU_ID"));
+            data.put("P_MENU_ID", P_MENU_ID);
+            result = t.data(data).create();
+        } else {
+            result = t.data(data).where(t.column("P_MENU_ID").eq(P_MENU_ID)).update();
+        }
+        if (result < 0) {
+            return CloverManager.CODE_FAILED;
+        }
+        return CloverManager.CODE_SUCCESS;
+    }
+
+    public int delete(Form form) {
+        Map data = form.getValuesMap();
+        String P_MENU_ID = StringUtils.toString(data.get("P_MENU_ID"));
+        if (P_MENU_ID.length() == 0) {
+            return CloverManager.CODE_FAILED;
+        }
+        String sql = "SELECT * FROM X_P_MENU WHERE P_MENU_PARENT = " + P_MENU_ID;
+        IQuery query = getQuery();
+        if (query.rowCount(sql) > 0) {
+            query.free();
+            return CloverManager.CODE_FAILED;
+        }
+        sql = "UPDATE X_P_MENU SET P_MENU_STATUS = 2 WHERE P_MENU_ID = " + P_MENU_ID;
+        int result = query.doExec(sql);
+        query.free();
+        if (result < 0) {
+            return CloverManager.CODE_FAILED;
+        }
+        return CloverManager.CODE_SUCCESS;
+    }
+}

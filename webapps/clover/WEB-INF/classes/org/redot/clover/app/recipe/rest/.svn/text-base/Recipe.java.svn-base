@@ -1,0 +1,48 @@
+package org.redot.clover.app.recipe.rest;
+
+import org.redot.clover.app.desk.DeskAction;
+import org.redot.clover.app.recipe.RecipeAction;
+import org.redot.clover.core.data.DataPackage;
+import org.redot.clover.core.ext.BaseResource;
+import org.redot.clover.core.ext.Params;
+import org.restlet.resource.Get;
+import org.restlet.resource.Post;
+import org.restlet.resource.Put;
+
+import java.util.List;
+import java.util.Map;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: yh_admin
+ * Date: 12-8-20
+ * Time: 上午10:02
+ * To change this template use File | Settings | File Templates.
+ */
+public class Recipe extends BaseResource {
+    @Get("json")
+    public String doGet() {
+
+        DataPackage dp = new DataPackage();
+        RecipeAction a = new RecipeAction();
+//        List<Map> data = a.select(form);
+        dp.addTable("table", a.list(params));
+        return dp.toJSON();
+    }
+    @Post("json")
+    public String doPost() {
+
+        DataPackage dp = new DataPackage();
+        RecipeAction a = new   RecipeAction ();
+        dp.setStatus(a.set(form));
+        return dp.toJSON();
+    }
+
+    @Put("json")
+    public String doDelete() {
+        DataPackage dp = new DataPackage();
+        RecipeAction a= new   RecipeAction ();
+        dp.setStatus(a.delete(form));
+        return dp.toJSON();
+    }
+}

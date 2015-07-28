@@ -1,0 +1,41 @@
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svn/yee/!svn/ver/104/server/Redot/CloverServer/src/org/redot/clover/app/order
+END
+OrderDishAction.java
+K 25
+svn:wc:ra_dav:version-url
+V 98
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/order/OrderDishAction.java
+END
+CashRegisterAction.java
+K 25
+svn:wc:ra_dav:version-url
+V 101
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/order/CashRegisterAction.java
+END
+TakeAwayAction.java
+K 25
+svn:wc:ra_dav:version-url
+V 97
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/order/TakeAwayAction.java
+END
+OrderBillAction.java
+K 25
+svn:wc:ra_dav:version-url
+V 98
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/order/OrderBillAction.java
+END
+OrderReportAction.java
+K 25
+svn:wc:ra_dav:version-url
+V 101
+/svn/yee/!svn/ver/104/server/Redot/CloverServer/src/org/redot/clover/app/order/OrderReportAction.java
+END
+OrderAction.java
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/order/OrderAction.java
+END

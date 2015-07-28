@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<clover>
+    <resource class="org.redot.clover.app.organization.rest.DepartmentTree">/org/dept/tree</resource>
+    <resource class="org.redot.clover.app.organization.rest.DepartmentList">/org/dept/list</resource>
+    <resource class="org.redot.clover.app.organization.rest.DepartmentSelect">/org/dept/select</resource>
+    <resource class="org.redot.clover.app.organization.rest.Department">/org/dept/info/{DEPT_ID}</resource>
+    <resource class="org.redot.clover.app.organization.rest.Department">/org/dept</resource>
+    <resource class="org.redot.clover.app.organization.rest.DepartmentDelete">/org/dept/delete</resource>
+
+    <resource class="org.redot.clover.app.organization.rest.AccountList">/org/account/list</resource>
+    <resource class="org.redot.clover.app.organization.rest.Account">/org/account/info/{ACCOUNT_ID}</resource>
+    <resource class="org.redot.clover.app.organization.rest.Account">/org/account</resource>
+    <resource class="org.redot.clover.app.organization.rest.AccountDelete">/org/account/delete</resource>
+
+    <resource class="org.redot.clover.app.organization.rest.RoleList">/org/role/list</resource>
+    <resource class="org.redot.clover.app.organization.rest.RoleListX">/org/role/list/{PARENT}</resource>
+    <resource class="org.redot.clover.app.organization.rest.RoleTree">/org/role/tree</resource>
+    <resource class="org.redot.clover.app.organization.rest.RoleSelectFilter">/org/role/select/filter</resource>
+    <resource class="org.redot.clover.app.organization.rest.Role">/org/role/info/{ROLE_ID}</resource>
+    <resource class="org.redot.clover.app.organization.rest.Role">/org/role</resource>
+    <resource class="org.redot.clover.app.organization.rest.RoleDelete">/org/role/delete</resource>
+    <resource class="org.redot.clover.app.organization.rest.RoleDeductConfig">/org/role/deduct/config</resource>
+    <resource class="org.redot.clover.app.organization.rest.RoleDeduct">/org/role/deduct</resource>
+    <resource class="org.redot.clover.app.organization.rest.RoleDeduct">/org/role/deduct/{PARENT}</resource>
+    <resource class="org.redot.clover.app.organization.rest.RolePrms">/org/role/prms/{ID}</resource>
+
+    <resource class="org.redot.clover.app.organization.rest.AccountCheck">/login/check</resource>
+
+    <resource class="org.redot.clover.app.organization.rest.AccountSeller">/org/account/seller</resource>
+    <resource class="org.redot.clover.app.organization.rest.AccountSeller">/org/account/server</resource>
+    <resource class="org.redot.clover.app.organization.rest.AccountSeller">/org/account/od-user</resource>
+
+    <resource class="org.redot.clover.app.organization.rest.PrmsTree">/org/prms/tree</resource>
+
+
+    <resource class="org.redot.clover.app.organization.rest.PartList">/org/part/list</resource>
+    <resource class="org.redot.clover.app.organization.rest.PartList">/org/part/list/{ROLE_ID}</resource>
+
+    <resource class="org.redot.clover.app.organization.rest.PartLarge">/org/part/large</resource>
+    <resource class="org.redot.clover.app.organization.rest.PartSmall">/org/part/small</resource>
+    <resource class="org.redot.clover.app.organization.rest.PartSmall">/org/part/small/{DEPT_ID}</resource>
+
+    <resource class="org.redot.clover.app.organization.rest.PartLargeDelete">/org/part/delete/large</resource>
+    <resource class="org.redot.clover.app.organization.rest.PartSmallDelete">/org/part/delete/small</resource>
+    <resource class="org.redot.clover.app.organization.rest.PartListDelete">/org/part/delete/list</resource>
+
+</clover>

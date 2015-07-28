@@ -1,0 +1,49 @@
+package org.redot.clover.app.order.rest;
+
+import org.redot.clover.core.CloverManager;
+import org.redot.clover.core.data.DataPackage;
+import org.redot.clover.core.ext.BaseResource;
+import org.redot.clover.print.PrintJob;
+import org.redot.clover.print.PrintManager;
+import org.redot.clover.print.cases.DishOrderPrintCase;
+import org.redot.library.db.IQuery;
+import org.redot.library.lang.StringUtils;
+import org.restlet.resource.Post;
+
+import java.util.Hashtable;
+import java.util.Map;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 10-12-21
+ * Time: 上午10:43
+ * To change this template use File | Settings | File Templates.
+ */
+public class OrderBillPrint extends BaseResource {
+
+    @Post("json")
+    public String doPost(){
+        DataPackage dp = new DataPackage();
+        //OrderBillAction a = new OrderBillAction();
+        String BILL_ID = StringUtils.toString(form.getFirstValue("BILL_ID"));
+        if(BILL_ID.length() == 0){
+            dp.setStatus(0);
+        }
+        else{
+            String[] BILL_IDS = BILL_ID.split(",");
+            if(BILL_IDS != null && BILL_IDS.length > 0){
+                for(String _BILL_ID : BILL_IDS){
+                    Map params = new Hashtable();
+                    params.put("BILL_ID", _BILL_ID);
+                    PrintManager.getInstance().addJob(PrintJob.COMMAND_ORDER_BILL,params);
+                }
+                dp.setStatus(1);
+            }
+            else{
+                dp.setStatus(0);
+            }
+        }
+        return dp.toJSON();
+    }
+}

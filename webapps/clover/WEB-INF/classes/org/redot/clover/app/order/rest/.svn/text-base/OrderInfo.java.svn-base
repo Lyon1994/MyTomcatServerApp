@@ -1,0 +1,36 @@
+package org.redot.clover.app.order.rest;
+
+import org.redot.clover.app.order.OrderAction;
+import org.redot.clover.core.data.DataPackage;
+import org.redot.clover.core.ext.BaseResource;
+import org.redot.library.lang.StringUtils;
+import org.restlet.resource.Get;
+
+import java.util.Hashtable;
+import java.util.Map;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 10-12-21
+ * Time: 上午10:43
+ * To change this template use File | Settings | File Templates.
+ */
+public class OrderInfo extends BaseResource {
+
+    @Get("json")
+    public String doGet(){
+        DataPackage dp = new DataPackage();
+        OrderAction a = new OrderAction();
+        Map m = a.info(StringUtils.toString(getRequestAttributes().get("O_ID")));
+        if(m == null){
+            dp.setStatus(0);
+            m = new Hashtable();
+        }
+        else{
+            dp.setStatus(1);
+        }
+        dp.getData().put("order", m);
+        return dp.toJSON();
+    }
+}

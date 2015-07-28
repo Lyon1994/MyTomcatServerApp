@@ -1,0 +1,29 @@
+package org.redot.clover.app.organization.rest;
+
+import org.redot.clover.app.organization.DepartmentAction;
+import org.redot.clover.core.data.DataPackage;
+import org.redot.clover.core.ext.BaseResource;
+import org.redot.library.lang.StringUtils;
+import org.restlet.resource.Get;
+import org.restlet.resource.Post;
+
+import java.util.Map;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 11-4-18
+ * Time: 下午9:07
+ * To change this template use File | Settings | File Templates.
+ */
+public class DepartmentDelete extends BaseResource{
+
+
+    @Post("json")
+    public String doPost(){
+        DataPackage dp = new DataPackage();
+        DepartmentAction a = new DepartmentAction();
+        dp.setStatus(a.delete(form));
+        return dp.toJSON();
+    }
+}

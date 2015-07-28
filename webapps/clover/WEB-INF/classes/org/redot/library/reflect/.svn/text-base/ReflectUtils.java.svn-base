@@ -1,0 +1,161 @@
+package org.redot.library.reflect;
+
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+import java.lang.reflect.InvocationTargetException;
+
+/**
+ * Copyright By Redot.
+ * User: CASH
+ * Date: 2009-10-19
+ * Time: 17:45:02
+ */
+public class ReflectUtils {
+
+    public static Field[] getFields(Class clz){
+        return clz.getDeclaredFields();
+    }
+
+    public static String[] getFieldNames(Class clz){
+        Field[] fields = getFields(clz);
+        String[] names = new String[fields.length];
+        for(int i=0;i<names.length;i++){
+            names[i] = fields[i].getName();
+        }
+        return names;
+    }
+
+    public static Method[] getMethods(Class clz){
+        return clz.getDeclaredMethods();
+    }
+
+    public static String[] getMethodNames(Class clz){
+        Method[] methods = getMethods(clz);
+        String[] names = new String[methods.length];
+        for(int i=0;i<names.length;i++){
+            names[i] = methods[i].getName();
+        }
+        return names;
+    }
+
+    public static Field getField(String name, Class clz){
+        try {
+            return clz.getDeclaredField(name);
+        } catch (NoSuchFieldException e) {
+            //e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+            return null;
+        }
+    }
+
+    public static Method getMethod(String name, Class clz, Class<?>...clasz){
+        try {
+            return clz.getDeclaredMethod(name, clasz);
+        } catch (NoSuchMethodException e) {
+            //e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+            return null;
+        }
+    }
+    public static String setterName(String name){
+
+        name = "set" + name.substring(0, 1).toUpperCase() + name.substring(1);
+        return name;
+    }
+
+    public static String setterName(Field field){
+        if(field == null) {
+            return null;
+        }
+        return setterName(field.getName());
+    }
+
+    public static String getterName(String name){
+        name = "get" + name.substring(0, 1).toUpperCase() + name.substring(1);
+        return name;
+    }
+
+    public static String getterName(Field field){
+        if(field == null) {
+            return null;
+        }
+        return getterName(field.getName());
+    }
+
+    public static Object getFieldValue(Field field, Object obj){
+        try {
+            if(!field.isAccessible()){
+                field.setAccessible(true);
+            }
+            return field.get(obj);
+        } catch (IllegalAccessException e) {
+            //e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+        }
+        catch(Exception e){
+
+        }
+        return invoke(getMethod(getterName(field), obj.getClass()), obj);
+        //return null;
+    }
+
+    public static void setFieldValue(Field field, Object obj, Object value){
+        try {
+            if(!field.isAccessible()){
+                field.setAccessible(true);
+            }
+            field.set(obj, value);
+        }
+        catch (IllegalAccessException e) {
+            //e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+        }
+        catch(Exception e){
+
+        }
+        invoke(getMethod(setterName(field), obj.getClass()), obj, value);
+    }
+
+    public static Object invoke(String name, Object obj, Object...values){
+        Class<?>[] clasz = new Class[values.length];
+        for(int i=0;i<clasz.length;i++){
+            clasz[i] = values[i].getClass();
+        }
+        return invoke(getMethod(name, obj.getClass(), clasz), obj, values);
+    }
+
+    public static Object invoke(Method method, Object obj, Object...values){
+        if(method == null || obj == null){
+            return null;
+        }
+        try {
+            return method.invoke(obj, values);
+        } catch (IllegalAccessException e) {
+            //e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+        } catch (InvocationTargetException e) {
+            //e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+        }
+        return null;
+    }
+
+    public static String getClassName(Object obj){
+        return obj.getClass().getSimpleName();
+    }
+
+    public static String getClassName(Class clz){
+        return clz.getSimpleName();
+    }
+
+    public static Class<?>[] getInterface(Object obj){
+        return getInterface(obj.getClass());
+    }
+
+    public static Class<?>[] getInterface(Class cls){
+        Class<?>[] clasz = cls.getInterfaces();
+        return clasz;
+    }
+
+    public static <T> T cast(Class<T> cls, Object obj){
+        return (T)obj;
+    }
+
+    public static <T> T[] castArray(Class<T> cls, Object obj){
+        return (T[])obj;
+    }
+}

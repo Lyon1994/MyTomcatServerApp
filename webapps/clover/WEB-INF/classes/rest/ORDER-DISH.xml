@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<clover>
+    <!-- 前厅-点菜 -->
+    <resource class="org.redot.clover.app.order.rest.OrderDishInfo">/order/dish/info</resource>
+    <resource class="org.redot.clover.app.order.rest.OrderDish">/order/dish/list/{O_ID}</resource>
+    <resource class="org.redot.clover.app.order.rest.OrderDish">/order/dish</resource>
+    <resource class="org.redot.clover.app.order.rest.OrderDishBatch">/order/dish/batch</resource>
+    <resource class="org.redot.clover.app.order.rest.OrderDishBatchByBook">/order/dish/batch/book</resource>
+    <resource class="org.redot.clover.app.order.rest.OrderDishTemp">/order/dish/temp</resource>
+    <resource class="org.redot.clover.app.order.rest.OrderDishOrder">/order/dish/order</resource>
+    <resource class="org.redot.clover.app.order.rest.OrderDishHang">/order/dish/hang</resource>
+    <resource class="org.redot.clover.app.order.rest.OrderDishCall">/order/dish/call</resource>
+    <resource class="org.redot.clover.app.order.rest.OrderDishGive">/order/dish/give</resource>
+    <resource class="org.redot.clover.app.order.rest.OrderDishDiscount">/order/dish/discount</resource>
+    <resource class="org.redot.clover.app.order.rest.OrderDishPack">/order/dish/pack</resource>
+    <resource class="org.redot.clover.app.order.rest.OrderDishUrgent">/order/dish/urgent</resource>
+    <resource class="org.redot.clover.app.order.rest.OrderDishHurry">/order/dish/hurry</resource>
+    <resource class="org.redot.clover.app.order.rest.OrderDishPrior">/order/dish/prior</resource>
+    <resource class="org.redot.clover.app.order.rest.OrderDishCancel">/order/dish/cancel</resource>
+    <resource class="org.redot.clover.app.order.rest.OrderDishDelete">/order/dish/delete</resource>
+
+    <resource class="org.redot.clover.app.order.rest.OrderDishTransfer">/order/dish/transfer</resource>
+    <resource class="org.redot.clover.app.order.rest.OrderDishCopy">/order/dish/copy</resource>
+    <resource class="org.redot.clover.app.order.rest.OrderDishRequire">/order/dish/require</resource>
+
+    <resource class="org.redot.clover.app.order.rest.OrderDishPlus">/order/dish/plus</resource>
+    <resource class="org.redot.clover.app.order.rest.OrderDishMinus">/order/dish/minus</resource>
+    <resource class="org.redot.clover.app.order.rest.OrderDishQuery">/order/dish/query</resource>
+</clover>

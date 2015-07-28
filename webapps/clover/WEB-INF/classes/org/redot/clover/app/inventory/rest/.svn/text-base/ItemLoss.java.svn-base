@@ -1,0 +1,24 @@
+package org.redot.clover.app.inventory.rest;
+
+import org.redot.clover.app.inventory.ItemLossAction;
+import org.redot.clover.core.data.DataPackage;
+import org.redot.clover.core.ext.BaseResource;
+import org.restlet.resource.Post;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: yh_admin
+ * Date: 12-10-30
+ * Time: 下午3:19
+ * To change this template use File | Settings | File Templates.
+ */
+public class ItemLoss extends BaseResource {
+    @Post("json")
+    public String doPost() {
+        DataPackage dp = new DataPackage();
+       ItemLossAction a = new ItemLossAction();
+        a.setClient(client);
+        dp.setStatus(a.set(form));
+        return dp.toJSON();
+    }
+}

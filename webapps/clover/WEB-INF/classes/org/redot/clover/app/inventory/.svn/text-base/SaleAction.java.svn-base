@@ -1,0 +1,53 @@
+package org.redot.clover.app.inventory;
+
+import org.redot.clover.app.message.MessageManager;
+import org.redot.clover.app.system.SystemAction;
+import org.redot.clover.core.CloverManager;
+import org.redot.clover.core.ext.BaseAction;
+import org.redot.clover.core.ext.Params;
+import org.redot.library.db.IQuery;
+import org.redot.library.db.ITable;
+import org.redot.library.lang.DateUtils;
+import org.redot.library.lang.StringUtils;
+import org.restlet.data.Form;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 11-4-30
+ * Time: 下午4:44
+ * To change this template use File | Settings | File Templates.
+ */
+public class SaleAction extends BaseAction{
+    public static int sale(String BILL_ID, String DT){
+        return new SaleAction().add(BILL_ID,DT);    
+    }
+    
+    public int add(String BILL_ID, String DT){
+        ITable T = getTable("X_SO").clearData();
+        String SO_ID = String.valueOf(T.getMaxID("SO_ID"));
+
+        IQuery query = getQuery();
+        String sql = "SELECT * FROM X_SO WHERE SO_BILL_ID = " + BILL_ID;
+        if(query.rowCount(sql) > 0){
+            query.free();
+            return CloverManager.CODE_SUCCESS;
+        }
+        query.free();
+        int result = 0;
+        Map data = new HashMap();
+        data.put("SO_ID", SO_ID);
+        data.put("SO_BILL_ID", BILL_ID);
+        data.put("SO_DT", DT);
+        result = T.data(data).create();
+        if(result < 0){
+            return CloverManager.CODE_FAILED;
+        }
+        return CloverManager.CODE_SUCCESS;
+    }
+
+}

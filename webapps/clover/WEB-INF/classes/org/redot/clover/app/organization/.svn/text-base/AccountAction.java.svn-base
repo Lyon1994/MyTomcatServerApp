@@ -1,0 +1,161 @@
+package org.redot.clover.app.organization;
+
+import org.redot.clover.app.message.MessageManager;
+import org.redot.clover.core.CloverManager;
+import org.redot.clover.core.ext.BaseAction;
+import org.redot.library.codec.AESEncrypter;
+import org.redot.library.db.IQuery;
+import org.redot.library.db.ITable;
+import org.redot.library.lang.StringUtils;
+import org.restlet.data.Form;
+
+import java.util.List;
+import java.util.Map;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 11-4-19
+ * Time: 下午12:06
+ * To change this template use File | Settings | File Templates.
+ */
+public class AccountAction extends BaseAction{
+
+    public List<Map> list(){
+        String sql = "SELECT A.ACCOUNT_ID, A.ACCOUNT_NAME, A.ACCOUNT_CODE, A.ACCOUNT_DEPT_ID, A.ACCOUNT_SORT, A.ACCOUNT_STATUS, C.ACCOUNT_STATUS_NAME, B.DEPT_NAME AS ACCOUNT_DEPT_NAME, '' AS ACCOUNT_ROLE_NAME, D.ACCOUNT_ROLE_ID " +
+                "FROM X_ACCOUNT A " +
+                "LEFT JOIN X_DEPT B ON A.ACCOUNT_DEPT_ID = B.DEPT_ID " +
+                "LEFT JOIN X_ACCOUNT_STATUS C ON C.ACCOUNT_STATUS = A.ACCOUNT_STATUS " +
+                "LEFT JOIN X_ACCOUNT_ROLE D ON D.ACCOUNT_ID = A.ACCOUNT_ID " +
+                "WHERE A.ACCOUNT_STATUS <> 2 ORDER BY A.ACCOUNT_DEPT_ID, A.ACCOUNT_SORT";
+        IQuery query = getQuery();
+        List<Map> list = query.doQuery(sql).tables();
+        for(Map m : list){
+            sql = "SELECT ROLE_NAME FROM X_ROLE WHERE ROLE_ID IN (SELECT ACCOUNT_ROLE_ID FROM X_ACCOUNT_ROLE WHERE ACCOUNT_ID = "+m.get("ACCOUNT_ID")+")";
+            String ACCOUNT_ROLE_NAME = query.doQuery(sql).getValueString();
+            m.put("ACCOUNT_ROLE_NAME", ACCOUNT_ROLE_NAME);
+        }
+        query.free();
+        return list;
+    }
+
+    public Map get(String ACCOUNT_ID){
+        if(ACCOUNT_ID == null || ACCOUNT_ID.equals("")){
+            return null;
+        }
+        String sql = "SELECT A.ACCOUNT_ID, A.ACCOUNT_NAME, A.ACCOUNT_CODE, A.ACCOUNT_DEPT_ID, A.ACCOUNT_SORT, A.ACCOUNT_STATUS, B.DEPT_NAME AS ACCOUNT_DEPT_NAME, '' AS ACCOUNT_ROLE_NAME FROM X_ACCOUNT A LEFT JOIN X_DEPT B ON A.ACCOUNT_DEPT_ID = B.DEPT_ID WHERE A.ACCOUNT_ID = "+ACCOUNT_ID+" ORDER BY A.ACCOUNT_SORT";
+        IQuery query = getQuery();
+        Map m = query.doQuery(sql).table();
+        sql = "SELECT A.ACCOUNT_ROLE_ID, B.ROLE_NAME FROM X_ACCOUNT_ROLE A LEFT JOIN X_ROLE B ON A.ACCOUNT_ROLE_ID = B.ROLE_ID WHERE A.ACCOUNT_ID = " + ACCOUNT_ID;
+        List<Map> list = query.doQuery(sql).tables();
+        String ACCOUNT_ROLE_ID = "";
+        String ACCOUNT_ROLE_NAME = "";
+        for(int i=0;i<list.size();i++){
+            Map mx = list.get(i);
+            if(i > 0){
+                ACCOUNT_ROLE_ID += ",";
+                ACCOUNT_ROLE_NAME += ",";
+            }
+            ACCOUNT_ROLE_ID += StringUtils.toString(mx.get("ACCOUNT_ROLE_ID"));
+            ACCOUNT_ROLE_NAME += StringUtils.toString(mx.get("ROLE_NAME"));
+        }
+        m.put("ACCOUNT_ROLE_ID", ACCOUNT_ROLE_ID);
+        m.put("ACCOUNT_ROLE_NAME", ACCOUNT_ROLE_NAME);
+        query.free();
+        return m;
+    }
+
+    public int set(Form form){
+        Map data = form.getValuesMap();
+        String ACCOUNT_ID = StringUtils.toString(data.get("ACCOUNT_ID"));
+        String ACCOUNT_PASSWORD = StringUtils.toString(data.get("ACCOUNT_PASSWORD"));
+
+        ITable t = getTable("X_ACCOUNT").clearData();
+        int result;
+        if(ACCOUNT_ID.length() == 0){
+            ACCOUNT_ID = String.valueOf(t.getMaxID("ACCOUNT_ID"));
+            data.put("ACCOUNT_ID", ACCOUNT_ID);
+            ACCOUNT_PASSWORD = AESEncrypter.getEncrypt(ACCOUNT_PASSWORD);
+            data.put("ACCOUNT_PASSWORD", ACCOUNT_PASSWORD);
+            result = t.data(data).create();
+        }
+        else{
+            if(ACCOUNT_PASSWORD.length() == 0){
+                data.remove("ACCOUNT_PASSWORD");
+            }
+            else{
+                ACCOUNT_PASSWORD = AESEncrypter.getEncrypt(ACCOUNT_PASSWORD);
+                data.put("ACCOUNT_PASSWORD", ACCOUNT_PASSWORD);
+            }
+            result = t.data(data).where(t.column("ACCOUNT_ID").eq(ACCOUNT_ID)).update();
+        }
+        if(result < 0){
+            return CloverManager.CODE_FAILED;
+        }
+        String ACCOUNT_ROLE_ID = StringUtils.toString(data.get("ACCOUNT_ROLE_ID"));
+        String[] ACCOUNT_ROLES = ACCOUNT_ROLE_ID.split(",");
+        String sql = "DELETE FROM X_ACCOUNT_ROLE WHERE ACCOUNT_ID = " + ACCOUNT_ID;
+        IQuery query = getQuery();
+        query.doExec(sql);
+        for(int i=0;i<ACCOUNT_ROLES.length;i++){
+            sql = "INSERT INTO X_ACCOUNT_ROLE (ACCOUNT_ID, ACCOUNT_ROLE_ID) VALUES ("+ACCOUNT_ID+", "+ACCOUNT_ROLES[i]+")";
+            query.doExec(sql);
+        }
+        query.free();
+        MessageManager.getInstance().setVersion(MessageManager.MSG_VER_ORGANIZATION);
+        return CloverManager.CODE_SUCCESS;
+    }
+
+    public int delete(Form form) {
+        Map data = form.getValuesMap();
+        String ACCOUNT_ID = StringUtils.toString(data.get("ACCOUNT_ID"));
+        if(ACCOUNT_ID.length() == 0){
+            return CloverManager.CODE_FAILED;
+        }
+        if(ACCOUNT_ID.equals("1")){
+            return CloverManager.CODE_FAILED;
+        }
+        String sql = "UPDATE X_ACCOUNT SET ACCOUNT_STATUS = 2 WHERE ACCOUNT_ID = " + ACCOUNT_ID;
+        IQuery query = getQuery();
+        int result = query.doExec(sql);
+        query.free();
+        if(result < 0){
+            return CloverManager.CODE_FAILED;
+        }
+        MessageManager.getInstance().setVersion(MessageManager.MSG_VER_ORGANIZATION);
+        return CloverManager.CODE_SUCCESS;
+    }
+
+    public Map check(Form form){
+        Map data = form.getValuesMap();
+        String ACCOUNT_NAME = StringUtils.toString(data.get("ACCOUNT_NAME"));
+        String ACCOUNT_PASSWORD = StringUtils.toString(data.get("ACCOUNT_PASSWORD"));
+        String sql = "SELECT A.*, B.DEPT_NAME AS ACCOUNT_DEPT_NAME FROM X_ACCOUNT A " +
+                "LEFT JOIN X_DEPT B ON A.ACCOUNT_DEPT_ID = B.DEPT_ID WHERE A.ACCOUNT_STATUS = 1 AND (A.ACCOUNT_NAME = '"+ACCOUNT_NAME+"' OR A.ACCOUNT_CODE = '"+ACCOUNT_NAME+"') AND A.ACCOUNT_PASSWORD = '"+AESEncrypter.getEncrypt(ACCOUNT_PASSWORD)+"'";
+        IQuery query = getQuery();
+        Map map = query.doQuery(sql).table();
+        if(map == null){
+            query.free();
+            return null;
+        }
+        map.remove("ACCOUNT_PASSWORD");
+        sql = "SELECT ROLE_ID, ROLE_NAME FROM X_ROLE WHERE ROLE_ID IN (SELECT ACCOUNT_ROLE_ID FROM X_ACCOUNT_ROLE WHERE ACCOUNT_ID = " + map.get("ACCOUNT_ID") + ")";
+        Map m1 = query.doQuery(sql).table();
+        if(m1 != null){
+            String ROLE_ID = StringUtils.toString(m1.get("ROLE_ID"));
+            RoleAction a = new RoleAction();
+            m1.put("PRMS", a.getPrms(ROLE_ID));
+            map.put("ACCOUNT_ROLE", m1);
+        }
+        query.free();
+        return map;
+    }
+
+    public List<Map> listSeller(){
+        String sql = "SELECT A.ACCOUNT_ID, A.ACCOUNT_NAME FROM X_ACCOUNT A WHERE A.ACCOUNT_STATUS = 0";
+        IQuery query = getQuery();
+        List<Map> list = query.doQuery(sql).tables();
+        query.free();
+        return list;
+    }
+}

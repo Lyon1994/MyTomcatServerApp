@@ -1,0 +1,40 @@
+package org.redot.clover.app.system.rest;
+
+import org.redot.clover.app.system.DictAction;
+import org.redot.clover.core.data.DataPackage;
+import org.redot.clover.core.ext.BaseResource;
+import org.restlet.resource.Get;
+import org.restlet.resource.Post;
+
+import java.util.List;
+import java.util.Map;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 11-3-27
+ * Time: 下午5:35
+ * To change this template use File | Settings | File Templates.
+ */
+public class FreeDishReason extends BaseResource {
+
+    @Get("json")
+    public String doGet() {
+        DataPackage dp = new DataPackage();
+        DictAction a = new DictAction();
+        List<Map> list = a.getDict("REASON/DISH/FREE");
+        if (list == null) {
+            return dp.toJSON();
+        }
+        dp.getData().put("DICT", list);
+        return dp.toJSON();
+    }
+
+    @Post("json")
+    public String doPost() {
+        DataPackage dp = new DataPackage();
+        DictAction a = new DictAction();
+        dp.setStatus(a.setDict("REASON/DISH/FREE", form));
+        return dp.toJSON();
+    }
+}

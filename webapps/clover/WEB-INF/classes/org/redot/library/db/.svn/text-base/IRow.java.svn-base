@@ -1,0 +1,62 @@
+package org.redot.library.db;
+
+import java.util.Hashtable;
+import java.util.Enumeration;
+
+/**
+ * Copyright By Redot.
+ * User: CASH
+ * Date: 2009-10-14
+ * Time: 14:43:12
+ */
+public class IRow {
+
+    private Hashtable<String, Object> data = new Hashtable<String, Object>();
+
+    private Hashtable<String, String> labels = new Hashtable<String, String>();
+
+    private String[] keys = null;
+
+    public IRow() {
+        
+    }
+
+    public String[] keys(){
+        if(keys != null){
+            return keys;
+        }
+        keys = getData().keySet().toArray(new String[0]);
+        return keys;
+    }
+
+    /*public Object get(int index){
+        if(index > -1 && index < keys().length){
+            return get(keys()[index]);
+        }
+        return null;
+    }*/
+
+    public Object get(String name){
+        return getData().get(name);
+    }
+
+    public Object getLabel(String name){
+        return getLabels().get(name);
+    }
+
+    public Hashtable<String, Object> getData() {
+        return data;
+    }
+
+    public void setData(Hashtable<String, Object> data) {
+        this.data = data;
+    }
+
+    public Hashtable<String, String> getLabels() {
+        return labels;
+    }
+
+    public void setLabels(Hashtable<String, String> labels) {
+        this.labels = labels;
+    }
+}

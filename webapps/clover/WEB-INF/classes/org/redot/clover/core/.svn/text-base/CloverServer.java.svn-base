@@ -1,0 +1,49 @@
+package org.redot.clover.core;
+
+import org.redot.clover.app.common.rest.CrossDomain;
+import org.redot.clover.demon.DemonService;
+import org.redot.library.lang.DateUtils;
+import org.restlet.Component;
+import org.restlet.Server;
+import org.restlet.data.Protocol;
+
+import java.util.Date;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: CASH
+ * Date: 10-12-17
+ * Time: 上午10:55
+ * To change this template use File | Settings | File Templates.
+ */
+public class CloverServer {
+
+    public CloverServer() throws Exception {
+//        if(DateUtils.getDateMinusDays(new Date(), DateUtils.toDate("2011-12-31")) > 0){
+//            System.out.println("系统授权过期");
+//            System.exit(0);
+//        }
+        CloverManager.getInstance();
+        final Component comp = new Component();
+        final Server server = comp.getServers().add(Protocol.HTTP, 8888);
+        comp.getDefaultHost().attach("/crossdomain.xml", CrossDomain.class);
+        comp.getDefaultHost().attach("/clover", new CloverApplication());
+        comp.start();
+
+        System.out.println("Server started on port " + server.getPort());
+        System.out.println("Press key to stop server");
+        System.in.read();
+        System.out.println("Stopping server");
+        comp.stop();
+        CloverManager.getInstance().destroy();
+        System.out.println("Server stopped");
+        //server.setNext(new CloverApplication());
+        //server.start();
+
+    }
+    public static void main(String[] args) throws Exception {
+        new CloverServer();
+    }
+
+
+}

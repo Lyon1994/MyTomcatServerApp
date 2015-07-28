@@ -1,0 +1,51 @@
+package org.redot.clover.app.system;
+
+import org.redot.clover.core.CloverManager;
+import org.redot.clover.core.ext.BaseAction;
+import org.redot.library.db.IQuery;
+import org.redot.library.lang.StringUtils;
+import org.restlet.data.Form;
+
+import java.util.Hashtable;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 10-12-30
+ * Time: 上午4:15
+ * To change this template use File | Settings | File Templates.
+ */
+public class DPAction extends BaseAction {
+
+    public List<Map> getDP() {
+        String sql = "SELECT * FROM X_DP ORDER BY DP_AREA_1";
+        IQuery query = getQuery();
+        List<Map> map = query.doQuery(sql).tables();
+        query.free();
+        return map;
+    }
+
+    public int setDP(Form form) {
+        IQuery query = getQuery();
+        query.doExec("DELETE FROM X_DP");
+        String[] DP_AREA_1 = form.getValuesArray("DP_AREA_1");
+        String[] DP_AREA_2 = form.getValuesArray("DP_AREA_2");
+        String[] DP_AMOUNT = form.getValuesArray("DP_AMOUNT");
+        for (int i = 0; i < DP_AREA_1.length; i++) {
+            if ((StringUtils.toString(DP_AREA_1[i]).length() == 0 || StringUtils.toString(DP_AREA_2[i]).length() == 0) && StringUtils.toString(DP_AMOUNT[i]).length() == 0) {
+                continue;
+            }
+            Map dd = new Hashtable();
+            dd.put("DP_AREA_1", DP_AREA_1[i]);
+            dd.put("DP_AREA_2", DP_AREA_2[i]);
+            dd.put("DP_AMOUNT", DP_AMOUNT[i]);
+            int result = getTable("X_DP").data(dd).create();
+            if (result < 0) {
+                return CloverManager.CODE_FAILED;
+            }
+        }
+        return CloverManager.CODE_SUCCESS;
+    }
+}

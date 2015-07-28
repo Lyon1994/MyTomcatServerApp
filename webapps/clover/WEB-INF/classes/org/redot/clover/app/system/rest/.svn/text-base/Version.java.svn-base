@@ -1,0 +1,25 @@
+package org.redot.clover.app.system.rest;
+
+import org.redot.clover.app.system.MarketTypeAction;
+import org.redot.clover.app.system.SystemAction;
+import org.redot.clover.core.data.DataPackage;
+import org.redot.clover.core.ext.BaseResource;
+import org.restlet.resource.Get;
+
+import java.util.HashMap;
+import java.util.Map;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 10-12-31
+ * Time: 上午2:35
+ * To change this template use File | Settings | File Templates.
+ */
+public class Version extends BaseResource {
+    @Get("json")
+    public String doGet() {
+        SystemAction a = new SystemAction();
+        return a.version();
+    }
+}

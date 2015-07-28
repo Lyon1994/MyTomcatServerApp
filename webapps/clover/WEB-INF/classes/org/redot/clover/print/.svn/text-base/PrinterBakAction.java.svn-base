@@ -1,0 +1,39 @@
+package org.redot.clover.print;
+
+import org.redot.clover.core.CloverManager;
+import org.redot.clover.core.ext.BaseAction;
+import org.redot.library.db.IQuery;
+import org.redot.library.lang.StringUtils;
+import org.restlet.data.Form;
+
+import java.util.Map;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: yh_admin
+ * Date: 12-12-5
+ * Time: 下午1:52
+ * To change this template use File | Settings | File Templates.
+ */
+public class PrinterBakAction extends BaseAction {
+    public  int updatebak(Form form)
+    {
+        Map data = form.getValuesMap();
+        String PRINTER_ID = StringUtils.toString(data.get("PRINTER_ID"));
+        String PRINTER_BAK= StringUtils.toString(data.get("PRINTER_BAK"));
+        int result=0;
+        String COUNT="0";
+        if(PRINTER_BAK.length()>0)
+        {
+            COUNT=PRINTER_BAK;
+        }
+        String sql=" UPDATE X_PRINTER A SET A.PRINTER_BAK="+COUNT+" WHERE A.PRINTER_ID="+PRINTER_ID;
+        IQuery query=getQuery();
+        result=query.doExec(sql);
+        if(result < 0){
+            return CloverManager.CODE_FAILED;
+        }
+
+        return CloverManager.CODE_SUCCESS;
+    }
+}

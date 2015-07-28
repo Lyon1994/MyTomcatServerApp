@@ -1,0 +1,270 @@
+package org.redot.library.lang;
+
+import java.util.Date;
+import java.util.Calendar;
+import java.text.SimpleDateFormat;
+import java.text.ParseException;
+
+/**
+ * Copyright By Redot.
+ * User: CASH
+ * Date: 2009-10-10
+ * Time: 17:39:52
+ */
+public class DateUtils {
+
+
+
+	public static Calendar toCalendar(Date date){
+		Calendar cal = Calendar.getInstance();
+		cal.setTime(date);
+		return cal;
+	}
+
+	public static int getYear(Date date){
+		return toCalendar(date).get(Calendar.YEAR);
+	}
+
+	public static int getMonth(Date date){
+		return toCalendar(date).get(Calendar.MONTH);
+	}
+
+	public static int getDay(Date date){
+		return toCalendar(date).get(Calendar.DAY_OF_MONTH);
+	}
+
+	public static int getHour(Date date){
+		return toCalendar(date).get(Calendar.HOUR_OF_DAY);
+	}
+
+	public static int getWeekDay(Date date){
+		return toCalendar(date).get(Calendar.DAY_OF_WEEK);
+	}
+
+
+	public static int getMinute(Date date){
+		return toCalendar(date).get(Calendar.MINUTE);
+	}
+
+	public static void setCal(Calendar cal, String flag, int type, int value){
+		if(flag.equals("+")){
+			cal.set(type, cal.get(type) + value);
+		}
+		else if(flag.equals("-")){
+			cal.set(type, cal.get(type) - value);
+		}
+		else{
+			cal.set(type, value);
+		}
+	}
+
+	public static Date emptyTime(Date d){
+		Calendar cal = toCalendar(d);
+		cal.set(Calendar.HOUR_OF_DAY, 0);
+		cal.set(Calendar.MINUTE, 0);
+		cal.set(Calendar.SECOND, 0);
+		cal.set(Calendar.MILLISECOND, 0);
+		return cal.getTime();
+	}
+
+	public static Date fullTime(Date d){
+		Calendar cal = toCalendar(d);
+		cal.set(Calendar.HOUR_OF_DAY, 23);
+		cal.set(Calendar.MINUTE, 59);
+		cal.set(Calendar.SECOND, 59);
+		return cal.getTime();
+	}
+
+    public static Date addMinutes(Date date, int minutes){
+        return setDate(date, "+", "minute", minutes);
+    }
+    public static Date addMinutes(String date, int minutes){
+        return setDate(toFullDate(date), "+", "minute", minutes);
+    }
+
+	public static Date setDate(Date date, String flag, String type, int value){
+		Calendar cal = toCalendar(date);
+		if(type.equals("year")){
+			setCal(cal, flag, Calendar.YEAR, value);
+		}
+		else if(type.equals("month")){
+			setCal(cal, flag, Calendar.MONTH, value);
+		}
+		else if(type.equals("day")){
+			setCal(cal, flag, Calendar.DATE, value);
+		}
+		else if(type.equals("day_of_year")){
+			setCal(cal, flag, Calendar.DAY_OF_YEAR, value);
+		}
+		else if(type.equals("hour")){
+			setCal(cal, flag, Calendar.HOUR_OF_DAY, value);
+		}
+		else if(type.equals("minute")){
+			setCal(cal, flag, Calendar.MINUTE, value);
+		}
+		else if(type.equals("second")){
+			setCal(cal, flag, Calendar.SECOND, value);
+		}
+		else if(type.equals("week")){
+			cal.setFirstDayOfWeek(Calendar.MONDAY);
+			setCal(cal, flag, Calendar.DAY_OF_WEEK, value);
+		}
+		return cal.getTime();
+	}
+
+	public static boolean isWeekend(Date d){
+		int weekday = getWeekDay(d);
+		if(weekday == 1 || weekday == 7){
+			return true;
+		}
+		return false;
+	}
+
+    public static Date getTomorrow(Date date){
+        Calendar cal = toCalendar(date);
+		cal.set(Calendar.DAY_OF_MONTH, cal.get(Calendar.DAY_OF_MONTH) + 1);
+		return cal.getTime();
+    }
+    public static Date getTomorrow(String date){
+		return getTomorrow(toDate(date));
+    }
+    public static Date getYesterday(Date date){
+        Calendar cal = toCalendar(date);
+		cal.set(Calendar.DAY_OF_MONTH, cal.get(Calendar.DAY_OF_MONTH) -1);
+		return cal.getTime();
+    }
+    public static Date getYesterday(String date){
+		return getYesterday(toDate(date));
+    }
+
+	public static Date getLastDateOfMonth(Date date){
+		Calendar cal = toCalendar(date);
+		cal.set(Calendar.DAY_OF_MONTH, cal.getActualMaximum(Calendar.DAY_OF_MONTH));
+		return cal.getTime();
+	}
+
+    public static int getMaxDayOfMonth(Date date){
+		Calendar cal = toCalendar(date);
+		return cal.getActualMaximum(Calendar.DAY_OF_MONTH);
+	}
+
+	public static int getDaysOfMonth(Date date){
+		Calendar cal = toCalendar(date);
+		return cal.getActualMaximum(Calendar.DAY_OF_MONTH);
+	}
+
+	public static Date getFirstDateOfMonth(Date date){
+		Calendar cal = toCalendar(date);
+		cal.set(Calendar.DAY_OF_MONTH, 1);
+		return cal.getTime();
+	}
+    public static Date getDateOfPreviousMonth(Date date){
+		Calendar cal = toCalendar(date);
+		cal.set(Calendar.MONTH, cal.get(Calendar.MONTH) - 1);
+		return cal.getTime();
+	}
+
+    public static Date getFirstDateOfWeek(Date date){
+		Calendar cal = toCalendar(date);
+        cal.setFirstDayOfWeek(Calendar.MONDAY);
+		cal.set(Calendar.DAY_OF_WEEK, Calendar.MONDAY);
+		return cal.getTime();
+	}
+
+    public static Date getLastDateOfWeek(Date date){
+		Calendar cal = toCalendar(date);
+        cal.setFirstDayOfWeek(Calendar.MONDAY);
+		cal.set(Calendar.DAY_OF_WEEK, Calendar.SUNDAY);
+		return cal.getTime();
+	}
+
+	public static Date getFirstDateOfNextMonth(Date date){
+		Calendar cal = toCalendar(date);
+		cal.set(Calendar.DAY_OF_MONTH, 1);
+		cal.set(Calendar.MONTH, cal.get(Calendar.MONTH) + 1);
+		return cal.getTime();
+	}
+
+    public static long getDateMinusSecond(Date d1, Date d2){
+    	long l = (d1.getTime() - d2.getTime())/1000;
+    	return l;
+    }
+
+    public static long getDateMinusMinutes(Date d1, Date d2){
+    	long l = (d1.getTime() - d2.getTime())/(1000*60);
+    	return l;
+    }
+
+    public static long getDateMinusHour(Date d1, Date d2){
+    	long l = (d1.getTime() - d2.getTime())/(1000*60*60);
+    	return l;
+    }
+
+    public static long getDateMinusDays(Date d1, Date d2){
+    	long l = (d1.getTime() - d2.getTime())/(1000*60*60*24);
+    	return l;
+    }
+
+    /*public static long getDateMinusDuration(Date d1, Date d2){
+    	long m_ms = d1.time - d2.time
+    	long m_s = m_ms/1000
+    	m_ms = m_ms - m_s*1000
+    	long m_m = m_s/60
+    	m_s = m_s - m_m * 60
+    	long m_h = m_m/60
+    	m_m = m_m - m_h * 60
+    	long m_d = m_h/24
+    	m_h = m_h - m_d * 24
+    	return new TimeDuration(m_d.toInteger(), m_h.toInteger(), m_m.toInteger(), m_s.toInteger(), m_ms.toInteger())
+    }*/
+
+    public static Date toDate(String data_str){
+    	return toDate(data_str, "yyyy-MM-dd");
+    }
+
+    public static Date toFullDate(String data_str){
+        if(data_str.length() == 16){
+            return toDate(data_str, "yyyy-MM-dd HH:mm");
+        }
+    	return toDate(data_str, "yyyy-MM-dd HH:mm:ss");
+    }
+
+    public static Date toDate(String data_str, String format){
+    	SimpleDateFormat simpleDateFormat = new SimpleDateFormat(format);
+    	try{
+	   		return simpleDateFormat.parse(data_str);
+		}
+		catch(ParseException px){
+			px.printStackTrace();
+		}
+		return null;
+    }
+
+    public static String formatDate(Date date, String format){
+    	SimpleDateFormat simpleDateFormat = new SimpleDateFormat(format);
+	   	return simpleDateFormat.format(date);
+    }
+
+    public static String formatDate(Date date){
+    	return formatDate(date, "yyyy-MM-dd");
+    }
+
+    public static String getNow(){
+        return formatDate(new Date(), "yyyy-MM-dd HH:mm:ss");
+    }
+
+     public static String getNowYear(){
+        return formatDate(new Date(), "yyyy");
+    }
+
+    public static String getNowMonth(){
+        return formatDate(new Date(), "MM");
+    }
+    public static String getNowTime(){
+        return formatDate(new Date(), "yyyy-MM-dd HH:mm");
+    }
+
+    public static String getNowDate(){
+        return formatDate(new Date(), "yyyy-MM-dd");
+    }
+}

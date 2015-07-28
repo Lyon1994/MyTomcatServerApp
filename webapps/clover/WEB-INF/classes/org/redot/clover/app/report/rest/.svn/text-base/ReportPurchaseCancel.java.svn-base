@@ -1,0 +1,23 @@
+package org.redot.clover.app.report.rest;
+
+import org.redot.clover.app.report.ReportAction;
+import org.redot.clover.core.data.DataPackage;
+import org.redot.clover.core.ext.BaseResource;
+import org.restlet.resource.Post;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 12-11-16
+ * Time: 上午10:58
+ * To change this template use File | Settings | File Templates.
+ */
+public class ReportPurchaseCancel extends BaseResource{
+    @Post("json")
+    public String doPost(){
+        DataPackage dp = new DataPackage();
+        ReportAction a = new ReportAction();
+        dp.addTable("table",a.listCancel(form));
+        return dp.toJSON();
+    }
+}

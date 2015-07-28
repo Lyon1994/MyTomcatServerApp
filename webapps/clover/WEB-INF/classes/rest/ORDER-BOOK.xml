@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<clover>
+
+    <resource class="org.redot.clover.app.order.rest.OrderBook">/order/book</resource>
+    <resource class="org.redot.clover.app.order.rest.OrderBookArrive">/order/book/arrive</resource>
+    <resource class="org.redot.clover.app.order.rest.OrderBookCancel">/order/book/cancel</resource>
+    <resource class="org.redot.clover.app.order.rest.OrderBookPrint">/order/book/print</resource>
+
+
+</clover>

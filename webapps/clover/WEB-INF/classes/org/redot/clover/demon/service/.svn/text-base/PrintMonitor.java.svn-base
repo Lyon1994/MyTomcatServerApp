@@ -1,0 +1,42 @@
+package org.redot.clover.demon.service;
+
+import org.apache.log4j.Logger;
+import org.redot.clover.demon.Demon;
+import org.redot.clover.print.PrintJob;
+import org.redot.clover.print.PrintManager;
+
+import java.util.List;
+import java.util.Map;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 11-4-7
+ * Time: 上午11:01
+ * To change this template use File | Settings | File Templates.
+ */
+public class PrintMonitor extends Demon{
+
+    Logger logger = Logger.getLogger(this.getClass());
+
+    public PrintMonitor(String name) {
+        super(name);
+        setPeriod(1000 * 60 * 3);
+    }
+
+    @Override
+    public void exec() {
+        List<Map> caseConfig = PrintManager.getInstance().getCaseConfig(PrintJob.COMMAND_KITCHEN);
+        for(int i=0;i<caseConfig.size();i++){
+            Map config = caseConfig.get(i);
+            PrintJob job = new PrintJob(PrintJob.COMMAND_KITCHEN, config);
+            job.start();
+        }
+        caseConfig = PrintManager.getInstance().getCaseConfig(PrintJob.COMMAND_KITCHEN_SAME);
+        for(int i=0;i<caseConfig.size();i++){
+            Map config = caseConfig.get(i);
+            PrintJob job = new PrintJob(PrintJob.COMMAND_KITCHEN_SAME, config);
+            job.start();
+        }
+    }
+}

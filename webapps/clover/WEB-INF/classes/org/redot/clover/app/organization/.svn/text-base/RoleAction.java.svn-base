@@ -1,0 +1,247 @@
+package org.redot.clover.app.organization;
+
+import org.redot.clover.core.CloverManager;
+import org.redot.clover.core.ext.BaseAction;
+import org.redot.library.db.IQuery;
+import org.redot.library.db.ITable;
+import org.redot.library.lang.ArrayUtils;
+import org.redot.library.lang.NumberUtils;
+import org.redot.library.lang.StringUtils;
+import org.restlet.data.Form;
+
+import java.util.*;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 11-4-18
+ * Time: 下午8:46
+ * To change this template use File | Settings | File Templates.
+ */
+public class RoleAction extends BaseAction{
+
+    public List<Map> list(){
+
+        String sql = "SELECT A.*,B.STATUS_NAME AS ROLE_STATUS_NAME,C.DEPT_NAME AS ROLE_DEPT_NAME FROM X_ROLE A " +
+                "LEFT JOIN X_STATUS B ON A.ROLE_STATUS = B.STATUS " +
+                "LEFT JOIN X_DEPT C ON A.ROLE_DEPT_ID = C.DEPT_ID " +
+                "WHERE A.ROLE_STATUS <> 2 ORDER BY A.ROLE_DEPT_ID, A.ROLE_ID";
+        IQuery query = getQuery();
+        List<Map> list = query.doQuery(sql).tables();
+        query.free();
+        return list;
+    }
+
+    public List<Map> list(String PARENT){
+        String sql = "SELECT A.ROLE_ID, A.ROLE_NAME FROM X_ROLE A " +
+                "WHERE A.ROLE_STATUS = 1 AND A.ROLE_DEPT_ID = "+PARENT;
+
+        sql += " ORDER BY A.ROLE_ID";
+        IQuery query = getQuery();
+        List<Map> list = query.doQuery(sql).tables();
+        query.free();
+        return list;
+    }
+
+    public List<Map> listFilter(String Q, String PARENT){
+
+        String sql = "SELECT A.ROLE_ID, A.ROLE_NAME FROM X_ROLE A " +
+                "WHERE A.ROLE_STATUS = 1 AND A.ROLE_DEPT_ID = "+PARENT;
+        if(Q.length() > 0){
+            sql += " AND A.ROLE_NAME LIKE '%"+Q+"%'";
+        }
+        sql += " ORDER BY A.ROLE_ID";
+        IQuery query = getQuery();
+        List<Map> list = query.doQuery(sql).tables();
+        query.free();
+        return list;
+    }
+
+    public List<Map> tree(){
+
+        String sql = "SELECT * FROM X_ROLE WHERE ROLE_STATUS <> 2 ORDER BY ROLE_SORT";
+        IQuery query = getQuery();
+        List<Map> list = query.doQuery(sql).tables();
+        List<Map> data = new ArrayList<Map>();
+        for(int i=0;i<list.size();i++){
+            Map m = list.get(i);
+            Map d = new Hashtable();
+            String DEPT_ID_ = StringUtils.toString(m.get("ROLE_ID"));
+            d.put("ID", DEPT_ID_);
+            d.put("NAME", StringUtils.toString(m.get("ROLE_NAME")));
+            d.put("EXT", m);
+            d.put("ITEM", new ArrayList<Map>());
+            data.add(d);
+        }
+        query.free();
+        return data;
+    }
+
+    public Map get(String ROLE_ID){
+        if(ROLE_ID == null || ROLE_ID.equals("")){
+            return null;
+        }
+        String sql = "SELECT A.*,B.DEPT_NAME AS ROLE_DEPT_NAME FROM X_ROLE A LEFT JOIN X_DEPT B ON A.ROLE_DEPT_ID = B.DEPT_ID WHERE A.ROLE_ID="+ROLE_ID;
+        IQuery query = getQuery();
+        Map m = query.doQuery(sql).table();
+        query.free();
+        return m;
+    }
+
+    public int set(Form form){
+        Map data = form.getValuesMap();
+        String ROLE_ID = StringUtils.toString(data.get("ROLE_ID"));
+
+        ITable t = getTable("X_ROLE").clearData();
+        int result;
+        if(ROLE_ID.length() == 0){
+            ROLE_ID = String.valueOf(t.getMaxID("ROLE_ID"));
+            data.put("ROLE_ID", ROLE_ID);
+            result = t.data(data).create();
+        }
+        else{
+            result = t.data(data).where(t.column("ROLE_ID").eq(ROLE_ID)).update();
+        }
+        if(result < 0){
+            return CloverManager.CODE_FAILED;
+        }
+        return CloverManager.CODE_SUCCESS;
+    }
+
+    public int delete(Form form) {
+        Map data = form.getValuesMap();
+        String ROLE_ID = StringUtils.toString(data.get("ROLE_ID"));
+        if(ROLE_ID.length() == 0){
+            return CloverManager.CODE_FAILED;
+        }
+        IQuery query = getQuery();
+        String sql = "UPDATE X_ROLE SET ROLE_STATUS = 2 WHERE ROLE_ID = " + ROLE_ID;
+        int result = query.doExec(sql);
+        query.free();
+        if(result < 0){
+            return CloverManager.CODE_FAILED;
+        }
+        return CloverManager.CODE_SUCCESS;
+    }
+
+    public Map getConfig(){
+        Map data = new Hashtable();
+        IQuery query = getQuery();
+        String sql = "SELECT A.* FROM X_ROLE A WHERE A.ROLE_STATUS <> 2";
+        List<Map> list = query.doQuery(sql).tables();
+        data.put("ROLES", list);
+        query.free();
+        return data;
+    }
+
+    public List<Map> listDeduct(String P_TYPE_ID) {
+        IQuery query = getQuery();
+        String sql = "SELECT P_TYPE_ID FROM X_P_TYPE WHERE P_TYPE_PARENT = " + P_TYPE_ID;
+        List<String[]> types = query.doQuery(sql).list();
+        List<String> typeList = new ArrayList<String>();
+        typeList.add(P_TYPE_ID);
+        for(Object[] arr : types){
+            typeList.add(arr[0] + "");
+        }
+        sql = "SELECT A.*, B.P_TYPE_NAME, C.UNIT_NAME AS P_UNIT_NAME, D.P_STATUS_NAME " +
+                "FROM X_P A " +
+                "LEFT JOIN X_P_TYPE B ON A.P_TYPE_ID=B.P_TYPE_ID " +
+                "LEFT JOIN X_UNIT C ON A.P_UNIT_ID=C.UNIT_ID " +
+                "LEFT JOIN X_P_STATUS D ON A.P_STATUS = D.P_STATUS " +
+                "WHERE A.P_TYPE_ID in ("+ ArrayUtils.join(",", typeList)+") AND A.P_STATUS <> 2 ORDER BY A.P_SORT,A.P_ID";
+        List<Map> list = query.doQuery(sql).tables();
+        for(int i=0;i<list.size();i++){
+            Map m = list.get(i);
+            String P_ID = StringUtils.toString(m.get("P_ID"));
+            sql = "SELECT A.* FROM X_ROLE_DEDUCT_P A WHERE A.ROLE_DEDUCT_P_ID = " + P_ID;
+            List<Map> deduct = query.doQuery(sql).tables();
+            m.put("DEDUCT", deduct);
+        }
+        query.free();
+        return list;
+    }
+
+    public Map setDeduct(Form form) {
+        Map data = form.getValuesMap();
+        String P_ID = StringUtils.toString(data.get("P_ID"));
+        if(P_ID.length() == 0){
+            data.put("STATUS", CloverManager.CODE_FAILED);
+            return data;
+        }
+        int result = 0;
+        IQuery query = getQuery();
+        Set<String> keys = form.getNames();
+        for(String key : keys){
+            if(key.indexOf("ROLE_DEDUCT_") > -1){
+                String ROLE_ID = key.substring(key.lastIndexOf("_") + 1);
+                String ROLE_DEDUCT_P_AMOUNT = StringUtils.toString(data.get(key));
+                if(ROLE_DEDUCT_P_AMOUNT.length() == 0){
+                    ROLE_DEDUCT_P_AMOUNT = "0";
+                }
+                String sql = "DELETE FROM X_ROLE_DEDUCT_P WHERE ROLE_ID = " + ROLE_ID + " AND ROLE_DEDUCT_P_ID = " + P_ID;
+                result = query.doExec(sql);
+                sql = "INSERT INTO X_ROLE_DEDUCT_P (ROLE_ID, ROLE_DEDUCT_P_ID, ROLE_DEDUCT_P_AMOUNT) VALUES ("+ROLE_ID+", "+P_ID+", "+ROLE_DEDUCT_P_AMOUNT+")";
+                result = query.doExec(sql);
+                query.free();
+            }
+        }
+        if(result < 0){
+            data.put("STATUS", CloverManager.CODE_FAILED);
+        }
+        else{
+            data.put("STATUS", CloverManager.CODE_SUCCESS);
+        }
+        return data;
+    }
+
+    public int setPrms(String ROLE_ID, Form form) {
+        Map data = form.getValuesMap();
+        if(ROLE_ID.length() == 0){
+            return CloverManager.CODE_FAILED;
+        }
+        int result = 0;
+        IQuery query = getQuery();
+        String sql = "DELETE FROM X_PRMS_ROLE WHERE ROLE_ID = " + ROLE_ID;
+        query.doExec(sql);
+        sql = "INSERT INTO X_PRMS_ROLE (ROLE_ID, PRMS_KEY) VALUES ("+ROLE_ID+", '"+form.getValues("PRMS_KEY")+"')";
+        result = query.doExec(sql);
+        if(result < 0){
+            query.free();
+            return CloverManager.CODE_FAILED;
+        }
+        Set<String> keys = form.getNames();
+        for(String key : keys){
+            if(key.indexOf("PRMS_EXT_") > -1){
+                String PRMS_KEY = key.substring(key.lastIndexOf("_") + 1);
+                String PRMS_EXT = StringUtils.toString(data.get(key));
+                sql = "DELETE FROM X_PRMS_EXT_ROLE WHERE ROLE_ID = " + ROLE_ID + " AND PRMS_KEY = " + PRMS_KEY;
+                result = query.doExec(sql);
+                sql = "INSERT INTO X_PRMS_EXT_ROLE (ROLE_ID, PRMS_KEY, PRMS_EXT) VALUES ("+ROLE_ID+", '"+PRMS_KEY+"', '"+PRMS_EXT+"')";
+                result = query.doExec(sql);
+            }
+        }
+        query.free();
+        if(result < 0){
+            return CloverManager.CODE_FAILED;
+        }
+        return CloverManager.CODE_SUCCESS;
+    }
+
+    public Map getPrms(String ROLE_ID) {
+        Map data = new HashMap();
+        if(ROLE_ID.length() == 0){
+            data.put("PRMS_KEY", "");
+            data.put("PRMS_EXT", new ArrayList<Map>());
+            return data;
+        }
+        IQuery query = getQuery();
+        String sql = "SELECT PRMS_KEY FROM X_PRMS_ROLE WHERE ROLE_ID = " + ROLE_ID;
+        String PRMS_KEY = query.doQuery(sql).getValue();
+        data.put("PRMS_KEY", PRMS_KEY);
+        sql = "SELECT * FROM X_PRMS_EXT_ROLE WHERE ROLE_ID = " + ROLE_ID;
+        List<Map> PRMS_EXT = query.doQuery(sql).tables();
+        data.put("PRMS_EXT", PRMS_EXT);
+        query.free();
+        return data;
+    }
+}

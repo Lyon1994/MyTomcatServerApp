@@ -1,0 +1,131 @@
+package org.redot.library.db;
+
+import org.apache.log4j.Logger;
+
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Hashtable;
+import java.util.Map;
+
+/**
+ * Copyright By Redot.
+ * User: CASH
+ * Date: 2009-10-14
+ * Time: 14:41:20
+ */
+public class IDataBase {
+
+    Logger logger = Logger.getLogger(this.getClass());
+
+    private String name = null;
+    private int type = 1;
+    private String url = null;
+    private String user = null;
+    private String pass = null;
+
+    private IDataSource ds;
+
+    private boolean isok = false;
+
+    private Hashtable<String, ITable> tables = new Hashtable<String, ITable>();
+
+    private Map<String, Long> maxID = Collections.synchronizedMap(new Hashtable<String, Long>());
+
+    public synchronized  Map<String, Long> getMaxID() {
+        return maxID;
+    }
+
+
+
+    public IDataBase(String name, int type, String url, String user, String pass) {
+        this.name = name;
+        this.type = type;
+        this.url = url;
+        this.user = user;
+        this.pass = pass;
+    }
+
+    public boolean init(){
+        ds = new IDataSource(this);
+        isok = ds.init();
+        return isok;
+    }
+
+    public synchronized ITable getTable(String name){
+        ITable table = getTables().get(name);
+        if(table != null){
+            return table.clone();
+        }
+        table = new ITable(this, name);
+        getTables().put(name, table);
+        return table;
+    }
+
+    public boolean isOK(){
+        return isok;
+    }
+
+    public IQuery createQuery(){
+        if(isOK()){
+            return new IQuery(this);
+        }
+        return null;
+    }
+
+    public void destroy(){
+        try {
+            ds.destroy();
+            //super.finalize();
+        } catch (Throwable throwable) {
+            throwable.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+        }
+    }
+
+    public Hashtable<String, ITable> getTables() {
+        return tables;
+    }
+
+    public IDataSource getDs() {
+        return ds;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public int getType() {
+        return type;
+    }
+
+    public void setType(int type) {
+        this.type = type;
+    }
+
+    public String getUrl() {
+        return url;
+    }
+
+    public void setUrl(String url) {
+        this.url = url;
+    }
+
+    public String getUser() {
+        return user;
+    }
+
+    public void setUser(String user) {
+        this.user = user;
+    }
+
+    public String getPass() {
+        return pass;
+    }
+
+    public void setPass(String pass) {
+        this.pass = pass;
+    }
+}

@@ -1,0 +1,25 @@
+package org.redot.clover.app.inventory.rest;
+
+import org.redot.clover.app.inventory.PurchaseRejectAction;
+import org.redot.clover.core.data.DataPackage;
+import org.redot.clover.core.ext.BaseResource;
+import org.restlet.resource.Post;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: yh_admin
+ * Date: 12-10-31
+ * Time: 上午10:06
+ * To change this template use File | Settings | File Templates.
+ */
+public class PurchaseReject extends BaseResource {
+
+    @Post("json")
+    public String doPost() {
+        DataPackage dp = new DataPackage();
+        PurchaseRejectAction a = new PurchaseRejectAction();
+        a.setClient(client);
+        dp.setStatus(a.set(form));
+        return dp.toJSON();
+    }
+}

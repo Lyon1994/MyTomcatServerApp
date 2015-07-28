@@ -1,0 +1,165 @@
+package org.redot.clover.print.template;
+
+import org.apache.log4j.Logger;
+import org.redot.library.lang.NumberUtils;
+
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 11-8-23
+ * Time: 下午2:49
+ * To change this template use File | Settings | File Templates.
+ */
+public class PrintTemplateRow implements Serializable{
+    private static final long serialVersionUID = 8301450719272052605L;
+    private int row;
+    private int loop = 0;
+    private int align = 0;
+    private int space = 0;
+    private List<PrintTemplateField> fields;
+    private PrintTemplate template;
+
+    public PrintTemplateRow(PrintTemplate template, int row, List<Map> fieldsData){
+        this.row = row;
+        this.template = template;
+        fields = new ArrayList<PrintTemplateField>();
+        init(fieldsData);
+    }
+    private void init(List<Map> fieldsData){
+        int x = 0;
+        for(Map m: fieldsData){
+            int fieldRow = NumberUtils.toInt(m.get("FIELD_ROW"));
+            if(fieldRow != getRow()){
+                continue;
+            }
+            if(x == 0){
+                loop = NumberUtils.toInt(m.get("FIELD_LOOP"));
+                align = NumberUtils.toInt(m.get("FIELD_ALIGN"));
+                space = NumberUtils.toInt(m.get("FIELD_SPACE"));
+            }
+            getFields().add(new PrintTemplateField(this, m));
+            x ++;
+        }
+    }
+
+    public StringBuffer getContent(){
+        return getTemplate().getContent();
+    }
+
+    public Map<String, String[]> getData(){
+        return getTemplate().getData();
+    }
+
+    public void process(){
+        processAlign();
+        if(getLoop() == 1){
+            int len = 0;
+            for(PrintTemplateField field : getFields()){
+                field.process();
+                if(field.getValueName().length() > 0){
+                        String[] valueNames = field.getValueName().split(",");
+                        if(valueNames != null && valueNames.length > 0){
+                            for(String valueName : valueNames){
+                                String[] data = getData().get(valueName);
+                                if(data != null){
+                                    if(data.length > len){
+                                        len = data.length;
+                                    }
+                                }
+                            }
+                        }
+                }
+            }
+            getContent().append("\n");
+            if(getSpace() == 1){
+                getContent().append("  ");
+                getContent().append("\n");
+            }
+            //getContent().append(PrintTemplateUtils.LINE_SPACE_DEF);
+            for(int i=0;i<len;i++){
+                for(PrintTemplateField field : getFields()){
+                    field.processLoop(i);
+                }
+                getContent().append("\n");
+                if(getSpace() == 1){
+                    getContent().append("  ");
+                    getContent().append("\n");
+                }
+
+            }
+
+            //getContent().append(PrintTemplateUtils.LINE_SPACE);
+        }
+        else{
+            for(PrintTemplateField field : getFields()){
+                field.process();
+            }
+            getContent().append("\n");
+            if(getSpace() == 1){
+                getContent().append("  ");
+                getContent().append("\n");
+            }
+        }
+        unProcessAlign();
+    }
+
+    public void processAlign(){
+        switch (getAlign()){
+            case 0 :
+                break;
+            case  1:
+                getContent().append(PrintTemplateUtils.ALIGN_CENTER);
+                break;
+            case  2:
+                getContent().append(PrintTemplateUtils.ALIGN_RIGHT);
+                break;
+            default:
+                break;
+        }
+    }
+    public void unProcessAlign(){
+        switch (getAlign()){
+            case 0 :
+
+                break;
+            case  1:
+                getContent().append(PrintTemplateUtils.ALIGN_LEFT);
+                break;
+            case  2:
+                getContent().append(PrintTemplateUtils.ALIGN_LEFT);
+                break;
+            default:
+
+                break;
+        }
+    }
+
+    public int getRow(){
+        return row;
+    }
+
+    public int getLoop() {
+        return loop;
+    }
+
+    public int getAlign() {
+        return align;
+    }
+
+    public int getSpace() {
+        return space;
+    }
+
+    public List<PrintTemplateField> getFields() {
+        return fields;
+    }
+
+    public PrintTemplate getTemplate() {
+        return template;
+    }
+}

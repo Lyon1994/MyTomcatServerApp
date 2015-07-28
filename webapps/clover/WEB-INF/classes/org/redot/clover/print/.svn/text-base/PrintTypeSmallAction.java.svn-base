@@ -1,0 +1,153 @@
+package org.redot.clover.print;
+
+import org.redot.clover.app.message.MessageManager;
+import org.redot.clover.core.CloverManager;
+import org.redot.clover.core.ext.BaseAction;
+import org.redot.library.db.IQuery;
+import org.redot.library.db.ITable;
+import org.redot.library.lang.NumberUtils;
+import org.redot.library.lang.StringUtils;
+import org.restlet.data.Form;
+
+import java.util.Hashtable;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: yh_admin
+ * Date: 12-11-21
+ * Time: 下午3:29
+ * To change this template use File | Settings | File Templates.
+ */
+public class PrintTypeSmallAction   extends BaseAction {
+    public List<Map> listSmall(String Q, String ID){
+        String sql = "SELECT A.*,B.CASE_STATUS_NAME, C.PRINTER_NAME AS CASE_PRINTER_NAME, D.TEMPLATE_NAME AS CASE_TEMPLATE_NAME,E.PRINT_COMMAND_NAME AS CASE_COMMAND_NAME, F.CASE_TYPE_NAME  " +
+                "   FROM X_PRINT_CASE A  " +
+                "  LEFT JOIN X_PRINT_CASE_STATUS B ON A.CASE_STATUS = B.CASE_STATUS " +
+                "   LEFT JOIN X_PRINTER C ON A.CASE_PRINTER = C.PRINTER_ID " +
+                "    LEFT JOIN X_PRINT_TEMPLATE D ON A.CASE_TEMPLATE = D.TEMPLATE_ID " +
+                "     LEFT JOIN X_PRINT_COMMAND E ON A.CASE_COMMAND = E.PRINT_COMMAND " +
+                "     LEFT JOIN X_PRINT_CASE_TYPE F ON A.CASE_TYPE = F.CASE_TYPE " +
+                "    WHERE A.CASE_STATUS  <> 2 AND A.CASE_PRINTER ="+ID ;
+        System.out.println(sql);
+        IQuery query = getQuery();
+        List<Map> list = query.doQuery(sql).tables();
+        for (Map mx:list)
+        {
+            String CASE_PS = StringUtils.toString(mx.get("CASE_PS"));
+            String CASE_PS_NAME = "";
+            String CASE_PSX = StringUtils.toString(mx.get("CASE_PSX"));
+            String CASE_PSX_NAME = "";
+            String CASE_PS_AREA = StringUtils.toString(mx.get("CASE_PS_AREA"));
+            String CASE_PS_AREA_NAME = "";
+            if(CASE_PS.length() > 0){
+                sql = "SELECT P_TYPE_NAME FROM X_P_TYPE WHERE P_TYPE_ID IN ("+CASE_PS+")";
+                List<Map> list1 = query.doQuery(sql).tables();
+                for(int i=0;i<list1.size();i++){
+                    Map p = list1.get(i);
+                    if(i > 0){
+                        CASE_PS_NAME += ",";
+                    }
+                    CASE_PS_NAME += StringUtils.toString(p.get("P_TYPE_NAME"));
+                }
+            }
+            mx.put("CASE_PS_NAME", CASE_PS_NAME);
+            if(CASE_PSX.length() > 0){
+                sql = "SELECT P_NAME FROM X_P WHERE P_ID IN ("+CASE_PSX+")";
+                List<Map> list2 = query.doQuery(sql).tables();
+                for(int i=0;i<list2.size();i++){
+                    Map p = list2.get(i);
+                    if(i > 0){
+                        CASE_PSX_NAME += ",";
+                    }
+                    CASE_PSX_NAME += StringUtils.toString(p.get("P_NAME"));
+                }
+            }
+            mx.put("CASE_PSX_NAME", CASE_PSX_NAME);
+            if(CASE_PS_AREA.length() > 0){
+                sql = "SELECT DESK_AREA_NAME FROM X_DESK_AREA WHERE DESK_AREA_ID IN ("+CASE_PS_AREA+")";
+                List<Map> list3 = query.doQuery(sql).tables();
+                for(int i=0;i<list3.size();i++){
+                    Map p = list3.get(i);
+                    if(i > 0){
+                        CASE_PS_AREA_NAME += ",";
+                    }
+                    CASE_PS_AREA_NAME += StringUtils.toString(p.get("DESK_AREA_NAME"));
+                }
+            }
+            mx.put("CASE_PS_AREA_NAME", CASE_PS_AREA_NAME);
+            query.free();
+        }
+        query.free();
+        return list;
+    }
+    public Map setSmall(Form form){
+        Map data = form.getValuesMap();
+        String CASE_ID = StringUtils.toString(data.get("CASE_ID"));
+        String CASE_NAME = StringUtils.toString(data.get("CASE_NAME"));
+        String CASE_PRINTER = StringUtils.toString(data.get("CASE_PRINTER"));
+        String CASE_TEMPLATE = StringUtils.toString(data.get("CASE_TEMPLATE"));
+        String CASE_NUM= StringUtils.toString(data.get("CASE_NUM"));
+        String CASE_COMMAND= StringUtils.toString(data.get("CASE_COMMAND"));
+        String CASE_PS= StringUtils.toString(data.get("CASE_PS"));
+        String CASE_STATUS= StringUtils.toString(data.get("CASE_STATUS"));
+        String CASE_MONEY_BOX= StringUtils.toString(data.get("CASE_MONEY_BOX"));
+        String CASE_PS_AREA= StringUtils.toString(data.get("CASE_PS_AREA"));
+        String CASE_TYPE= StringUtils.toString(data.get("CASE_TYPE"));
+        String CASE_PSX= StringUtils.toString(data.get("CASE_PSX"));
+        Map d = new Hashtable();
+        d.put("CASE_NAME", CASE_NAME);
+        d.put("CASE_PRINTER", CASE_PRINTER);
+        d.put("CASE_TEMPLATE",CASE_TEMPLATE);
+        d.put("CASE_NUM", CASE_NUM);
+        d.put("CASE_COMMAND", CASE_COMMAND);
+        d.put("CASE_STATUS", CASE_STATUS);
+        d.put("CASE_MONEY_BOX", CASE_MONEY_BOX);
+        d.put("CASE_PS_AREA", CASE_PS_AREA);
+        d.put("CASE_TYPE", CASE_TYPE);
+        d.put("CASE_PSX", CASE_PSX);
+        d.put("CASE_PS", CASE_PS);
+
+        ITable t = getTable("X_PRINT_CASE").clearData();
+        int result;
+        if(CASE_ID.length() == 0){
+            CASE_ID = String.valueOf(t.getMaxID("CASE_ID"));
+            d.put("CASE_ID", CASE_ID);
+            result = t.data(d).create();
+        }
+        else{
+            result = t.data(d).where(t.column("CASE_ID").eq(CASE_ID)).update();
+        }
+        if(result < 0){
+            d.put("STATUS", CloverManager.CODE_FAILED);
+        }
+        else{
+            MessageManager.getInstance().setVersion(MessageManager.MSG_VER_PRODUCT_TYPE);
+            d.put("STATUS", CloverManager.CODE_SUCCESS);
+        }
+        return d;
+    }
+    public int deleteSmall(Form form){
+        Map data = form.getValuesMap();
+        String CASE_ID = StringUtils.toString(data.get("CASE_ID"));
+        if(CASE_ID.length() == 0){
+            return CloverManager.CODE_FAILED;
+        }
+        IQuery query = getQuery();
+//        if(query.rowCount(sql) > 0){
+//            query.free();
+//            return CloverManager.CODE_FAILED;
+//        }
+         String sql = "UPDATE X_PRINT_CASE SET CASE_STATUS = 2  WHERE CASE_ID = " + CASE_ID;
+        int result = query.doExec(sql);
+        query.free();
+        if(result < 0){
+            return CloverManager.CODE_FAILED;
+        }
+        MessageManager.getInstance().setVersion(MessageManager.MSG_VER_PRODUCT_TYPE);
+        return CloverManager.CODE_SUCCESS;
+    }
+
+
+}

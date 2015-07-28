@@ -1,0 +1,44 @@
+package org.redot.clover.app.inventory;
+
+import org.redot.clover.app.message.MessageManager;
+import org.redot.clover.core.CloverManager;
+import org.redot.clover.core.ext.BaseAction;
+import org.redot.library.db.IQuery;
+import org.redot.library.db.ITable;
+import org.redot.library.lang.DateUtils;
+import org.redot.library.lang.StringUtils;
+import org.restlet.data.Form;
+
+import java.util.Hashtable;
+import java.util.Map;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: yh_admin
+ * Date: 12-10-30
+ * Time: 下午3:19
+ * To change this template use File | Settings | File Templates.
+ */
+public class ItemLossAction extends BaseAction {
+    public int set(Form form){
+        if(!isLogin()){
+            return CloverManager.CODE_FAILED;
+        }
+        String LOSS_ITEM_MAKER = StringUtils.toString(getClient().getCookies().get("ACCOUNT_ID"));
+        Map data = form.getValuesMap();
+//        String LOSS_ITEM_MAKER=StringUtils.toString(data.get("ACCOUNT_ID"));
+        ITable T = getTable("X_ITEM_LOSS").clearData();
+        int result = 0;
+        String  LOSS_ID = String.valueOf(T.getMaxID("LOSS_ID"));
+            data.put("LOSS_ID", LOSS_ID);
+            data.put("LOSS_DT", DateUtils.getNow());
+            data.put("LOSS_ITEM_MAKER",LOSS_ITEM_MAKER) ;
+            result=T.data(data).create();
+        if(result < 0){
+            return CloverManager.CODE_FAILED;
+        }
+        MessageManager.getInstance().setVersion(MessageManager.MSG_VER_CLIENT);
+        return CloverManager.CODE_SUCCESS;
+    }
+
+}

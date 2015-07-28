@@ -1,0 +1,102 @@
+package org.redot.clover.print;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 11-4-13
+ * Time: 下午9:57
+ * To change this template use File | Settings | File Templates.
+ */
+public class Printer {
+    private int id;
+    private String name;
+    private String ip;
+    private int port;
+    private int bakPrinderID;
+    private Printer bakPrinter;
+
+    public Printer(){
+
+    }
+
+    public Printer(int id, String name, String ip, int port) {
+        this.id = id;
+        this.name = name;
+        this.ip = ip;
+        this.port = port;
+    }
+
+    public int getId() {
+        return id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getIp() {
+        return ip;
+    }
+
+
+
+    public void setIp(String ip) {
+        this.ip = ip;
+    }
+
+
+
+    public int getPort() {
+        return port;
+    }
+
+    public void setPort(int port) {
+        this.port = port;
+    }
+
+
+    public Printer getBakPrinter(){
+        if(bakPrinter == null && bakPrinderID != 0){
+            for(Printer printer : PrintManager.getInstance().getPrinterList()){
+                if(bakPrinderID == printer.getId()){
+                    bakPrinter = printer;
+                    break;
+                }
+            }
+        }
+        return bakPrinter;
+    }
+
+    public void setBakPrinter(Printer bakPrinter){
+        this.bakPrinter = bakPrinter;
+    }
+
+    public int getBakPrinderID() {
+        return bakPrinderID;
+    }
+
+    public void setBakPrinderID(int bakPrinderID) {
+        this.bakPrinderID = bakPrinderID;
+    }
+
+    public int getStatus(){
+       return PrinterMonitor.getStatus(getIp());
+//        return getPrintStatus(getIp());
+    }
+
+//    public native int getPrintStatus(String print_ip);
+//
+//    static {
+//        System.loadLibrary("PosPrint");
+//    }
+
+
+}

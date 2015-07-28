@@ -1,0 +1,79 @@
+package org.redot.clover.core.ext;
+
+import org.redot.clover.core.CloverManager;
+import org.redot.library.db.IQuery;
+import org.redot.library.db.ITable;
+import org.redot.library.lang.StringUtils;
+
+import java.util.Map;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: CASH
+ * Date: 10-12-17
+ * Time: 下午6:18
+ * To change this template use File | Settings | File Templates.
+ */
+public abstract class BaseAction {
+
+    private Client client;
+
+    public Client getClient(){
+        if(client == null){
+            client = new Client();
+        }
+        return client;
+    }
+
+    public void setClient(Client client){
+        this.client = client;
+    }
+
+    public boolean isLogin(){
+        String ACCOUNT_ID = StringUtils.toString(getClient().getCookies().get("ACCOUNT_ID"));
+        if(ACCOUNT_ID.length() == 0){
+            return false;
+        }
+        return true;
+    }
+
+    public IQuery getQuery(){
+      //  if(DateUtils.getDateMinusDays(new Date(), DateUtils.toDate("2011-03-08")) > 0){
+        //    System.out.println("系统授权过期");
+          //  System.exit(0);
+      //  }
+        CloverManager clover = CloverManager.getInstance();
+        return CloverManager.getInstance().getQuery();
+    }
+
+    public synchronized ITable getTable(String name){
+        if(CloverManager.getInstance().getDB() == null){
+            return null;
+        }
+        return CloverManager.getInstance().getDB().getTable(name);
+    }
+
+    public static void encodeData(Map data, String np){
+        Object[] keys = data.keySet().toArray();
+        for(Object key : keys){
+            String k = StringUtils.toString(key);
+            Object v = data.get(k);
+            data.remove(k);
+            data.put(np + "_" + k, v);
+        }
+        //return data
+    }
+
+    public static void decodeData(Map data, String np){
+        Object[] keys = data.keySet().toArray();
+        for(Object key : keys){
+            String k = StringUtils.toString(key);
+            if(k.indexOf(np) == -1){
+                continue;
+            }
+            Object v = data.get(k);
+            data.remove(k);
+            data.put(k.substring((np+"_").length()), v);
+        }
+    }
+}

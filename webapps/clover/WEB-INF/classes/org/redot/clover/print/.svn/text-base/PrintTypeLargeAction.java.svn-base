@@ -1,0 +1,89 @@
+package org.redot.clover.print;
+
+import org.redot.clover.app.message.MessageManager;
+import org.redot.clover.core.CloverManager;
+import org.redot.clover.core.ext.BaseAction;
+import org.redot.library.db.IQuery;
+import org.redot.library.db.ITable;
+import org.redot.library.lang.NumberUtils;
+import org.redot.library.lang.StringUtils;
+import org.restlet.data.Form;
+
+import java.util.Hashtable;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: yh_admin
+ * Date: 12-11-21
+ * Time: 下午2:54
+ * To change this template use File | Settings | File Templates.
+ */
+public class PrintTypeLargeAction   extends BaseAction {
+    public List<Map> listLarge(){
+        String sql = " SELECT A.PRINTER_ID,A.PRINTER_NAME,A.PRINTER_IP,A.PRINTER_PORT,A.PRINTER_STATUS,A.PRINTER_BAK,(SELECT COUNT(*) FROM X_PRINT_CASE B WHERE B.CASE_PRINTER=A.PRINTER_ID) AS CHILDREN FROM X_PRINTER A WHERE A.PRINTER_STATUS<>2  ";
+        System.out.println(sql);
+        IQuery query = getQuery();
+        List<Map> list = query.doQuery(sql).tables();
+        query.free();
+        return list;
+    }
+    public Map setLarge(Form form){
+        Map data = form.getValuesMap();
+        String PRINTER_ID = StringUtils.toString(data.get("PRINTER_ID"));
+        String PRINTER_NAME = StringUtils.toString(data.get("PRINTER_NAME"));
+        String PRINTER_IP = StringUtils.toString(data.get("PRINTER_IP"));
+        String PRINTER_PORT = StringUtils.toString(data.get("PRINTER_PORT"));
+        String PRINTER_STATUS = StringUtils.toString(data.get("PRINTER_STATUS"));
+        String PRINTER_BAK = StringUtils.toString(data.get("PRINTER_BAK"));
+        Map d = new Hashtable();
+        d.put("PRINTER_ID", PRINTER_ID);
+        d.put("PRINTER_NAME", PRINTER_NAME);
+        d.put("PRINTER_IP", PRINTER_IP);
+        d.put("PRINTER_PORT", PRINTER_PORT);
+        d.put("PRINTER_STATUS",PRINTER_STATUS);
+        d.put("PRINTER_BAK",PRINTER_BAK);
+        ITable t = getTable("X_PRINTER").clearData();
+        int result;
+        if(PRINTER_ID.length() == 0){
+            PRINTER_ID = String.valueOf(t.getMaxID("PRINTER_ID"));
+            d.put("PRINTER_ID",PRINTER_ID);
+            result = t.data(d).create();
+        }
+        else{
+            result = t.data(d).where(t.column("PRINTER_ID").eq(PRINTER_ID)).update();
+        }
+        if(result < 0){
+            d.put("STATUS", CloverManager.CODE_FAILED);
+        }
+        else{
+            d.put("STATUS", CloverManager.CODE_SUCCESS);
+        }
+        return d;
+    }
+    public int deleteLarge(Form form){
+        System.out.println("2222222");
+        Map data = form.getValuesMap();
+        String PRINTER_ID = StringUtils.toString(data.get("PRINTER_ID"));
+        if(PRINTER_ID.length() == 0){
+            return CloverManager.CODE_FAILED;
+        }
+        String sql = "SELECT * FROM X_PRINT_CASE  WHERE CASE_PRINTER=  "+PRINTER_ID    ;
+        IQuery query = getQuery();
+        if(query.rowCount(sql) > 0){
+            query.free();
+            return CloverManager.CODE_FAILED;
+        }
+        sql = "UPDATE X_PRINTER SET PRINTER_STATUS = 2 WHERE PRINTER_ID ="+ PRINTER_ID;
+        System.out.println(sql);
+        int result = query.doExec(sql);
+        query.free();
+        if(result < 0){
+            return CloverManager.CODE_FAILED;
+        }
+        MessageManager.getInstance().setVersion(MessageManager.MSG_VER_PRODUCT_TYPE);
+        return CloverManager.CODE_SUCCESS;
+    }
+
+}

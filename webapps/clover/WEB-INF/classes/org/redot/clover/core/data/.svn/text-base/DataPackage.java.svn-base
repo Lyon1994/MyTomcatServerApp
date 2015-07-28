@@ -1,0 +1,99 @@
+package org.redot.clover.core.data;
+
+import org.json.JSONObject;
+import org.redot.library.lang.StringUtils;
+
+import java.util.Hashtable;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: CASH
+ * Date: 10-12-17
+ * Time: 下午6:04
+ * To change this template use File | Settings | File Templates.
+ */
+public class DataPackage {
+
+    private Map<String, Object> options = new Hashtable<String, Object>();
+
+    private Map<String, Object> data = new Hashtable<String, Object>();
+
+    private int status = 0;
+    private String key;
+
+    public DataPackage() {
+
+    }
+
+    public void addTable(String name, List<Map> rowData) {
+        addTable(name, rowData, null, null);
+    }
+
+    public void addTable(String name, List<Map> rowData, Map header, Map footer) {
+        Map<String, Object> table = new Hashtable<String, Object>();
+        if (rowData != null) {
+            table.put("rowData", rowData);
+        }
+        if (header != null) {
+            table.put("header", header);
+        }
+        if (footer != null) {
+            table.put("footer", footer);
+        }
+        getData().put(name, table);
+    }
+
+    public String toJSON() {
+        Map<String, Object> map = new Hashtable<String, Object>();
+        map.put("options", getOptions());
+        map.put("data", getData());
+        map.put("status", getStatus());
+        map.put("key", StringUtils.toString(getKey()));
+        JSONObject jo = new JSONObject(map);
+        String str = jo.toString();
+        getOptions().clear();
+        getData().clear();
+        map.clear();
+        map = null;
+        jo = null;
+        return str;
+    }
+
+    public void fromJSON(String str) {
+
+    }
+
+    public Map<String, Object> getData() {
+        return data;
+    }
+
+    public Map<String, Object> getOptions() {
+        return options;
+    }
+
+    public void setOptions(Map<String, Object> options) {
+        this.options = options;
+    }
+
+    public void setData(Map<String, Object> data) {
+        this.data = data;
+    }
+
+    public int getStatus() {
+        return status;
+    }
+
+    public void setStatus(int status) {
+        this.status = status;
+    }
+
+    public String getKey() {
+        return key;
+    }
+
+    public void setKey(String key) {
+        this.key = key;
+    }
+}

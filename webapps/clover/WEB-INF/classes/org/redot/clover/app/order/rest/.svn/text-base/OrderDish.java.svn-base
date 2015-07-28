@@ -1,0 +1,126 @@
+package org.redot.clover.app.order.rest;
+
+import org.redot.clover.app.order.OrderDishAction;
+import org.redot.clover.core.data.DataPackage;
+import org.redot.clover.core.ext.BaseResource;
+import org.redot.library.lang.ArrayUtils;
+import org.redot.library.lang.NumberUtils;
+import org.redot.library.lang.StringUtils;
+import org.restlet.resource.Get;
+import org.restlet.resource.Post;
+
+import java.util.*;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 10-12-30
+ * Time: 下午11:51
+ * To change this template use File | Settings | File Templates.
+ */
+public class OrderDish extends BaseResource {
+
+    @Get("json")
+    public String doGet() {
+        DataPackage dp = new DataPackage();
+        String O_ID = StringUtils.toString(getRequestAttributes().get("O_ID"));
+        OrderDishAction a = new OrderDishAction();
+        dp.addTable("table", a.list(O_ID));
+        /*
+        List<Map> list = a.list(O_ID);
+        Map footer = new HashMap();
+        int cancel = 0;
+        int give = 0;
+        double amount = 0;
+        Map<String, Float>  DES= new HashMap<String, Float>();
+        float AMOUNT = 0;
+        for (int i = 0; i < list.size(); i++) {
+            Map m = list.get(i);
+            String O_P_ID = StringUtils.toString(m.get("O_P_ID"));
+            float O_P_PRICE = NumberUtils.toFloat(m.get("O_P_PRICE"));
+            String O_P_TASTE = StringUtils.toString(m.get("O_P_TASTE"));
+
+            String O_P_REQUIRE = StringUtils.toString(m.get("O_P_REQUIRE"));
+            String O_P_MEMO = StringUtils.toString(m.get("O_P_MEMO"));
+            float O_P_DISCOUNT = NumberUtils.toFloat(m.get("O_P_DISCOUNT"));
+            float O_P_NUM = NumberUtils.toFloat(m.get("O_P_NUM"));
+            List<String> memos = new ArrayList<String>();
+            if(O_P_DISCOUNT >= 0){
+                if(O_P_DISCOUNT == 0){
+                    memos.add("免单");
+                }
+                else{
+                    memos.add(O_P_DISCOUNT + "折");
+                }
+            }
+            if(O_P_TASTE.length() > 0){
+                memos.add(O_P_TASTE);
+            }
+            if(O_P_REQUIRE.length() > 0){
+                memos.add(O_P_REQUIRE);
+            }
+            if(O_P_MEMO.length() > 0){
+                memos.add(O_P_MEMO);
+            }
+
+            m.put("O_P_MEMO", ArrayUtils.join(",", memos));
+            int STATUS = NumberUtils.toInt(m.get("O_P_STATUS"));
+            String status_ext = StringUtils.toString(m.get("O_P_EXT_STATUS"));
+            String P_TYPE_NAME = StringUtils.toString(m.get("P_TYPE_NAME"));
+            if(STATUS == 1 || STATUS == 3){
+                if(DES.containsKey(P_TYPE_NAME)){
+                    DES.put(P_TYPE_NAME, DES.get(P_TYPE_NAME) + O_P_NUM);
+                }
+                else{
+                    DES.put(P_TYPE_NAME, O_P_NUM);
+                }
+                if(O_P_DISCOUNT < 0){
+                    O_P_DISCOUNT = 10;
+                }
+                String P_TAG_WEIGHT = StringUtils.toString(m.get("P_TAG_WEIGHT"));
+                if(P_TAG_WEIGHT.equals("1")){
+                    O_P_NUM = NumberUtils.toFloat(m.get("O_P_WEIGHT"));
+                }
+                AMOUNT += O_P_PRICE * O_P_NUM * O_P_DISCOUNT / 10;
+            }
+
+
+        }
+        String DES_STR = "";
+        Set<String> keys =  DES.keySet();
+        for(String key : keys){
+            if(DES_STR.length() > 0){
+                DES_STR += ",";
+            }
+            DES_STR += key + ":" + DES.get(key);
+        }
+        footer.put("DES", DES_STR);
+        AMOUNT = NumberUtils.clearZero(AMOUNT);
+        footer.put("AMOUNT", AMOUNT);
+        dp.addTable("table", list, null, footer);   */
+        return dp.toJSON();
+    }
+
+    @Post("json")
+    public String doPost() {
+        DataPackage dp = new DataPackage();
+        OrderDishAction a = new OrderDishAction();
+        a.setClient(client);
+        int key = 0;
+        if (this.form.getFirstValue("O_P_NO") == null) {
+            key = a.create(form);
+        } else {
+            key = a.update(form);
+        }
+        if(key <= 0){
+            dp.setStatus(0);
+        }
+        else{
+            dp.setStatus(1);
+        }
+        dp.setKey(key + "");
+        return dp.toJSON();
+    }
+
+
+}

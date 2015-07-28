@@ -1,0 +1,30 @@
+package org.redot.clover.app.favorable.rest;
+
+import org.redot.clover.app.favorable.FavorableAction;
+import org.redot.clover.core.data.DataPackage;
+import org.redot.clover.core.ext.BaseResource;
+import org.restlet.resource.Get;
+
+import java.util.List;
+import java.util.Map;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 11-3-28
+ * Time: 下午8:45
+ * To change this template use File | Settings | File Templates.
+ */
+public class FavorableCaseList extends BaseResource {
+    @Get("json")
+    public String doGet() {
+        DataPackage dp = new DataPackage();
+        FavorableAction a = new FavorableAction();
+        List<Map> list = a.list();
+        if (list == null) {
+            return dp.toJSON();
+        }
+        dp.addTable("table", list, null, null);
+        return dp.toJSON();
+    }
+}

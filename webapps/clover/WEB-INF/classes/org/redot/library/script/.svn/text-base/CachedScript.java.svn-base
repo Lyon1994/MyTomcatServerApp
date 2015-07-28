@@ -1,0 +1,62 @@
+package org.redot.library.script;
+
+import javax.script.ScriptException;
+import javax.script.CompiledScript;
+import javax.script.Compilable;
+import java.io.*;
+
+/**
+ * Copyright By Redot.
+ * User: CASH
+ * Date: 2009-10-19
+ * Time: 9:59:43
+ */
+public class CachedScript {
+
+    private Compilable scriptEngine;
+    private File scriptFile;
+    private CompiledScript compiledScript;
+    //private Date compiledDate;
+
+
+    public CachedScript(Compilable scriptEngine, File scriptFile) {
+        this.scriptEngine = scriptEngine;
+        this.scriptFile = scriptFile;
+    }
+
+    public void compiledScript() throws ScriptException, IOException {
+        Reader reader = new InputStreamReader(new FileInputStream(scriptFile), "UTF-8");
+        try {
+            compiledScript = scriptEngine.compile(reader);
+        } finally {
+            reader.close();
+        }
+    }
+
+    public CompiledScript getCompiledScript() throws ScriptException, IOException {
+        if (compiledScript == null) {
+            compiledScript();
+        }
+        return compiledScript;
+    }
+
+
+
+    /* bak
+    public CompiledScript getCompiledScript() throws ScriptException, IOException {
+        Date scriptDate = new Date(scriptFile.lastModified());
+        if (compiledDate == null || scriptDate.after(compiledDate)) {
+            //Reader reader = new FileReader(scriptFile);
+            Reader reader = new InputStreamReader (new FileInputStream(scriptFile),"UTF-8");
+            try {
+                compiledScript = scriptEngine.compile(reader);
+                compiledDate = scriptDate;
+            } finally {
+                reader.close();
+            }
+        }
+        return compiledScript;
+    }
+    */
+
+}

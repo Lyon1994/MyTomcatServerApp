@@ -1,0 +1,40 @@
+package org.redot.clover.app.system;
+
+import org.redot.clover.core.CloverManager;
+import org.redot.clover.core.ext.BaseAction;
+import org.redot.library.db.IQuery;
+import org.redot.library.lang.StringUtils;
+import org.restlet.data.Form;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 10-12-30
+ * Time: 上午4:47
+ * To change this template use File | Settings | File Templates.
+ */
+public class KTAction extends BaseAction {
+
+    public String getKT(){
+        IQuery query = getQuery();
+        String[] ARR = query.doQuery("SELECT BO_KT FROM X_BO_KT").get();
+        query.free();
+        if(ARR.length == 0){
+            return "";
+        }
+        return StringUtils.toString(ARR[0]);
+    }
+
+    public int setKT(Form form) {
+        String KT = form.getFirstValue("BO_KT");
+        if(KT == null || KT.equals("")){
+            return CloverManager.CODE_FAILED;
+        }
+        IQuery query = getQuery();
+        int result = query.doExec("INSERT INTO X_BO_KT (BO_KT) VALUES ("+KT+")");
+        if(result < 0){
+            return CloverManager.CODE_FAILED;
+        }
+        return CloverManager.CODE_SUCCESS;
+    }
+}

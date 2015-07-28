@@ -1,0 +1,45 @@
+package org.redot.clover.app.message;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 11-8-31
+ * Time: 下午2:06
+ * To change this template use File | Settings | File Templates.
+ */
+public class MessageManager {
+
+    public static final int MSG_VER_SYSTEM = 1;
+    public static final int MSG_VER_UNIT = 2;
+    public static final int MSG_VER_TASTE = 3;
+    public static final int MSG_VER_REASON = 4;
+    public static final int MSG_VER_REQUIRE = 5;
+    public static final int MSG_VER_PRODUCT_TYPE = 6;
+    public static final int MSG_VER_PRODUCT = 7;
+    public static final int MSG_VER_PRODUCT_COMBO = 8;
+    public static final int MSG_VER_PRODUCT_MT = 9;
+    public static final int MSG_VER_ORGANIZATION = 10;
+    public static final int MSG_VER_CLIENT = 11;
+    public static final int MSG_VER_FAVORABLE_CASE = 12;
+    public static final int MSG_VER_WAY = 13;
+
+    private static MessageManager instance = null;
+
+    public MessageManager(){
+        init();
+    }
+    private void init(){
+
+    }
+
+    public void setVersion(int type){
+        new MessageVersionAction().set(type);
+    }
+
+    public static MessageManager getInstance() {
+        if(instance == null){
+            instance = new MessageManager();
+        }
+        return instance;
+    }
+}

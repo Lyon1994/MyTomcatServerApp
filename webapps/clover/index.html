@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html>
+<head>
+    <title></title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <meta http-equiv="X-UA-Compatible" content="IE=8"/>
+    <link rel="stylesheet" type="text/css" href="style/ui-print.css" media="print"/>
+    <link rel="stylesheet" type="text/css" href="style/ui-base.css"/>
+    <link rel="stylesheet" type="text/css" href="style/ui-x-window.css"/>
+    <link rel="stylesheet" type="text/css" href="style/boxy.css"/>
+    <link rel="stylesheet" type="text/css" href="style/jquery.jscrollpane.css"/>
+    <link rel="stylesheet" type="text/css" href="style/jquery.jgrowl.css"/>
+    <!--<link rel="stylesheet" type="text/css" href="style/uploadify.css"/>-->
+    <!--<link rel="stylesheet" type="text/css" href="style/fileuploader.css"/>-->
+    <link rel="stylesheet" type="text/css" href="js/upload/styles.css"/>
+    <link rel="stylesheet" type="text/css" href="style/cal/jscal2.css"/>
+    <link rel="stylesheet" type="text/css" href="style/cal/border-radius.css"/>
+    <link rel="stylesheet" type="text/css" href="style/cal/steel/steel.css"/>
+    <script type="text/javascript" src="js/lib/jquery-1.4.2.js"></script>
+    <script type="text/javascript" src="js/lib/jquery.templates.js"></script>
+    <script type="text/javascript" src="js/lib/jquery.easing.1.3.js"></script>
+    <script type="text/javascript" src="js/lib/jquery.drag.js"></script>
+    <script type="text/javascript" src="js/lib/jquery.dnd.js"></script>
+    <script type="text/javascript" src="js/lib/jquery.boxy.js"></script>
+    <script type="text/javascript" src="js/lib/jquery.jgrowl.js"></script>
+    <script type="text/javascript" src="js/lib/jquery.jscrollpane.js"></script>
+    <script type="text/javascript" src="js/lib/jquery.mousewheel.js"></script>
+    <script type="text/javascript" src="js/lib/jquery.autocomplete.js"></script>
+    <script type="text/javascript" src="js/lib/jquery.form.js"></script>
+    <script type="text/javascript" src="js/lib/uuid.js"></script>
+    <script type="text/javascript" src="js/lib/jquery.cookie.js"></script>
+    <script type="text/javascript" src="js/dp/WdatePicker.js"></script>
+    <script type="text/javascript" src="js/upload/ajaxupload.3.5.js"></script>
+    <script type="text/javascript" src="js/cal/jscal2.js"></script>
+    <script type="text/javascript" src="js/cal/lang/cn.js"></script>
+    <!--<script type="text/javascript" src="js/lib/fileuploader.js"></script>-->
+    <!--<script type="text/javascript" src="js/uploadify/swfobject.js"></script>-->
+    <!--<script type="text/javascript" src="js/uploadify/jquery.uploadify.v2.1.4.js"></script>-->
+    <script type="text/javascript" src="js/ext/x-router.js"></script>
+    <script type="text/javascript" src="js/ext/common.js"></script>
+    <script type="text/javascript" src="js/ext/x-window.js"></script>
+    <script type="text/javascript" src="js/ext/x-page.js"></script>
+    <script type="text/javascript" src="js/ext/x-content.js"></script>
+    <script type="text/javascript" src="js/ext/x-table.js"></script>
+    <script type="text/javascript" src="js/ext/x-edit-table.js"></script>
+    <script type="text/javascript" src="js/ext/x-form.js"></script>
+    <script type="text/javascript" src="js/ext/x-list-view.js"></script>
+    <script type="text/javascript" src="js/ext/x-tree-view.js"></script>
+    <script type="text/javascript" src="js/ext/x-tab-view.js"></script>
+    <script type="text/javascript" src="js/ext/x-datasource.js"></script>
+    <script type="text/javascript" src="js/ext/x-table-new.js"></script>
+    <script type="text/javascript" src="js/ext/x-form-view.js"></script>
+    <script type="text/javascript" src="js/ext/app.js"></script>
+    <script type="text/javascript" src="apps/app-config.js"></script>
+    <!--<script type="text/javascript" src="apps/purchase/init.js"></script>-->
+
+    <script type="text/javascript">
+    $(function () {
+
+
+        applicationManager.start();
+
+        //applicationManager.get('测试').doAction('采购申请单');
+        //log(applicationManager.get('采购').handler['doPO']());
+        //applicationManager.create({name:'111'});
+        //autoScroll();
+        //router.process();
+        var appList = $('#application-list');
+        for(var i=0;i<applicationManager.apps.length;i++){
+            var app = applicationManager.apps[i];
+            var opt = $('<option></option>');
+            opt.val(app.code);
+            opt.text(app.name);
+            opt.appendTo(appList);
+        }
+        var actionList = $('#action-list');
+        appList.change(function(){
+            actionList.children().eq(0).siblings().remove();
+            var app = applicationManager.get($(this).val());
+            if(app == null){
+                return;
+            }
+            for(var i=0;i<app.action.length;i++){
+                var action_ = app.action[i];
+                var opt = $('<option></option>');
+                opt.val(action_.code);
+                opt.text(action_.name);
+                opt.appendTo(actionList);
+            }
+            //log(app.action);
+        });
+        actionList.change(function(){
+            doAction(appList.val(), $(this).val());
+        });
+    });
+    function autoScroll(){
+        $(".scroll-pane").jScrollPane({animateDuration:50});
+        setTimeout('autoScroll()', 500);
+    }
+    function doAction(){
+        applicationManager.get(arguments[0]).doAction(arguments[1]);
+    }
+    </script>
+</head>
+<body>
+<div id="container">
+    <div id="header-container" class="no-print">
+        <div id="header">
+            <div id="start-menu" class="left">
+                <a id="logo">
+                    <img src="style/images/logo.png"  height="32"/>
+                </a>
+            </div>
+            <ul id="menu-bar" class="left" style="display: none;">
+                <li>
+                    <a href="javascript:void(0)">
+                        <img src="style/images/apps.png" height="24"/>
+                        <span>Appllications</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="javascript:void(0)">
+                        <img src="style/images/system.png" height="24"/>
+                        <span>System Manager</span>
+                    </a>
+                </li>
+            </ul>
+            <ul id="quick-bar" class="left">
+
+                <!--<li>-->
+                    <!--<a href="javascript:applicationManager.get('Organization').doAction('DepartmentConfig')">-->
+                        <!--<img src="style/images/1.png" height="32"/>-->
+                    <!--</a>-->
+                <!--</li>-->
+                <!--<li>-->
+                    <!--<a href="javascript:applicationManager.get('Organization').doAction('AccountConfig')">-->
+                        <!--<img src="style/images/1.png" height="32"/>-->
+                    <!--</a>-->
+                <!--</li>-->
+                <!--<li>-->
+                    <!--<a href="javascript:applicationManager.get('Organization').doAction('RoleConfig')">-->
+                        <!--<img src="style/images/1.png" height="32"/>-->
+                    <!--</a>-->
+                <!--</li>-->
+                <!--<li>-->
+                    <!--<a href="javascript:applicationManager.get('Product').doAction('ProductConfig')">-->
+                        <!--<img src="style/images/1.png" height="32"/>-->
+                    <!--</a>-->
+                <!--</li>-->
+                <!--<li>-->
+                    <!--<a href="javascript:applicationManager.get('Print').doAction('PrintTemplateConfig')">-->
+                        <!--<img src="style/images/1.png" height="32"/>-->
+                    <!--</a>-->
+                <!--</li>-->
+                <li><select style="width:100px;" id="application-list"><option>请选择</option></select></li>
+                <li><select style="width:100px;" id="action-list"><option>请选择</option></select></li>
+            </ul>
+            <ul id="task-bar" class="left" style="display:none">
+                <li><select style="width:100px;"></select></li>
+                <li><a>5555</a></li>
+                <li><a>6666</a></li>
+            </ul>
+            <div class="clear"></div>
+        </div>
+
+    </div>
+    <div id="center-container">
+	</div>
+    <div id="msg-container" class="jGrowl bottom-right"></div>
+    </div>
+</body>
+</html>

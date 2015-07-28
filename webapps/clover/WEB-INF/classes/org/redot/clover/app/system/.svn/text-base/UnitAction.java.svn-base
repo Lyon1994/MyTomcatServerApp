@@ -1,0 +1,95 @@
+package org.redot.clover.app.system;
+
+import org.redot.clover.core.CloverManager;
+import org.redot.clover.core.ext.BaseAction;
+import org.redot.library.db.IQuery;
+import org.redot.library.db.ITable;
+import org.redot.library.lang.StringUtils;
+import org.restlet.data.Form;
+
+import java.util.List;
+import java.util.Map;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 10-12-31
+ * Time: 上午2:33
+ * To change this template use File | Settings | File Templates.
+ */
+public class UnitAction extends BaseAction {
+
+    public List<Map> list() {
+        String sql = "SELECT A.*, B.STATUS_NAME AS UNIT_STATUS_NAME, C.BOOLEAN_NAME AS UNIT_WEIGHT_NAME  FROM X_UNIT A " +
+                "LEFT JOIN X_STATUS B ON A.UNIT_STATUS = B.STATUS " +
+                "LEFT JOIN X_BOOLEAN C ON A.UNIT_WEIGHT = C.BOOLEAN " +
+                "WHERE A.UNIT_STATUS <> 2 ORDER BY A.UNIT_WEIGHT, A.UNIT_ID";
+        IQuery query = getQuery();
+        List<Map> list = query.doQuery(sql).tables();
+        query.free();
+        return list;
+    }
+
+    public List<Map> select() {
+        String sql = "SELECT * FROM X_UNIT WHERE UNIT_STATUS  = 1 ORDER BY UNIT_WEIGHT, UNIT_ID";
+        IQuery query = getQuery();
+        List<Map> list = query.doQuery(sql).tables();
+        query.free();
+        return list;
+    }
+
+    public boolean isWeightUnit(String UNIT_ID){
+        String sql = "SELECT UNIT_WEIGHT FROM X_UNIT WHERE UNIT_ID = " + UNIT_ID;
+        IQuery query = getQuery();
+        String UNIT_WEIGHT = query.doQuery(sql).getValue();
+        query.free();
+        if(UNIT_WEIGHT.equals("1")){
+            return true;
+        }
+        return false;
+    }
+
+    public Map get(String UNIT_ID) {
+        String sql = "SELECT * FROM X_UNIT WHERE UNIT_ID  = ?";
+        IQuery query = getQuery();
+        Map data = query.doQuery(sql, UNIT_ID).table();
+        query.free();
+        return data;
+    }
+
+    public int set(Form form) {
+        Map data = form.getValuesMap();
+        String UNIT_ID = StringUtils.toString(data.get("UNIT_ID"));
+        ITable T = getTable("X_UNIT").clearData();
+        int result = 0;
+        if (UNIT_ID.length() == 0) {
+            UNIT_ID = T.getMaxID("UNIT_ID") + "";
+            data.put("UNIT_ID", UNIT_ID);
+            result = T.data(data).create();
+        } else {
+            result = T.data(data).where(T.column("UNIT_ID").eq(UNIT_ID)).update();
+        }
+        if (result < 0) {
+            return CloverManager.CODE_FAILED;
+        }
+        return CloverManager.CODE_SUCCESS;
+    }
+
+    public int delete(Form form) {
+        Map data = form.getValuesMap();
+        String UNIT_ID = StringUtils.toString(data.get("UNIT_ID"));
+        if (UNIT_ID.length() == 0) {
+            return CloverManager.CODE_FAILED;
+        }
+        String sql = "UPDATE X_UNIT SET UNIT_STATUS = 2 WHERE UNIT_ID = ?";
+        IQuery query = getQuery();
+        int result = query.doExec(sql, UNIT_ID);
+        query.free();
+        if (result < 0) {
+            return CloverManager.CODE_FAILED;
+        }
+        return CloverManager.CODE_SUCCESS;
+    }
+
+
+}

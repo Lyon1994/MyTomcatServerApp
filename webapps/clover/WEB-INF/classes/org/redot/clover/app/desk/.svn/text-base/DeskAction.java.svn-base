@@ -1,0 +1,567 @@
+package org.redot.clover.app.desk;
+
+import org.redot.clover.core.CloverManager;
+import org.redot.clover.core.ext.BaseAction;
+import org.redot.clover.core.ext.Params;
+import org.redot.library.db.IQuery;
+import org.redot.library.db.ITable;
+import org.redot.library.lang.ArrayUtils;
+import org.redot.library.lang.NumberUtils;
+import org.redot.library.lang.StringUtils;
+import org.restlet.data.Form;
+
+import java.util.ArrayList;
+import java.util.Hashtable;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 10-12-18
+ * Time: 上午11:37
+ * To change this template use File | Settings | File Templates.
+ */
+public class DeskAction extends BaseAction {
+
+    public List<Map> list() {
+        ITable desk = getTable("X_DESK");
+        ITable desk_status = getTable("X_DESK_STATUS");
+        desk.join(desk_status, desk.column("desk_status_id"), desk_status.column("desk_status_id")).order("", desk.column("desk_code"));
+        //desk.select()
+        //IQuery query = getQuery();
+        //String sql = "SELECT A.*,B.DESK_STATUS_NAME FROM X_DESK A LEFT JOIN X_DESK_STATUS B ON A.DESK_STATUS_ID=B.DESK_STATUS_ID ORDER BY A.DESK_CODE";
+
+        //List<Map> list = query.doQuery(sql).tables();
+        //query.free();
+        IQuery query = getQuery();
+        String sql = "SELECT * FROM X_DESK ";
+        List<Map> list = query.doQuery(sql).tables();
+        for (Map map : list) {
+            if (map.get("DESK_SMOKING") != null && StringUtils.toString(map.get("DESK_SMOKING")).equals("1")) {
+                map.put("DESK_SMOKING_IMG", "<img src=\"style/images/nosmoking.png\"  style=\"width:16px;height:16px;position:relative;top:2px;\"/>");
+                continue;
+            } else {
+                map.put("DESK_SMOKING_IMG", "");
+            }
+        }
+        query.free();
+        return list;
+    }
+
+    public List<Map> list(String DESK_AREA_ID) {
+        IQuery query = getQuery();
+        String sql = "SELECT DESK_AREA_ID FROM X_DESK_AREA WHERE DESK_AREA_PARENT = " + DESK_AREA_ID;
+        List<String[]> types = query.doQuery(sql).list();
+        List<String> typeList = new ArrayList<String>();
+        typeList.add(DESK_AREA_ID);
+        for(Object[] arr : types){
+            typeList.add(arr[0] + "");
+        }
+        sql = "SELECT A.*, B.DESK_AREA_NAME,C.DESK_STATUS_NAME " +
+                "FROM X_DESK A " +
+                "LEFT JOIN X_DESK_AREA B ON A.DESK_AREA_ID=B.DESK_AREA_ID " +
+                "LEFT JOIN X_DESK_STATUS C ON A.DESK_STATUS = C.DESK_STATUS " +
+                "WHERE A.DESK_AREA_ID in ("+ ArrayUtils.join(",", typeList)+") AND A.DESK_STATUS <> 2 ORDER BY A.DESK_SORT,A.DESK_ID";
+        System.out.println(sql);
+
+        List<Map> list = query.doQuery(sql).tables();
+        query.free();
+        return list;
+    }
+
+    public List<Map> listArea(){
+        String sql = "SELECT * FROM X_DESK_AREA WHERE DESK_AREA_STATUS <> 2 AND DESK_AREA_PARENT= 0 ORDER BY DESK_AREA_SORT, DESK_AREA_ID";
+        IQuery query = getQuery();
+        List<Map> list = query.doQuery(sql).tables();
+        query.free();
+        return list;
+    }
+
+    public List<Map> listX(){
+        String sql = "SELECT * FROM X_DESK_AREA WHERE DESK_AREA_STATUS <> 2 ORDER BY DESK_AREA_SORT, DESK_AREA_ID";
+        IQuery query = getQuery();
+        List<Map> list = query.doQuery(sql).tables();
+        query.free();
+        return list;
+    }
+
+    public List<Map> listFloor(String PARENT){
+        String sql = "SELECT * FROM X_DESK_AREA WHERE DESK_AREA_STATUS <> 2 AND DESK_AREA_PARENT= "+PARENT+" ORDER BY DESK_AREA_SORT, DESK_AREA_ID";
+        IQuery query = getQuery();
+        List<Map> list = query.doQuery(sql).tables();
+        query.free();
+        return list;
+    }
+
+    public Map setArea(Form form){
+        Map data = form.getValuesMap();
+        String DESK_AREA_ID = StringUtils.toString(data.get("DESK_AREA_ID_L"));
+        String DESK_AREA_NAME = StringUtils.toString(data.get("DESK_AREA_NAME_L"));
+        String DESK_AREA_SORT = StringUtils.toString(data.get("DESK_AREA_SORT_L"));
+        Map d = new Hashtable();
+
+        d.put("DESK_AREA_NAME", DESK_AREA_NAME);
+        d.put("DESK_AREA_ID", DESK_AREA_ID);
+        ITable t = getTable("X_DESK_AREA").clearData();
+//        System.out.println("P_TYPE_SORT = " + P_TYPE_SORT);
+        int result;
+        if(DESK_AREA_ID.length() == 0){
+            DESK_AREA_ID = String.valueOf(t.getMaxID("DESK_AREA_ID"));
+            d.put("DESK_AREA_ID", DESK_AREA_ID);
+            IQuery query = getQuery();
+            String sql = "SELECT MAX(DESK_AREA_SORT) FROM X_DESK_AREA WHERE DESK_AREA_PARENT = 0";
+            if(DESK_AREA_SORT.length() == 0){
+                DESK_AREA_SORT = (NumberUtils.toInt(query.doQuery(sql).getValue()) + 1) + "";
+            }
+            else{
+                sql = "UPDATE X_DESK_AREA SET DESK_AREA_SORT=DESK_AREA_SORT+1 WHERE DESK_AREA_PARENT = 0 AND DESK_AREA_SORT > " + DESK_AREA_SORT;
+                query.doExec(sql);
+                DESK_AREA_SORT = (NumberUtils.toInt(DESK_AREA_SORT) + 1) + "";
+            }
+            query.free();
+            d.put("DESK_AREA_SORT", DESK_AREA_SORT);
+            d.put("DESK_AREA_PARENT", 0);
+            result = t.data(d).create();
+        }
+        else{
+            result = t.data(d).where(t.column("DESK_AREA_ID").eq(DESK_AREA_ID)).update();
+        }
+        if(result < 0){
+            d.put("STATUS", CloverManager.CODE_FAILED);
+
+        }
+        else{
+            d.put("STATUS", CloverManager.CODE_SUCCESS);
+        }
+        return d;
+    }
+
+    public Map setFloor(Form form){
+        Map data = form.getValuesMap();
+        String DESK_AREA_ID = StringUtils.toString(data.get("DESK_AREA_ID_S"));
+        String DESK_AREA_NAME = StringUtils.toString(data.get("DESK_AREA_NAME_S"));
+        String DESK_AREA_SORT = StringUtils.toString(data.get("DESK_AREA_SORT_S"));
+        String DESK_AREA_PARENT = StringUtils.toString(data.get("DESK_AREA_PARENT"));
+        Map d = new Hashtable();
+        if(DESK_AREA_PARENT.length() == 0){
+            d.put("STATUS", CloverManager.CODE_FAILED);
+            return d;
+        }
+        d.put("DESK_AREA_NAME", DESK_AREA_NAME);
+        d.put("DESK_AREA_PARENT", DESK_AREA_PARENT);
+        d.put("DESK_AREA_ID", DESK_AREA_ID);
+        ITable t = getTable("X_DESK_AREA").clearData();
+        int result;
+        if(DESK_AREA_ID.length() == 0){
+            DESK_AREA_ID = String.valueOf(t.getMaxID("DESK_AREA_ID"));
+            d.put("DESK_AREA_ID", DESK_AREA_ID);
+            IQuery query = getQuery();
+            String sql = "SELECT MAX(DESK_AREA_SORT) FROM X_DESK_AREA WHERE DESK_AREA_PARENT = "+DESK_AREA_PARENT;
+            if(DESK_AREA_SORT.length() == 0){
+                DESK_AREA_SORT = (NumberUtils.toInt(query.doQuery(sql).getValue()) + 1) + "";
+            }
+            else{
+                sql = "UPDATE X_DESK_AREA SET DESK_AREA_SORT=DESK_AREA_SORT+1 WHERE DESK_AREA_PARENT = "+DESK_AREA_PARENT+" AND DESK_AREA_SORT > " + DESK_AREA_SORT;
+                query.doExec(sql);
+                DESK_AREA_SORT = (NumberUtils.toInt(DESK_AREA_SORT) + 1) + "";
+            }
+            query.free();
+            d.put("DESK_AREA_SORT", DESK_AREA_SORT);
+            result = t.data(d).create();
+        }
+        else{
+            result = t.data(d).where(t.column("DESK_AREA_ID").eq(DESK_AREA_ID)).update();
+        }
+        if(result < 0){
+            d.put("STATUS", CloverManager.CODE_FAILED);
+
+        }
+        else{
+            d.put("STATUS", CloverManager.CODE_SUCCESS);
+        }
+        return d;
+    }
+
+    public int deleteArea(Form form) {
+        Map data = form.getValuesMap();
+        String DESK_AREA_ID = StringUtils.toString(data.get("DESK_AREA_ID_L"));
+        if(DESK_AREA_ID.length() == 0){
+            return CloverManager.CODE_FAILED;
+        }
+        IQuery query = getQuery();
+        String sql = "SELECT DESK_AREA_ID FROM X_DESK_AREA WHERE DESK_AREA_PARENT = " + DESK_AREA_ID;
+        List<String[]> types = query.doQuery(sql).list();
+        List<String> typeList = new ArrayList<String>();
+        typeList.add(DESK_AREA_ID);
+        for(Object[] arr : types){
+            typeList.add(arr[0] + "");
+        }
+
+        sql = "DELETE FROM X_DESK_AREA WHERE DESK_AREA_ID IN (" + ArrayUtils.join(",", typeList) + ")";
+//        sql = "UPDATE X_P_TYPE SET P_TYPE_STATUS = 2 WHERE P_TYPE_ID = " + P_TYPE_ID;
+        int result = query.doExec(sql);
+        sql = "DELETE FROM X_DESK WHERE DESK_AREA_ID IN (" + ArrayUtils.join(",", typeList) + ")";
+        result = query.doExec(sql);
+        query.free();
+        if(result < 0){
+            return CloverManager.CODE_FAILED;
+        }
+        return CloverManager.CODE_SUCCESS;
+    }
+    public int deleteFloor(Form form) {
+        Map data = form.getValuesMap();
+        String DESK_AREA_ID = StringUtils.toString(data.get("DESK_AREA_ID_S"));
+        if(DESK_AREA_ID.length() == 0){
+            return CloverManager.CODE_FAILED;
+        }
+        String sql = "SELECT * FROM X_DESK_AREA WHERE DESK_AREA_PARENT = " + DESK_AREA_ID;
+        IQuery query = getQuery();
+        if(query.rowCount(sql) > 0){
+            query.free();
+            return CloverManager.CODE_FAILED;
+        }
+        sql = "DELETE FROM X_DESK_AREA WHERE DESK_AREA_ID = " + DESK_AREA_ID;
+//        sql = "UPDATE X_P_TYPE SET P_TYPE_STATUS = 2 WHERE P_TYPE_ID = " + P_TYPE_ID;
+        int result = query.doExec(sql);
+        sql = "DELETE FROM X_DESK WHERE DESK_AREA_ID = " + DESK_AREA_ID;
+        result = query.doExec(sql);
+        query.free();
+        if(result < 0){
+            return CloverManager.CODE_FAILED;
+        }
+        return CloverManager.CODE_SUCCESS;
+    }
+
+    public List<Map> search(Params params) {
+        String sql = "SELECT DESK_ID, DESK_CODE, DESK_NAME FROM X_DESK WHERE 1=1 ";
+        if (params.val("q").length() > 0) {
+            sql += " AND (DESK_CODE LIKE '%" + params.val("q") + "%' OR DESK_NAME LIKE '%" + params.val("q") + "%')";
+        }
+        if (params.val("sel").length() > 0) {
+            sql += " AND DESK_ID NOT IN (" + params.val("sel") + ")";
+        }
+        sql += " ORDER BY DESK_CODE";
+//        System.out.println(sql);
+        IQuery query = getQuery();
+        List<Map> list = query.doQuery(sql).tables();
+        query.free();
+        return list;
+    }
+
+
+
+
+
+    public List<String[]> getDeskArea() {
+        String sql = "SELECT DESK_AREA FROM X_DESK GROUP BY DESK_AREA ORDER BY DESK_AREA";
+        IQuery query = getQuery();
+        List<String[]> list = query.doQuery(sql).list();
+        query.free();
+
+        return list;
+
+    }
+
+    public List<String[]> getDeskFloor() {
+        String sql = "SELECT DESK_FLOOR FROM X_DESK GROUP BY DESK_FLOOR ORDER BY DESK_FLOOR";
+        IQuery query = getQuery();
+        List<String[]> list = query.doQuery(sql).list();
+        query.free();
+
+        return list;
+    }
+
+    public List<String[]> getDeskType() {
+        String sql = "SELECT DESK_TYPE FROM X_DESK GROUP BY DESK_TYPE ORDER BY DESK_TYPE";
+        IQuery query = getQuery();
+        List<String[]> list = query.doQuery(sql).list();
+        query.free();
+
+        return list;
+    }
+
+    public List<String[]> getDeskClothType() {
+        String sql = "SELECT DESK_CLOTH_TYPE FROM X_DESK GROUP BY DESK_CLOTH_TYPE ORDER BY DESK_CLOTH_TYPE";
+        IQuery query = getQuery();
+        List<String[]> list = query.doQuery(sql).list();
+        query.free();
+
+        return list;
+    }
+
+    public List<String[]> getDeskStatus() {
+        String sql = "SELECT DESK_STATUS, DESK_STATUS_NAME FROM X_DESK_STATUS ORDER BY DESK_STATUS";
+        IQuery query = getQuery();
+        List<String[]> list = query.doQuery(sql).list();
+        query.free();
+
+        return list;
+    }
+    public Map set(Form form){
+            Map data = form.getValuesMap();
+            String DESK_ID = StringUtils.toString(data.get("DESK_ID"));
+            ITable t = getTable("X_DESK").clearData();
+            int result = 0;
+            String DESK_SORT = StringUtils.toString(data.get("DESK_SORT"));
+            String DESK_AREA_ID = StringUtils.toString(data.get("DESK_AREA_ID"));
+            if(DESK_ID.length() == 0){
+                DESK_ID = String.valueOf(t.getMaxID("DESK_ID"));
+                data.put("DESK_ID", DESK_ID);
+                IQuery query = getQuery();
+                String sql = "SELECT MAX(DESK_SORT) FROM X_DESK WHERE DESK_AREA_ID = "+DESK_AREA_ID;
+                if(DESK_SORT.length() == 0){
+                    DESK_SORT = (NumberUtils.toInt(query.doQuery(sql).getValue()) + 1) + "";
+                }
+                else{
+                    sql = "UPDATE X_DESK SET DESK_SORT=DESK_SORT+1 WHERE DESK_AREA_ID = "+DESK_AREA_ID+" AND DESK_SORT > " + DESK_SORT;
+                    query.doExec(sql);
+                    DESK_SORT = (NumberUtils.toInt(DESK_SORT) + 1) + "";
+                }
+                query.free();
+                data.put("DESK_SORT", DESK_SORT);
+                result = t.data(data).create();
+            }
+            else{
+                data.remove("DESK_SORT");
+                result = t.data(data).where(t.column("DESK_ID").eq(DESK_ID)).update();
+            }
+            if(result < 0){
+                data.put("STATUS", CloverManager.CODE_FAILED);
+            }
+            else{
+                data.put("STATUS", CloverManager.CODE_SUCCESS);
+            }
+            return data;
+        }
+
+    public int setbak(Form form){
+        Map data = form.getValuesMap();
+        String DESK_ID = StringUtils.toString(data.get("DESK_ID"));
+        if (data.get("DESK_SMOKING") == null) {
+            data.put("DESK_SMOKING", 0);
+        }
+        ITable T = getTable("X_DESK").clearData();
+        int result = 0;
+        boolean isNew = true;
+
+        if(DESK_ID.length() == 0){
+            DESK_ID = String.valueOf(T.getMaxID("DESK_ID") + 1);
+            data.put("DESK_ID", DESK_ID);
+            data.put("DESK_USE_STATUS_ID", 0);
+            result = T.data(data).create();
+        }
+        else{
+            isNew = false;
+            result = T.data(data).where(T.column("DESK_ID").eq(DESK_ID)).update();
+        }
+        if(result < 0){
+            return CloverManager.CODE_FAILED;
+        }
+
+        return CloverManager.CODE_SUCCESS;
+    }
+
+    public Map get(String DESK_ID) {
+        IQuery query = getQuery();
+        String sql = "SELECT A.*,B.DESK_STATUS_NAME FROM X_DESK A LEFT JOIN X_DESK_STATUS B ON A.DESK_STATUS=B.DESK_STATUS WHERE DESK_ID= ?";
+        Map map = query.doQuery(sql, DESK_ID).table();
+        query.free();
+        return map;
+    }
+
+    public int create(Form form) {
+        Map data = form.getValuesMap();
+        if (data.get("DESK_SMOKING") == null) {
+            data.put("DESK_SMOKING", 0);
+        }
+
+        ITable desk = getTable("X_DESK");
+        data.put("DESK_ID", desk.getMaxID("DESK_ID"));
+        int result = desk.data(data).create();
+        if (result < 0) {
+            return CloverManager.CODE_CREATE_FAILED;
+        }
+        return CloverManager.CODE_CREATE_SUCCESS;
+    }
+
+    public int update(Form form) {
+        Map data = form.getValuesMap();
+        System.out.println(data.keySet());
+        System.out.println(data.entrySet());
+        if (data.get("DESK_SMOKING") == null) {
+            data.put("DESK_SMOKING", 0);
+        }
+        ITable desk = getTable("X_DESK");
+        int result = desk.data(data).where(desk.column("DESK_ID").eq(data.get("DESK_ID"))).update();
+        if (result < 0) {
+            return CloverManager.CODE_UPDATE_FAILED;
+        }
+        return CloverManager.CODE_UPDATE_SUCCESS;
+    }
+
+    public int delete(Form form) {
+        Map data = form.getValuesMap();
+        String DESK_ID = StringUtils.toString(data.get("DESK_ID"));
+        if(DESK_ID.length() == 0){
+            return CloverManager.CODE_FAILED;
+        }
+        IQuery query = getQuery();
+
+        String sql = "DELETE FROM X_DESK WHERE DESK_ID = " + DESK_ID;
+//        String sql = "UPDATE X_P SET P_STATUS = 2 WHERE P_ID = " + P_ID;
+        int result = query.doExec(sql);
+        query.free();
+        if(result < 0){
+            return CloverManager.CODE_FAILED;
+        }
+        return CloverManager.CODE_SUCCESS;
+    }
+
+    public List<Map> getFeeMin(Params params) {
+        String DESK_ID = params.val("DESK_ID");
+        if (DESK_ID.length() == 0) {
+            DESK_ID = "-1";
+            //    return null;
+        }
+        String sql = "SELECT * FROM X_MT A LEFT JOIN (SELECT * FROM X_DESK_FEE_MIN WHERE DESK_ID=" + DESK_ID + ") B ON A.MT_ID = B.DESK_MT_ID WHERE A.MT_STATUS=1 ORDER BY A.MT_ID";
+        IQuery query = getQuery();
+        List<Map> feeMin = query.doQuery(sql).tables();
+        query.free();
+        return feeMin;
+    }
+
+    public Map getFee(String DESK_ID) {
+        Map data = new Hashtable();
+        if (DESK_ID.length() == 0) {
+            return data;
+        }
+        String sql = "SELECT * FROM X_DESK_FEE_MIN WHERE DESK_ID=" + DESK_ID;
+        IQuery query = getQuery();
+        List<Map> feeMin = query.doQuery(sql).tables();
+        if (feeMin != null) {
+            data.put("DESK_FEE_MIN", feeMin);
+        }
+        sql = "SELECT * FROM X_DESK_FEE WHERE DESK_ID=" + DESK_ID;
+        Map fee = query.doQuery(sql).table();
+        if (fee != null) {
+            String FEE_TYPE = StringUtils.toString(fee.get("DESK_FEE_TYPE"));
+            if(FEE_TYPE.equals("3")){
+                sql = "SELECT * FROM X_DESK_FEE_AREA WHERE DESK_ID=" + DESK_ID;
+                List<Map> list = query.doQuery(sql).tables();
+                fee.put("DESK_FEE_AREA", list);
+            }
+            data.put("DESK_FEE", fee);
+        }
+        query.free();
+        return data;
+    }
+
+    public int setFeeMin(Form form) {
+        Map data = form.getValuesMap();
+        String DESK_ID = StringUtils.toString(data.get("DESK_ID"));
+        IQuery query = getQuery();
+        query.doExec("DELETE FROM X_DESK_FEE_MIN WHERE DESK_ID=" + DESK_ID);
+//        System.out.println(111111111);
+        for (Object key : data.keySet()) {
+//            System.out.println(key);
+            String kx = StringUtils.toString(key);
+            if (kx.indexOf("FEE_MIN_") > -1) {
+                String mt_id = kx.substring(8);
+                if (StringUtils.toString(data.get(kx)).length() > 0) {
+                    int result = query.doExec("INSERT INTO X_DESK_FEE_MIN (DESK_ID, DESK_MT_ID, DESK_FEE_MIN) VALUES (" + DESK_ID + ", " + mt_id + ", " + StringUtils.toString(data.get(kx)) + ")");
+                    if (result < 0) {
+                        query.free();
+                        return CloverManager.CODE_CREATE_FAILED;
+                    }
+                }
+            }
+        }
+        query.free();
+        return CloverManager.CODE_CREATE_SUCCESS;
+    }
+
+    public int setFee(String DESK_ID, Form form) {
+        if(DESK_ID.length() == 0){
+            return CloverManager.CODE_SUCCESS;
+        }
+        Map data = form.getValuesMap();
+        IQuery query = getQuery();
+        query.doExec("DELETE FROM X_DESK_FEE_MIN WHERE DESK_ID=" + DESK_ID);
+        query.doExec("DELETE FROM X_DESK_FEE WHERE DESK_ID=" + DESK_ID);
+        query.doExec("DELETE FROM X_DESK_FEE_AREA WHERE DESK_ID=" + DESK_ID);
+        for(int i=0;i<6;i++){
+            String DESK_DEE_MIN = StringUtils.toString(data.get("DESK_FEE_MIN_" + i));
+            Map d = new Hashtable();
+            d.put("DESK_ID", DESK_ID);
+            d.put("DESK_MT_ID", i);
+            d.put("DESK_FEE_MIN", NumberUtils.toInt(DESK_DEE_MIN));
+            getTable("X_DESK_FEE_MIN").clearData().data(d).create();
+        }
+        String DESK_FEE_TYPE = StringUtils.toString(data.get("DESK_FEE_TYPE"));
+        Map d = new Hashtable();
+        d.put("DESK_ID", DESK_ID);
+        d.put("DESK_FEE_TYPE", DESK_FEE_TYPE);
+        if (DESK_FEE_TYPE.equals("1")) {
+            d.put("DESK_FEE_TIME", StringUtils.toString(data.get("DESK_FEE_TIME_1")));
+            d.put("DESK_FEE", StringUtils.toString(data.get("DESK_FEE_1")));
+            d.put("DESK_FEE_COND_1", StringUtils.toString(data.get("DESK_FEE_COND_1_1")));
+            d.put("DESK_FEE_COND_2", StringUtils.toString(data.get("DESK_FEE_COND_2_1")));
+            d.put("DESK_FEE_COND_3", StringUtils.toString(data.get("DESK_FEE_COND_3_1")));
+        } else if (DESK_FEE_TYPE.equals("2")) {
+            d.put("DESK_FEE_TIME", data.get("DESK_FEE_TIME_2"));
+            d.put("DESK_FEE", data.get("DESK_FEE_2"));
+            d.put("DESK_FEE_COND_1", data.get("DESK_FEE_COND_1_2"));
+            d.put("DESK_FEE_COND_2", data.get("DESK_FEE_COND_2_2"));
+        } else {
+            String[] AREA = form.getValuesArray("DESK_FEE_AREA");
+            String[] RATE = form.getValuesArray("DESK_FEE_RATE");
+            for (int i = 0; i < AREA.length; i++) {
+                if (StringUtils.toString(AREA[i]).length() == 0  || StringUtils.toString(RATE[i]).length() == 0) {
+                    continue;
+                }
+                Map dd = new Hashtable();
+                dd.put("DESK_ID", DESK_ID);
+                dd.put("DESK_FEE_AREA", AREA[i]);
+                dd.put("DESK_FEE_RATE", RATE[i]);
+                getTable("X_DESK_FEE_AREA").clearData().data(dd).create();
+            }
+        }
+        int result = getTable("X_DESK_FEE").clearData().data(d).create();
+        query.free();
+        if (result < 0) {
+
+            return CloverManager.CODE_FAILED;
+        }
+        return CloverManager.CODE_SUCCESS;
+    }
+
+    public List<Map> treeArea(String DESK_AREA_ID){
+        DESK_AREA_ID = DESK_AREA_ID == null || DESK_AREA_ID.equals("") ? "0" : DESK_AREA_ID;
+        String sql = "SELECT * FROM X_DESK_AREA WHERE DESK_AREA_STATUS <> 2 AND DESK_AREA_PARENT= "+DESK_AREA_ID+" ORDER BY DESK_AREA_SORT, DESK_AREA_ID";
+        IQuery query = getQuery();
+        List<Map> list = query.doQuery(sql).tables();
+        List<Map> data = new ArrayList<Map>();
+        for(int i=0;i<list.size();i++){
+            Map m = list.get(i);
+            Map d = new Hashtable();
+            String _DESK_AREA_ID = StringUtils.toString(m.get("DESK_AREA_ID"));
+            d.put("ID", _DESK_AREA_ID);
+            d.put("NAME", StringUtils.toString(m.get("DESK_AREA_NAME")));
+
+            sql = "SELECT * FROM X_DESK_AREA WHERE DESK_AREA_STATUS <> 2 AND DESK_AREA_PARENT="+_DESK_AREA_ID;
+            int count = query.rowCount(sql);
+            if( count > 0){
+                d.put("ITEM", treeArea(_DESK_AREA_ID));
+            }
+            else{
+                d.put("ITEM", new ArrayList<Map>());
+            }
+            m.put("CHILDREN", count);
+            d.put("EXT", m);
+            data.add(d);
+        }
+        query.free();
+        return data;
+    }
+}

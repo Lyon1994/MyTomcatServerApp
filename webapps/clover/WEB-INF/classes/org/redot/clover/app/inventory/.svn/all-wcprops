@@ -1,0 +1,71 @@
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/yee/!svn/ver/134/server/Redot/CloverServer/src/org/redot/clover/app/inventory
+END
+SaleAction.java
+K 25
+svn:wc:ra_dav:version-url
+V 97
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/inventory/SaleAction.java
+END
+UseAction.java
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/svn/yee/!svn/ver/95/server/Redot/CloverServer/src/org/redot/clover/app/inventory/UseAction.java
+END
+ItemLossAction.java
+K 25
+svn:wc:ra_dav:version-url
+V 102
+/svn/yee/!svn/ver/132/server/Redot/CloverServer/src/org/redot/clover/app/inventory/ItemLossAction.java
+END
+StockAction.java
+K 25
+svn:wc:ra_dav:version-url
+V 99
+/svn/yee/!svn/ver/133/server/Redot/CloverServer/src/org/redot/clover/app/inventory/StockAction.java
+END
+ItemUseAction.java
+K 25
+svn:wc:ra_dav:version-url
+V 101
+/svn/yee/!svn/ver/132/server/Redot/CloverServer/src/org/redot/clover/app/inventory/ItemUseAction.java
+END
+SupplierAmountListAction.java
+K 25
+svn:wc:ra_dav:version-url
+V 112
+/svn/yee/!svn/ver/132/server/Redot/CloverServer/src/org/redot/clover/app/inventory/SupplierAmountListAction.java
+END
+PurchaseAction.java
+K 25
+svn:wc:ra_dav:version-url
+V 102
+/svn/yee/!svn/ver/134/server/Redot/CloverServer/src/org/redot/clover/app/inventory/PurchaseAction.java
+END
+PurchaseRejectAction.java
+K 25
+svn:wc:ra_dav:version-url
+V 108
+/svn/yee/!svn/ver/132/server/Redot/CloverServer/src/org/redot/clover/app/inventory/PurchaseRejectAction.java
+END
+PurchaseRequestAction.java
+K 25
+svn:wc:ra_dav:version-url
+V 108
+/svn/yee/!svn/ver/96/server/Redot/CloverServer/src/org/redot/clover/app/inventory/PurchaseRequestAction.java
+END
+SupplierAction.java
+K 25
+svn:wc:ra_dav:version-url
+V 102
+/svn/yee/!svn/ver/132/server/Redot/CloverServer/src/org/redot/clover/app/inventory/SupplierAction.java
+END
+SubjectAction.java
+K 25
+svn:wc:ra_dav:version-url
+V 100
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/inventory/SubjectAction.java
+END

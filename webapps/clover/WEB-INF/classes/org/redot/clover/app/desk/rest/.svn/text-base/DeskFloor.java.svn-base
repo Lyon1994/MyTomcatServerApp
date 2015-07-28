@@ -1,0 +1,48 @@
+package org.redot.clover.app.desk.rest;
+
+import org.redot.clover.app.desk.DeskAction;
+import org.redot.clover.core.data.DataPackage;
+import org.redot.clover.core.data.SimpleDataPackage;
+import org.redot.clover.core.ext.BaseResource;
+import org.redot.library.lang.NumberUtils;
+import org.redot.library.lang.StringUtils;
+import org.restlet.resource.Get;
+import org.restlet.resource.Post;
+import org.restlet.resource.Put;
+
+import java.util.List;
+import java.util.Map;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 10-12-22
+ * Time: 上午8:57
+ * To change this template use File | Settings | File Templates.
+ */
+public class DeskFloor extends BaseResource {
+    @Get("json")
+    public String doGet(){
+        DataPackage dp = new DataPackage();
+        DeskAction a = new DeskAction();
+        dp.addTable("table", a.listFloor(StringUtils.toString(getRequestAttributes().get("PARENT"))), null, null);
+        return dp.toJSON();
+    }
+
+    @Post("json")
+    public String doPost(){
+        DataPackage dp = new DataPackage();
+        DeskAction a = new DeskAction();
+        Map data = a.setFloor(form);
+        dp.setStatus(NumberUtils.toInt(data.get("STATUS")));
+        dp.getData().put("form", data);
+        return dp.toJSON();
+    }
+    @Put("json")
+    public String doDelete(){
+        DataPackage dp = new DataPackage();
+        DeskAction a = new DeskAction();
+        dp.setStatus(a.deleteFloor(form));
+        return dp.toJSON();
+    }
+}

@@ -1,0 +1,22 @@
+package org.redot.library.dao;
+
+/**
+ * Copyright By Redot.
+ * User: CASH
+ * Date: 2009-10-14
+ * Time: 13:22:18
+ */
+public interface IDAOHandler {
+
+    boolean onBeforeInsert();
+
+    boolean onAfterInsert();
+
+    boolean onBeforeUpdate();
+
+    boolean onAfterUpdate();
+
+    boolean onBeforeDelete();
+
+    boolean onAfterDelete();
+}

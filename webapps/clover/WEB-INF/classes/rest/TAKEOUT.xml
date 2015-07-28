@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<clover>
+
+	<resource class="org.redot.clover.app.takeout.rest.TakeOutArrival">/takeout/arrival/{O_ID}</resource>
+
+	<resource class="org.redot.clover.app.takeout.rest.TakeOutCancel">/takeout/cancel/{O_ID}</resource>
+
+	<resource class="org.redot.clover.app.takeout.rest.TakeOutList">/takeout/list</resource>
+	<resource class="org.redot.clover.app.takeout.rest.TakeOutPrint">/takeout/print/{O_ID}</resource>
+</clover>

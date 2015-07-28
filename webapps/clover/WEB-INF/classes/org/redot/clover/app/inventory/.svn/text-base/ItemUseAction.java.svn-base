@@ -1,0 +1,43 @@
+package org.redot.clover.app.inventory;
+
+import org.redot.clover.app.message.MessageManager;
+import org.redot.clover.core.CloverManager;
+import org.redot.clover.core.ext.BaseAction;
+import org.redot.library.db.ITable;
+import org.redot.library.lang.DateUtils;
+import org.redot.library.lang.StringUtils;
+import org.restlet.data.Form;
+
+import java.util.Map;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: yh_admin
+ * Date: 12-11-1
+ * Time: 上午10:59
+ * To change this template use File | Settings | File Templates.
+ */
+public class ItemUseAction extends BaseAction {
+    
+    public  int  set(Form form)
+    {
+        if(!isLogin()){
+            return CloverManager.CODE_FAILED;
+        }
+        String ITEM_USE_ITEM_MAKER = StringUtils.toString(getClient().getCookies().get("ACCOUNT_ID"));
+          Map date=form.getValuesMap();
+        ITable C =getTable("X_ITEM_USE").clearData();
+        int result=0;
+//        String      ITEM_USE_ITEM_MAKER=StringUtils.toString(date.get("ACCOUNT_ID"))       ;
+        String  ITEM_USE_ID= String.valueOf(C.getMaxID("ITEM_USE_ID"))  ;
+        date.put("ITEM_USE_ID",ITEM_USE_ID)   ;
+        date.put("ITEM_USE_ITEM_MAKER",ITEM_USE_ITEM_MAKER)  ;
+        date.put("ITEM_USE_DT", DateUtils.getNow());
+        result=C.data(date).create();
+        if(result < 0){
+            return CloverManager.CODE_FAILED;
+        }
+        MessageManager.getInstance().setVersion(MessageManager.MSG_VER_CLIENT);
+        return CloverManager.CODE_SUCCESS;
+    }
+}

@@ -1,0 +1,50 @@
+package org.redot.clover.print.rest;
+
+import org.redot.clover.app.item.ItemAction;
+import org.redot.clover.core.data.DataPackage;
+import org.redot.clover.core.ext.BaseResource;
+import org.redot.clover.print.PrintTypeSmallAction;
+import org.redot.library.lang.NumberUtils;
+import org.redot.library.lang.StringUtils;
+import org.restlet.resource.Get;
+import org.restlet.resource.Post;
+import org.restlet.resource.Put;
+
+import java.util.Map;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: yh_admin
+ * Date: 12-11-21
+ * Time: 下午3:28
+ * To change this template use File | Settings | File Templates.
+ */
+public class PrintTypeSmall extends BaseResource {
+    @Get("json")
+    public String doGet(){
+        DataPackage dp = new DataPackage();
+        PrintTypeSmallAction a = new PrintTypeSmallAction();
+        dp.addTable("table", a.listSmall(null, StringUtils.toString(getRequestAttributes().get("ID"))), null, null);
+        return dp.toJSON();
+    }
+
+    @Post("json")
+    public String doPost(){
+        DataPackage dp = new DataPackage();
+        PrintTypeSmallAction a = new PrintTypeSmallAction();
+        Map data = a.setSmall(form);
+        dp.setStatus(NumberUtils.toInt(data.get("STATUS")));
+        dp.getData().put("form",data);
+        return dp.toJSON();
+    }
+
+    @Put("json")
+    public String doDelete(){
+        DataPackage dp = new DataPackage();
+        PrintTypeSmallAction a = new PrintTypeSmallAction();
+        dp.setStatus(a.deleteSmall(form));
+        return dp.toJSON();
+    }
+
+
+}

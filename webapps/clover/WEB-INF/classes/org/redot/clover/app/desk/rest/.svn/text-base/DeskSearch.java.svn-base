@@ -1,0 +1,39 @@
+package org.redot.clover.app.desk.rest;
+
+import org.json.JSONArray;
+import org.redot.clover.app.desk.DeskAction;
+import org.redot.clover.core.ext.BaseResource;
+import org.restlet.resource.Get;
+
+import java.util.List;
+import java.util.Map;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 10-12-21
+ * Time: 下午2:24
+ * To change this template use File | Settings | File Templates.
+ */
+public class DeskSearch extends BaseResource {
+
+    @Get("json")
+    public String doGet() {
+        DeskAction da = new DeskAction();
+        List<Map> list = da.search(params);
+        System.out.println(list.size());
+        for (Map map : list) {
+            map.put("id", map.get("DESK_ID"));
+            map.remove("DESK_ID");
+            map.put("name", map.get("DESK_NAME") + "" + map.get("DESK_CODE"));
+            map.remove("DESK_CODE");
+            map.remove("DESK_NAME");
+        }
+        JSONArray ja = new JSONArray(list);
+        return ja.toString();
+//        DataPackage dp = new DataPackage();
+//        dp.getData().put("desk_info", list);
+//
+//        return dp.toJSON();
+    }
+}

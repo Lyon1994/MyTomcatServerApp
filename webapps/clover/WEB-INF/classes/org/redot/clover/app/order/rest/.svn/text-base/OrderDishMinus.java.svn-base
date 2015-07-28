@@ -1,0 +1,25 @@
+package org.redot.clover.app.order.rest;
+
+import org.redot.clover.app.order.OrderDishAction;
+import org.redot.clover.core.data.DataPackage;
+import org.redot.clover.core.ext.BaseResource;
+import org.restlet.resource.Post;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 10-12-30
+ * Time: 下午11:51
+ * To change this template use File | Settings | File Templates.
+ */
+public class OrderDishMinus extends BaseResource {
+
+    @Post("json")
+    public String doPost() {
+        DataPackage dp = new DataPackage();
+        OrderDishAction a = new OrderDishAction();
+        dp.setStatus(a.minus(form));
+        return dp.toJSON();
+    }
+
+}

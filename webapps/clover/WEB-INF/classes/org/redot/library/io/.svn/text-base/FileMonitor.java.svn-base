@@ -1,0 +1,203 @@
+package org.redot.library.io;
+
+import org.apache.log4j.Logger;
+
+import java.io.File;
+import java.util.*;
+
+/**
+ * Copyright By Redot.
+ * User: CASH
+ * Date: 2009-11-5
+ * Time: 16:00:42
+ */
+public class FileMonitor {
+
+    Logger logger = Logger.getLogger(this.getClass());
+
+    private static FileMonitor instance = new FileMonitor();
+
+    private Map<File, Long> files = null;
+
+    private Map<File, List<FileListener>> fileLienters = null;
+
+    private List<FileListener> listeners = null;
+
+    private Timer timer = null;
+
+    public FileMonitor() {
+        files = new HashMap<File, Long>();
+        fileLienters = new HashMap<File, List<FileListener>>();
+        listeners = new ArrayList<FileListener>();
+        timer = new Timer(false);
+        timer.scheduleAtFixedRate(new FileMonitorNotifier(), 0, 2000);
+        logger.debug("FileMonitor start.");
+    }
+
+    public void addFile(File file, FileListener... listeners_) {
+        if (!file.exists()) {
+            return;
+        }
+        if (!files.containsKey(file)) {
+            files.put(file, file.lastModified());
+            logger.debug("FileMonitor add file[" + file.getName() + "] success.");
+            if (listeners_ == null || listeners_.length == 0) {
+                return;
+            }
+            List<FileListener> listenerList = new ArrayList<FileListener>();
+            for (int i = 0; i < listeners_.length; i++) {
+                listenerList.add(listeners_[i]);
+            }
+            fileLienters.put(file, listenerList);
+        } else {
+            if (listeners_ == null || listeners_.length == 0) {
+                return;
+            }
+            List<FileListener> listenerList = fileLienters.get(file);
+            if (listenerList == null) {
+                listenerList = new ArrayList<FileListener>();
+            }
+            for (int i = 0; i < listeners_.length; i++) {
+                boolean ishave = false;
+                for (FileListener listener : listenerList) {
+                    if (listener == listeners_[i]) {
+                        ishave = true;
+                        break;
+                    }
+                }
+                if (!ishave) {
+                    listenerList.add(listeners_[i]);
+                }
+            }
+        }
+    }
+
+    public void addListener(FileListener... listeners_) {
+        if (listeners_ == null || listeners_.length == 0) {
+            return;
+        }
+        for (int i = 0; i < listeners_.length; i++) {
+            boolean ishave = false;
+            for (FileListener listener : listeners) {
+                if (listener == listeners_[i]) {
+                    ishave = true;
+                    break;
+                }
+            }
+            if (!ishave) {
+                listeners.add(listeners_[i]);
+            }
+        }
+    }
+
+    public void removeListener(FileListener... listeners_) {
+        if (listeners_ == null || listeners_.length == 0) {
+            return;
+        }
+        for (int i = 0; i < listeners_.length; i++) {
+            for (int j = 0; j < listeners.size(); j++) {
+                if (listeners.get(j) == listeners_[i]) {
+                    listeners.remove(j);
+                    break;
+                }
+            }
+        }
+    }
+
+    public void removeFileListener(File file, FileListener... listeners_) {
+        if (listeners_ == null || listeners_.length == 0) {
+            return;
+        }
+        if (!files.containsKey(file)) {
+            return;
+        }
+        List<FileListener> listenerList = fileLienters.get(file);
+        if (listenerList == null) {
+            return;
+        }
+        for (int i = 0; i < listeners_.length; i++) {
+            for (int j=0;j<listenerList.size(); j++) {
+                if (listenerList.get(j) == listeners_[i]) {
+                    listenerList.remove(j);
+                    break;
+                }
+            }
+        }
+    }
+
+    public void removeFile(File file) {
+        files.remove(file);
+    }
+
+    public void resetListener() {
+        listeners.clear();
+    }
+
+    public void resetFileListener(File file) {
+
+        if (!files.containsKey(file)) {
+            return;
+        }
+        List<FileListener> listenerList = fileLienters.get(file);
+        if (listenerList == null) {
+            return;
+        }
+        listenerList.clear();
+    }
+
+    public static FileMonitor getInstance() {
+        return instance;
+    }
+
+    public Map<File, Long> getFiles() {
+        return files;
+    }
+
+    public Map<File, List<FileListener>> getFileLienters() {
+        return fileLienters;
+    }
+
+    public List<FileListener> getListeners() {
+        return listeners;
+    }
+
+    protected class FileMonitorNotifier extends TimerTask {
+
+        FileMonitorNotifier() {
+
+        }
+
+        @Override
+        public void run() {
+            //logger.debug("FileMonitorNotifier start.");
+            for (Iterator<File> it = files.keySet().iterator(); it.hasNext();) {
+                File file = it.next();
+                if (!file.exists()) {
+                    resetFileListener(file);
+                    it.remove();
+                    continue;
+                }
+
+                long lastModifiedTime = files.get(file);
+                long newModifiedTime = file.lastModified();
+                //logger.debug("file : " + file.getName() + ",lastModifiedTime = " + lastModifiedTime + ", newModifiedTime = " + newModifiedTime);
+                if (lastModifiedTime != newModifiedTime) {
+                    logger.debug("file : " + file.getName() + " has changed");
+
+                    files.put(file, newModifiedTime);
+                    List<FileListener> listenerList = fileLienters.get(file);
+                    //logger.debug("exec change action");
+                    if (listenerList != null) {
+                        //logger.debug("exec change action1111asas");
+                        for (int i = 0; i < listenerList.size(); i++) {
+                            listenerList.get(i).fileChanged(file);
+                        }
+                    }
+                    for (int i = 0; i < listeners.size(); i++) {
+                        listeners.get(i).fileChanged(file);
+                    }
+                }
+            }
+        }
+    }
+}

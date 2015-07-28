@@ -1,0 +1,24 @@
+package org.redot.clover.app.item.rest;
+
+import org.redot.clover.app.item.ItemAction;
+import org.redot.clover.core.data.DataPackage;
+import org.redot.clover.core.ext.BaseResource;
+import org.restlet.resource.Get;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: yh_admin
+ * Date: 12-8-29
+ * Time: 下午2:28
+ * To change this template use File | Settings | File Templates.
+ */
+public class ItemTree extends BaseResource {
+    @Get("json")
+    public String doGet() {
+        DataPackage dp = new DataPackage();
+        ItemAction a = new ItemAction();
+        dp.addTable("table", a.tree());
+
+        return dp.toJSON();
+    }
+}

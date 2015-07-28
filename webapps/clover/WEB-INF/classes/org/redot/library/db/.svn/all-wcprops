@@ -1,0 +1,83 @@
+K 25
+svn:wc:ra_dav:version-url
+V 70
+/svn/yee/!svn/ver/12/server/Redot/LiveLibrary/src/org/redot/library/db
+END
+IColumn.java
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/yee/!svn/ver/12/server/Redot/LiveLibrary/src/org/redot/library/db/IColumn.java
+END
+IQuery.java
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/yee/!svn/ver/12/server/Redot/LiveLibrary/src/org/redot/library/db/IQuery.java
+END
+IDataBaseType.java
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/svn/yee/!svn/ver/12/server/Redot/LiveLibrary/src/org/redot/library/db/IDataBaseType.java
+END
+IDataSource.java
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/svn/yee/!svn/ver/12/server/Redot/LiveLibrary/src/org/redot/library/db/IDataSource.java
+END
+IClause.java
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/yee/!svn/ver/12/server/Redot/LiveLibrary/src/org/redot/library/db/IClause.java
+END
+DataSourceConfig.java
+K 25
+svn:wc:ra_dav:version-url
+V 92
+/svn/yee/!svn/ver/12/server/Redot/LiveLibrary/src/org/redot/library/db/DataSourceConfig.java
+END
+IConnection.java
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/svn/yee/!svn/ver/12/server/Redot/LiveLibrary/src/org/redot/library/db/IConnection.java
+END
+IDataBaseFactory.java
+K 25
+svn:wc:ra_dav:version-url
+V 92
+/svn/yee/!svn/ver/12/server/Redot/LiveLibrary/src/org/redot/library/db/IDataBaseFactory.java
+END
+ITable.java
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/yee/!svn/ver/12/server/Redot/LiveLibrary/src/org/redot/library/db/ITable.java
+END
+ISqlParser.java
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/yee/!svn/ver/12/server/Redot/LiveLibrary/src/org/redot/library/db/ISqlParser.java
+END
+IDataBase.java
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/yee/!svn/ver/12/server/Redot/LiveLibrary/src/org/redot/library/db/IDataBase.java
+END
+ITableClause.java
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svn/yee/!svn/ver/12/server/Redot/LiveLibrary/src/org/redot/library/db/ITableClause.java
+END
+IRow.java
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/svn/yee/!svn/ver/12/server/Redot/LiveLibrary/src/org/redot/library/db/IRow.java
+END

@@ -1,0 +1,1204 @@
+package org.redot.clover.app.order;
+
+import org.fest.util.Maps;
+import org.redot.clover.app.system.LogAction;
+import org.redot.clover.app.system.MarketTypeAction;
+import org.redot.clover.app.system.SystemAction;
+import org.redot.clover.core.CloverManager;
+import org.redot.clover.core.ext.BaseAction;
+import org.redot.clover.core.ext.Params;
+import org.redot.clover.print.PrintJob;
+import org.redot.clover.print.PrintManager;
+import org.redot.library.db.IQuery;
+import org.redot.library.db.ITable;
+import org.redot.library.lang.ArrayUtils;
+import org.redot.library.lang.DateUtils;
+import org.redot.library.lang.NumberUtils;
+import org.redot.library.lang.StringUtils;
+import org.restlet.data.Form;
+
+import java.util.*;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 11-3-31
+ * Time: 上午10:32
+ * To change this template use File | Settings | File Templates.
+ */
+public class OrderAction extends BaseAction {
+
+    public List<Map> list(Params params) {
+        List<Map> data = new ArrayList<Map>();
+        String O_DINE_DT = StringUtils.toString(params.val("O_DINE_DT"));
+//        System.out.println("O_DINE_DT = " + O_DINE_DT);
+        String NOW = DateUtils.getNow();
+        if (O_DINE_DT.length() == 0) {
+            O_DINE_DT = NOW;
+        }
+        String[] MT = new MarketTypeAction().getMT(O_DINE_DT);
+        if(MT.length == 0){
+            return data;
+        }
+        String MT_DT_S = MT[2];
+        String MT_DT_E = MT[3];
+        int BOOK_INTERVAL = SystemAction.getBookInterval();
+        String sql = "";
+        boolean  isBook = false;
+        if(!O_DINE_DT.equals(NOW)){
+            if(DateUtils.getDateMinusMinutes(DateUtils.toFullDate(O_DINE_DT), new Date()) > BOOK_INTERVAL){
+                isBook = true;
+            }
+        }
+        if(isBook){
+            sql = "SELECT A.DESK_ID, A.DESK_CODE, A.DESK_NAME, A.DESK_TYPE, A.DESK_AREA, A.DESK_NOP_NORM, A.DESK_NOP_MAX, B.* " +
+                "FROM X_DESK A " +
+                "LEFT JOIN (" +
+                "SELECT O.*, OS.O_STATUS_NAME FROM X_O O LEFT JOIN X_O_STATUS OS ON O.O_STATUS = OS.O_STATUS WHERE O.O_TYPE IN (0,1) AND O.O_STATUS IN(1,2,3,4,5,6,7) AND O.O_DINE_DT >= '\" + MT_DT_S + \"' AND O.O_DINE_DT <= '\" + MT_DT_E + \"'\" +\n" +
+                    "                \") B ON A.DESK_ID = B.O_DESK_ID " +
+                "WHERE A.DESK_STATUS = 1 ORDER BY A.DESK_NAME, B.O_ID";
+        }
+        else{
+            sql = "SELECT A.DESK_ID, A.DESK_CODE, A.DESK_NAME, A.DESK_TYPE, A.DESK_AREA, A.DESK_NOP_NORM, A.DESK_NOP_MAX, B.* " +
+                "FROM X_DESK A " +
+                "LEFT JOIN (" +
+                "SELECT O.*, OS.O_STATUS_NAME FROM X_O O LEFT JOIN X_O_STATUS OS ON O.O_STATUS = OS.O_STATUS WHERE O.O_TYPE IN (0, 1) AND O.O_STATUS IN(2,3,4,5,6,7) " +
+                ") B ON A.DESK_ID = B.O_DESK_ID " +
+                "WHERE A.DESK_STATUS = 1 ORDER BY  A.DESK_NAME, B.O_ID";
+        }
+
+
+        //System.out.println(sql);
+        IQuery query = getQuery();
+        List<Map> list = query.doQuery(sql).tables();
+//        sql = "SELECT A.DESK_ID, A.DESK_CODE, A.DESK_NAME, B.O_ID, B.O_NO, B.O_DT, B.O_STATUS , B.O_STATUS_NAME " +
+//                "FROM X_DESK A " +
+//                "LEFT JOIN (" +
+//                "SELECT O.*, OS.O_STATUS_NAME FROM X_O O LEFT JOIN X_O_STATUS OS ON O.O_STATUS = OS.O_STATUS WHERE O.O_TYPE IN (1) AND O.O_STATUS IN(1) AND O.O_DINE_DT >= '" + MT_DT_S + "' AND O.O_DINE_DT <= '" + MT_DT_E + "'" +
+//                ") B ON A.DESK_ID = B.O_DESK_ID " +
+//                "WHERE A.DESK_STATUS = 1 ORDER BY A.DESK_CODE, A.DESK_ID";
+
+        //MT_DT_S = DateUtils.formatDate(DateUtils.addMinutes(new Date(), BOOK_INTERVAL), "yyyy-MM-dd HH:mm");
+        sql = "SELECT A.*, B.O_STATUS_NAME, C.DESK_ID, C.DESK_CODE, C.DESK_NAME FROM X_O A " +
+                "LEFT JOIN X_O_STATUS B ON A.O_STATUS = B.O_STATUS " +
+                "LEFT JOIN X_DESK C ON A.O_DESK_ID = C.DESK_ID " +
+                "WHERE A.O_TYPE = 1 AND A.O_STATUS IN (1) AND A.O_DINE_DT >= '" + MT_DT_S + "' AND A.O_DINE_DT <= '" + MT_DT_E + "' ORDER BY A.O_DINE_DT";
+        System.out.println(sql);
+        List<Map> listBook = query.doQuery(sql).tables();
+        for(Map m : list){
+            String O_STATUS = StringUtils.toString(m.get("O_STATUS"));
+            String DESK_ID = StringUtils.toString(m.get("DESK_ID"));
+            if(O_STATUS.length() > 0){
+                continue;
+            }
+            for(Map mx : listBook){
+                String _DESK_ID = StringUtils.toString(mx.get("DESK_ID"));
+                if(DESK_ID.equals(_DESK_ID)){
+                    String _O_DINE_DT = StringUtils.toString(mx.get("O_DINE_DT"));
+
+//                    if(DateUtils.getDateMinusMinutes(DateUtils.toFullDate(_O_DINE_DT), new Date()) - BOOK_INTERVAL > 0){
+//                        continue;
+//                    }
+                    //System.out.println(DateUtils.getDateMinusMinutes(DateUtils.toFullDate(O_DINE_DT),DateUtils.toFullDate(_O_DINE_DT)));
+                    if(Math.abs(DateUtils.getDateMinusMinutes(DateUtils.toFullDate(O_DINE_DT),DateUtils.toFullDate(_O_DINE_DT)))  > BOOK_INTERVAL){
+                        continue;
+                    }
+                    //System.out.println(_O_DINE_DT);
+                    m.putAll(mx);
+                }
+            }
+        }
+        String flag = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        int x = 0;
+        int i = 0;
+        int count = list.size();
+        for(Map m : list){
+            String O_STATUS = StringUtils.toString(m.get("O_STATUS"));
+            if(O_STATUS.length() == 0){
+                m.put("O_STATUS", 0);
+                m.put("O_STATUS_NAME", "空闲");
+            }
+            String O_NO = StringUtils.toString(m.get("O_NO"));
+            if(O_NO.length() > 0){
+                m.put("ID", O_NO);
+            }
+            else{
+                m.put("ID", m.get("DESK_ID"));
+            }
+            String DESK_NAME = StringUtils.toString(m.get("DESK_NAME"));
+            //m.put("DESK_NAME_SHOW", DESK_NAME);
+            if(i < count - 1){
+                Map m2 = list.get(i + 1);
+                String DESK_NAME_ = StringUtils.toString(m2.get("DESK_NAME"));
+                if(DESK_NAME.equals(DESK_NAME_)){
+                    if(x == 0){
+                        m.put("DESK_NAME_SHOW", DESK_NAME + "(" + flag.charAt(x) + ")");
+                    }
+                    m2.put("DESK_NAME_SHOW", DESK_NAME + "(" + flag.charAt(x + 1) + ")");
+                    x++;
+                }
+                else{
+                    if(x == 0){
+                        m.put("DESK_NAME_SHOW", DESK_NAME);
+                    }
+                    x = 0;
+                }
+            }
+            else{
+                if(x == 0){
+                    m.put("DESK_NAME_SHOW", DESK_NAME);
+                }
+            }
+            i++;
+        }
+        data.addAll(list);
+        query.free();
+        return data;
+    }
+
+    public List<Map> listDesk(Params params) {
+        String sql = "SELECT A.DESK_ID AS ID, A.*, " +
+                "B.DESK_USE_STATUS AS STATUS_ID,B.DESK_USE_STATUS_NAME AS STATUS_NAME, " +
+                "C.*, C.O_DINE_NOP AS DINE_NOP, GET_P_NUM(C.O_ID) AS P_NUM, GET_P_AMOUNT(C.O_ID) AS P_AMOUNT " +
+                "FROM X_DESK A " +
+                "LEFT JOIN X_DESK_USE_STATUS B ON A.DESK_USE_STATUS = B.DESK_USE_STATUS " +
+                "LEFT JOIN (SELECT * FROM X_O WHERE O_TYPE = 0 AND O_STATUS IN (1,2,3)) C ON A.DESK_ID = C.O_DESK_ID " +
+                "WHERE A.DESK_STATUS = 0 ORDER BY A.DESK_CODE";
+        IQuery query = getQuery();
+        List<Map> list = query.doQuery(sql).tables();
+        for (int i = 0; i < list.size(); i++) {
+            Map m =  list.get(i);
+            String DINE_NOP = StringUtils.toString(m.get("DINE_NOP"));
+            if (DINE_NOP.length() == 0) {
+                m.put("DINE_NOP", 0);
+            }
+            String O_OD_USER = StringUtils.toString(m.get("O_OD_USER"));
+            if (O_OD_USER.length() == 0) {
+                m.put("O_OD_USER", "无");
+            }
+            String O_SERVER = StringUtils.toString(m.get("O_SERVER"));
+            if (O_SERVER.length() == 0) {
+                m.put("O_SERVER", "无");
+            }
+            m.put("ISTIMEOUT", 0);
+            m.put("ISPRINT", 0);
+        }
+        /*************/
+        sql = "SELECT A.O_NO AS ID, A.*, " +
+                "A.O_STATUS AS STATUS_ID,B.O_STATUS_NAME AS STATUS_NAME, '' AS DESK_AREA, " +
+                "'' AS DESK_TYPE, " +
+                "'' AS DESK_SMOKING, " +
+                "'' AS DESK_NOP_NORM, " +
+                "'' AS DESK_NOP_MIN, " +
+                "'' AS DESK_NOP_MAX, " +
+                "'' AS DESK_DP, " +
+                "'' AS DESK_CP, " +
+                "'' AS DESK_CP_TYPE, " +
+                "C.*, '0' AS DINE_NOP, GET_P_NUM(A.O_ID) AS P_NUM, GET_P_AMOUNT(A.O_ID) AS P_AMOUNT " +
+                "FROM X_O A " +
+                "LEFT JOIN X_O_STATUS B ON A.O_STATUS = B.O_STATUS " +
+                "LEFT JOIN X_DESK_TEMP C ON C.DESK_ID = A.O_DESK_ID " +
+                "WHERE A.O_TYPE <> 0 AND A.O_STATUS NOT IN (4,10)";
+
+        List<Map> listTemp = query.doQuery(sql).tables();
+        for (int i=0; i < listTemp.size(); i++) {
+            Map m = listTemp.get(i);
+            m.put("ISTIMEOUT", 0);
+            m.put("ISPRINT", 0);
+            list.add(m);
+        }
+        /*************/
+
+        String O_DINE_DT = StringUtils.toString(params.val("O_DINE_DT"));
+//        System.out.println("O_DINE_DT = " + O_DINE_DT);
+        String O_DINE_DATE = "";
+        if (O_DINE_DT.length() == 0) {
+            O_DINE_DT = DateUtils.formatDate(new Date(), "yyyy-MM-dd HH:mm");
+        }
+        O_DINE_DATE = O_DINE_DT.substring(0, O_DINE_DT.indexOf(" "));
+        MarketTypeAction a = new MarketTypeAction();
+        String[] MT = a.getMT(O_DINE_DT);
+        if(MT.length == 0){
+            query.free();
+            return list;
+        }
+        String MT_DT_S = MT[2];
+        String MT_DT_E = MT[3];
+        boolean canBook =  DateUtils.formatDate(new Date(), "yyyy-MM-dd HH:mm").compareTo(MT_DT_S) == -1;
+        System.out.println("canBook = " + canBook);
+        System.out.println(MT_DT_S);
+        System.out.println(MT_DT_E);
+        sql = "SELECT A.DESK_ID AS ID, A.*, " +
+                "B.O_STATUS AS STATUS_ID,C.O_STATUS_NAME AS STATUS_NAME, " +
+                "B.*, B.O_DINE_NOP AS DINE_NOP, GET_P_NUM(B.O_ID) AS P_NUM, GET_P_AMOUNT(B.O_ID) AS P_AMOUNT " +
+                "FROM X_DESK A " +
+                "LEFT JOIN (SELECT * FROM X_O WHERE O_TYPE = 0 AND O_STATUS = -1 AND O_DINE_DT >= '" + MT_DT_S + "' AND O_DINE_DT <= '" + MT_DT_E + "') B ON A.DESK_ID = B.O_DESK_ID " +
+                "LEFT JOIN X_O_STATUS C ON B.O_STATUS = C.O_STATUS " +
+                "WHERE A.DESK_STATUS = 0";
+//        System.out.println(sql);
+        List<Map> listBook = query.doQuery(sql).tables();
+        for(int i=0; i<list.size(); i++){
+            Map m = list.get(i);
+            String STATUS_ID = StringUtils.toString(m.get("STATUS_ID"));
+            String DESK_ID = StringUtils.toString(m.get("DESK_ID"));
+//            if(STATUS_ID.equals("0")){
+//                continue;
+//            }
+            for(int j=0; j<listBook.size(); j++){
+                Map mx = listBook.get(j);
+                String STATUS_IDX = StringUtils.toString(mx.get("STATUS_ID"));
+                String DESK_IDX = StringUtils.toString(mx.get("DESK_ID"));
+                if(!DESK_ID.equals(DESK_IDX)){
+                    continue;
+                }
+                if(canBook){
+                    if(STATUS_IDX.equals("-1")){
+                        m.putAll(mx);
+                    }
+                    else{
+                        mx.put("STATUS_ID", 0);
+                        mx.put("STATUS_NAME", "空闲");
+                        m.putAll(mx);
+                    }
+                }
+                else{
+                    if(STATUS_ID.equals("0") && STATUS_IDX.equals("-1")){
+                        m.putAll(mx);
+                    }
+                }
+//                if(!STATUS_IDX.equals("-1")){
+//                    continue;
+//                }
+//                if(STATUS_ID.equals("0")){
+//                    m.putAll(mx);
+//                    //System.out.println(mx.get("DESK_ID"));
+//                    //System.out.println(mx.get("STATUS_NAME"));
+//                    //m = mx;
+//                }
+//                else{
+//                    if(canBook){
+//                        m.putAll(mx);
+//                    }
+//                }
+            }
+        }
+        query.free();
+        return list;
+    }
+
+    public List<Map> listBook(Params params) {
+        List<Map> data = new ArrayList<Map>();
+        String DINE_DATE_S = StringUtils.toString(params.val("DINE_DATE_S"));
+        String DINE_DATE_E = StringUtils.toString(params.val("DINE_DATE_E"));
+        String MT_ID = StringUtils.toString(params.val("MT_ID"));
+//        System.out.println("DINE_DATE_S = " + DINE_DATE_S);
+//        System.out.println("DINE_DATE_E = " + DINE_DATE_E);
+        if (DINE_DATE_S.length() == 0) {
+            DINE_DATE_S = DateUtils.getNowDate();
+        }
+        if (DINE_DATE_E.length() == 0) {
+            DINE_DATE_E = DateUtils.getNowDate();
+        }
+        if(DINE_DATE_S.compareTo(DINE_DATE_E) > 0){
+            DINE_DATE_S = DateUtils.getNowDate();
+            DINE_DATE_E = DateUtils.getNowDate();
+        }
+        if(MT_ID.length() == 0){
+            MT_ID = "0";
+        }
+        String[] MT = new MarketTypeAction().getMTX(DINE_DATE_S, DINE_DATE_E, MT_ID);
+        if(MT.length == 0){
+            return data;
+        }
+        String MT_DT_S = MT[2];
+        String MT_DT_E = MT[3];
+        String STATUS = StringUtils.toString(params.val("STATUS"));
+        String CLIENT_INFO = StringUtils.toString(params.val("CLIENT_INFO"));
+        String DESK_ID = StringUtils.toString(params.val("DESK_ID"));
+        String CS = "";
+        if(STATUS.equals("0")){
+            CS += " AND A.O_STATUS IN (-1)";
+        }
+        else if(STATUS.equals("1")){
+            CS += " AND A.O_STATUS IN (1)";
+        }
+        else if(STATUS.equals("2")){
+            CS += " AND A.O_STATUS  > 1";
+        }
+        else{
+            CS += " AND A.O_STATUS IN (1)";
+        }
+        if(DESK_ID.length() > 0){
+            CS += " AND A.O_DESK_ID IN ("+DESK_ID+")";
+        }
+        if(CLIENT_INFO.length() > 0){
+            CS += " AND (A.O_CLIENT_NAME LIKE '%"+CLIENT_INFO+"%' OR A.O_CLIENT_PHONE LIKE '%"+CLIENT_INFO+"%' OR A.O_CLIENT_COMPANY LIKE '%"+CLIENT_INFO+"%')";
+        }
+        String DT_CS = "";
+        if(MT_ID.equals("0")){
+            DT_CS = "A.O_DINE_DT >= '" + MT_DT_S + "' AND A.O_DINE_DT <= '" + MT_DT_E + "'";
+        }
+        else{
+            DT_CS = "SUBSTRING(A.O_DINE_DT, 1, 10) >= '" + MT_DT_S.substring(0, 10)
+                             + "' AND SUBSTRING(A.O_DINE_DT, 12) >= '"+ MT_DT_S.substring(11)
+                             + "' AND SUBSTRING(A.O_DINE_DT, 1, 10) <= '" + MT_DT_E.substring(0, 10)
+                             + "' AND SUBSTRING(A.O_DINE_DT, 12) <= '"+MT_DT_E.substring(11)+"'";
+        }
+        String sql = "SELECT A.O_ID AS ID, A.*, B.O_STATUS_NAME,  C.*, C.DESK_NAME AS DESK_NAME_SHOW FROM X_O A " +
+                "LEFT JOIN X_O_STATUS B ON A.O_STATUS = B.O_STATUS " +
+                "LEFT JOIN X_DESK C ON A.O_DESK_ID = C.DESK_ID " +
+                "WHERE A.O_TYPE = 1 AND " + DT_CS + CS + " ORDER BY A.O_DINE_DT";
+        System.out.println(sql);
+        IQuery query = getQuery();
+        List<Map> list = query.doQuery(sql).tables();
+        for(Map m : list){
+            String O_STATUS = StringUtils.toString(m.get("O_STATUS"));
+            if(O_STATUS.equals("-1")){
+                m.put("O_STATUS_NAME", "预定取消");
+            }
+            else  if(O_STATUS.equals("1")){
+                m.put("O_STATUS_NAME", "预定");
+            }
+            else{
+                m.put("O_STATUS_NAME", "预定成功");
+            }
+        }
+        data.addAll(list);
+        query.free();
+        return data;
+    }
+
+    public Map book(Form form){
+        Map D = new HashMap();
+        D.put("O_ID", "");
+        if(!isLogin()){
+            D.put("STATUS", CloverManager.CODE_FAILED);
+            return D;
+        }
+        Map data = form.getValuesMap();
+//        System.out.println("O_DESK_ID=" + StringUtils.toString(data.get("O_DESK_ID")));
+        String[] DESK_IDS = StringUtils.split(StringUtils.toString(data.get("O_DESK_ID")), ",");
+        data.remove("O_DESK_ID");
+        String now = DateUtils.getNow();
+        String O_DINE_DT = StringUtils.toString(data.get("O_DINE_DT"));
+        if(O_DINE_DT.length() == 0){
+            D.put("STATUS", CloverManager.CODE_FAILED);
+            return D;
+        }
+        if(DateUtils.getDateMinusMinutes(DateUtils.toFullDate(O_DINE_DT), new Date()) < 0){
+            D.put("STATUS", CloverManager.CODE_FAILED);
+            return D;
+        }
+        String ACCOUNT_ID = StringUtils.toString(getClient().getCookies().get("ACCOUNT_ID"));
+
+        MarketTypeAction a = new MarketTypeAction();
+        String[] MT = a.getMT(O_DINE_DT);
+        if(MT.length == 0){
+            D.put("STATUS", CloverManager.CODE_FAILED);
+            return D;
+        }
+        ITable o = getTable("X_O");
+        int result = -1;
+        IQuery query = getQuery();
+        int BOOK_INTERVAL = SystemAction.getBookInterval();
+
+        String O_IDS = "";
+        for (String DESK_ID : DESK_IDS) {
+            String sql = "SELECT O_ID, O_DINE_DT FROM X_O WHERE O_DESK_ID =  ? AND O_STATUS IN (1,2,3,4,5,6) AND O_DINE_DT >= ? AND O_DINE_DT <= ? ORDER BY O_DINE_DT DESC";
+            List<Map> list = query.doQuery(sql, DESK_ID, MT[2], MT[3]).tables();
+            if(list.size() > 0){
+                Map m = list.get(0);
+                String _O_DINE_DT = StringUtils.toString(m.get("O_DINE_DT"));
+                if(Math.abs(DateUtils.getDateMinusMinutes(DateUtils.toFullDate(O_DINE_DT),DateUtils.toFullDate(_O_DINE_DT)))  < BOOK_INTERVAL){
+                    continue;
+                }
+//                if(DateUtils.getDateMinusMinutes(DateUtils.addMinutes(_O_DINE_DT, BOOK_INTERVAL), DateUtils.toFullDate(O_DINE_DT)) > 0){
+//                    continue;
+//                }
+            }
+            o.clearData();
+            Map _data = ArrayUtils.cloneTable(data);
+            String O_ID = o.getMaxID("O_ID") + "";
+            if(O_IDS.length() > 0){
+                O_IDS += ",";
+            }
+            O_IDS += O_ID;
+            _data.put("O_ID", O_ID);
+            _data.put("O_NO", SystemAction.makeOSN());
+            _data.put("O_STATUS", 1);
+            _data.put("O_DT", now);
+            _data.put("O_DESK_ID", DESK_ID);
+            _data.put("O_TYPE", 1);
+            _data.put("O_BOOKER", ACCOUNT_ID);
+            result = o.data(_data).create();
+        }
+        if( O_IDS.indexOf(",") > -1){
+            ITable t = getTable("X_O_UNION");
+            Map d = new Hashtable();
+            long O_UNION_ID =  t.getMaxID("O_UNION_ID");
+            d.put("O_UNION_ID", O_UNION_ID);
+            d.put("O_UNION_DT", DateUtils.getNow());
+            d.put("O_IDS", O_IDS);
+            result = t.data(d).create();
+            String sql = "UPDATE X_O SET O_UNION_ID = "+O_UNION_ID+" WHERE O_ID IN ("+O_IDS + ")";
+            result = query.doExec(sql);
+        }
+        query.free();
+        if (result < 0) {
+            D.put("STATUS", CloverManager.CODE_FAILED);
+            return D;
+        }
+        LogAction.add(getClient(), 1, O_IDS);
+        D.put("O_ID", O_IDS);
+        D.put("STATUS", CloverManager.CODE_SUCCESS);
+        return D;
+    }
+
+
+    public int bookArrive(Form form){
+        if(!isLogin()){
+            return CloverManager.CODE_FAILED;
+        }
+        Map data = form.getValuesMap();
+        String O_IDS = StringUtils.toString(data.get("O_ID"));
+        if(O_IDS.length() == 0){
+            return CloverManager.CODE_FAILED;
+        }
+
+        String[] O_ID_ARR = StringUtils.split(O_IDS, ",");
+        String UNION = StringUtils.toString(data.get("UNION"));
+        data.remove("O_ID");
+        String nowTime = DateUtils.getNowTime();
+        ITable o = getTable("X_O");
+        int result = 0;
+        IQuery query = getQuery();
+        if(UNION.equals("1")){
+            String O_IDS_UNION = "";
+            for (String O_ID : O_ID_ARR) {
+                String IDS = getUnion(O_ID);
+                if(IDS.length()>0){
+                    if(O_IDS_UNION.length() > 0){
+                        O_IDS_UNION += ",";
+                    }
+                    O_IDS_UNION += IDS;
+                }
+            }
+            if(O_IDS_UNION.length() > 0){
+                O_IDS += "," + O_IDS_UNION;
+            }
+            O_ID_ARR = StringUtils.split(O_IDS, ",");
+            O_ID_ARR = ArrayUtils.unique(O_ID_ARR);
+        }
+        String now = DateUtils.getNow();
+        String[] MT = new MarketTypeAction().getMT(now);
+        for (String O_ID : O_ID_ARR) {
+            String sql = "SELECT O_DESK_ID FROM X_O WHERE O_STATUS = 1 AND O_ID= "+ O_ID;
+            String O_DESK_ID = query.doQuery(sql).getValue();
+            if(O_DESK_ID.length() == 0){
+                continue;
+            }
+            o.clearData();
+            Map _data = ArrayUtils.cloneTable(data);
+            _data.put("O_STATUS", 4);
+            _data.put("O_DINE_DT", nowTime);
+            _data.put("O_MT_ID", MT[0]);
+            result = o.data(_data).where(o.column("O_ID").eq(O_ID)).update();
+            if (result < 0) {
+                query.free();
+                return CloverManager.CODE_FAILED;
+            }
+        }
+        String sql = "UPDATE X_O_P SET O_P_STATUS = 1,O_P_DT_ORDER = '"+now+"' WHERE O_ID IN ("+O_IDS+")";
+        query.doExec(sql);
+        query.free();
+        LogAction.add(getClient(), 2, O_IDS);
+        return CloverManager.CODE_SUCCESS;
+    }
+
+    public int bookCancel(Form form){
+        if(!isLogin()){
+            return CloverManager.CODE_FAILED;
+        }
+        Map data = form.getValuesMap();
+       String O_IDS = StringUtils.toString(data.get("O_ID"));
+        if(O_IDS.length() == 0){
+            return CloverManager.CODE_FAILED;
+        }
+
+        String[] O_ID_ARR = StringUtils.split(O_IDS, ",");
+        String UNION = StringUtils.toString(data.get("UNION"));
+        data.remove("O_ID");
+        ITable o = getTable("X_O");
+        int result = 0;
+        IQuery query = getQuery();
+        if(UNION.equals("1")){
+            String O_IDS_UNION = "";
+            for (String O_ID : O_ID_ARR) {
+                String IDS = getUnion(O_ID);
+                if(IDS.length()>0){
+                    if(O_IDS_UNION.length() > 0){
+                        O_IDS_UNION += ",";
+                    }
+                    O_IDS_UNION += IDS;
+                }
+            }
+            if(O_IDS_UNION.length() > 0){
+                O_IDS += "," + O_IDS_UNION;
+            }
+            O_ID_ARR = StringUtils.split(O_IDS, ",");
+            O_ID_ARR = ArrayUtils.unique(O_ID_ARR);
+        }
+        for (String O_ID : O_ID_ARR) {
+            String sql = "SELECT O_DESK_ID FROM X_O WHERE O_STATUS = 1 AND O_ID= "+ O_ID;
+            String O_DESK_ID = query.doQuery(sql).getValue();
+            if(O_DESK_ID.length() == 0){
+                continue;
+            }
+            o.clearData();
+            Map _data = ArrayUtils.cloneTable(data);
+            _data.put("O_STATUS", -1);
+            result = o.data(_data).where(o.column("O_ID").eq(O_ID)).update();
+            if (result < 0) {
+                query.free();
+                return CloverManager.CODE_FAILED;
+            }
+        }
+        query.free();
+        LogAction.add(getClient(), 3, O_IDS);
+        return CloverManager.CODE_SUCCESS;
+    }
+
+    public List<Map> bookQuery(Form form){
+        Map data = form.getValuesMap();
+        String O_DINE_DATE_S = StringUtils.toString(data.get("O_DINE_DATE_S"));
+        String O_DINE_DATE_E = StringUtils.toString(data.get("O_DINE_DATE_E"));
+        String MT_ID = StringUtils.toString(data.get("MT_ID"));
+        String O_DESK_ID = StringUtils.toString(data.get("O_DESK_ID"));
+        String O_CLIENT_INFO = StringUtils.toString(data.get("O_CLIENT_INFO"));
+
+
+        return null;
+    }
+
+
+    public Map open(Form form) {
+        Map D = new HashMap();
+        D.put("O_ID", "");
+        if(!isLogin()){
+            D.put("STATUS", CloverManager.CODE_FAILED);
+            return D;
+        }
+        Map data = form.getValuesMap();
+        String DESK_IDS = StringUtils.toString(data.get("O_DESK_ID"));
+        String O_IDS = StringUtils.toString(data.get("O_ID"));
+        if(O_IDS.length() == 0 && DESK_IDS.length() == 0) {
+            D.put("STATUS", CloverManager.CODE_FAILED);
+            return D;
+        }
+        String ACCOUNT_ID = StringUtils.toString(getClient().getCookies().get("ACCOUNT_ID"));
+
+
+        data.remove("O_ID");
+        data.remove("O_DESK_ID");
+        data.remove("O_ID");
+        ITable o = getTable("X_O");
+        int result = 0;
+        String nowTime = DateUtils.getNowTime();
+        String now = DateUtils.getNow();
+        String[] MT = new MarketTypeAction().getMT(now);
+        IQuery query = getQuery();
+        List<Map> OS = new ArrayList<Map>();
+        if(O_IDS.length() > 0){
+            String[] O_ID_ARR = StringUtils.split(O_IDS, ",");
+            String UNION = StringUtils.toString(data.get("UNION"));
+            if(UNION.equals("1")){
+                String O_IDS_UNION = "";
+                for (String O_ID : O_ID_ARR) {
+                    String IDS = getUnion(O_ID);
+                    if(IDS.length()>0){
+                        if(O_IDS_UNION.length() > 0){
+                            O_IDS_UNION += ",";
+                        }
+                        O_IDS_UNION += IDS;
+                    }
+                }
+                if(O_IDS_UNION.length() > 0){
+                    O_IDS += "," + O_IDS_UNION;
+                }
+                O_ID_ARR = StringUtils.split(O_IDS, ",");
+                O_ID_ARR = ArrayUtils.unique(O_ID_ARR);
+            }
+            String sql = "SELECT * FROM X_O WHERE O_STATUS IN (1, 2) AND O_TYPE = 1 AND O_ID = ?";
+            for (String O_ID : O_ID_ARR) {
+//                o.clearData();
+                Map om = query.doQuery(sql, O_ID).table();
+                if(om == null){
+                    continue;
+                }
+//                if(data.containsKey("O_DINE_NOP")){
+//                    om.put("O_DINE_NOP", NumberUtils.toInt(data.get("O_DINE_NOP")));
+//                }
+                Map dataX = new HashMap();
+                if(O_ID_ARR.length == 0){
+                    om.putAll(data);
+                }
+                dataX.putAll(data);
+                dataX.put("O_STATUS", 3);
+                dataX.put("O_DT", now);
+                dataX.put("O_DINE_DT", nowTime);
+                dataX.put("O_MT_ID", MT[0]);
+                dataX.put("O_MAKER", ACCOUNT_ID);
+
+//                Map _data = ArrayUtils.cloneTable(om);
+                result = o.data(dataX).where(o.column("O_ID").eq(O_ID)).update();
+                if (result < 0) {
+                    query.free();
+                    D.put("STATUS", CloverManager.CODE_FAILED);
+                    return D;
+                }
+                OS.add(om);
+            }
+
+        }
+        else{
+            String[] DESK_ID_ARR = StringUtils.split(DESK_IDS, ",");
+            O_IDS = "";
+            for (String DESK_ID : DESK_ID_ARR) {
+
+                o.clearData();
+                Map _data = ArrayUtils.cloneTable(data);
+                long O_ID = o.getMaxID("O_ID");
+
+                Map om = new Hashtable();
+                om.put("O_ID", O_ID);
+                om.put("O_DINE_NOP", NumberUtils.toInt(_data.get("O_DINE_NOP")));
+
+                _data.put("O_ID", O_ID);
+                _data.put("O_NO", SystemAction.makeOSN());
+                _data.put("O_STATUS", 3);
+                _data.put("O_DT", now);
+                _data.put("O_DINE_DT", nowTime);
+                _data.put("O_MT_ID", MT[0]);
+                _data.put("O_DESK_ID", DESK_ID);
+                _data.put("O_MAKER", ACCOUNT_ID);
+                result = o.data(_data).create();
+                if (result < 0) {
+                    query.free();
+                    D.put("STATUS", CloverManager.CODE_FAILED);
+                    return D;
+                }
+                OS.add(om);
+                if(O_IDS.length() > 0){
+                    O_IDS += ",";
+                }
+                O_IDS += O_ID;
+            }
+            if(O_IDS.length() > 0){
+                setUnion(O_IDS);
+            }
+
+        }
+
+        if(OS.size() == 0){
+            query.free();
+            D.put("STATUS", CloverManager.CODE_FAILED);
+            return D;
+        }
+
+        String sql = "SELECT A.* FROM X_P A WHERE A.P_DEF_TYPE IN (1, 2) AND A.P_STATUS = 1";
+        List<Map> list = query.doQuery(sql).tables();
+
+        List<Map> ops = new ArrayList<Map>();
+        for(int i=0;i<list.size();i++){
+            Map m = list.get(i);
+            Map op = new Hashtable();
+            if(NumberUtils.toInt(m.get("P_DEF_NUM")) == 0){
+                continue;
+            }
+            op.put("O_P_ID", StringUtils.toString(m.get("P_ID")));
+            op.put("O_P_NAME", StringUtils.toString(m.get("P_NAME")));
+            op.put("O_P_TYPE_ID", StringUtils.toString(m.get("P_TYPE_ID")));
+            op.put("O_P_UNIT_ID", StringUtils.toString(m.get("P_UNIT_ID")));
+            op.put("O_P_STATUS", 10);
+            op.put("O_P_PRICE", StringUtils.toString(m.get("P_PRICE")));
+            op.put("O_P_DT_ORDER", now);
+            op.put("O_P_DT_FINISH", now);
+            op.put("O_P_DT", now);
+            op.put("O_P_KEY", StringUtils.UUID());
+
+            op.put("P_DEF_TYPE", StringUtils.toString(m.get("P_DEF_TYPE")));
+            op.put("P_DEF_NUM", StringUtils.toString(m.get("P_DEF_NUM")));
+            ops.add(op);
+        }
+        ITable P = getTable("X_O_P").clearData();
+        OrderDishAction a = new OrderDishAction();
+        O_IDS = "";
+        for(int i=0;i<OS.size();i++){
+            Map om = OS.get(i);
+            String O_ID = StringUtils.toString(om.get("O_ID"));
+            if(i > 0){
+                O_IDS += ",";
+            }
+            O_IDS += O_ID;
+            int O_DINE_NOP = NumberUtils.toInt(om.get("O_DINE_NOP"));
+
+            for(int j=0;j<ops.size();j++){
+                Map op = ops.get(j);
+                long O_P_NO = P.getMaxID("O_P_NO");
+                op.put("O_P_NO", O_P_NO);
+                op.put("O_ID", O_ID);
+                String P_DEF_TYPE = StringUtils.toString(op.get("P_DEF_TYPE"));
+                int P_DEF_NUM = NumberUtils.toInt(op.get("P_DEF_NUM"));
+
+                float O_P_PRICE = a.getSpecialPrice(O_ID, StringUtils.toString(op.get("O_P_ID")));
+//                float O_P_PRICE = NumberUtils.toFloat(op.get("O_P_PRICE"));
+                int O_P_NUM = 0;
+                if(P_DEF_TYPE.equals("1")){
+                    O_P_NUM += P_DEF_NUM;
+                }
+                else if(P_DEF_TYPE.equals("2")){
+                    if(O_DINE_NOP == 0){
+                        continue;
+                    }
+                    O_P_NUM += P_DEF_NUM * O_DINE_NOP;
+                }
+                float O_P_AMOUNT =  O_P_PRICE * O_P_NUM;
+                op.put("O_P_NUM", O_P_NUM);
+                op.put("O_P_PRICE", O_P_PRICE);
+                op.put("O_P_AMOUNT", O_P_AMOUNT);
+                op.put("O_P_AMOUNT_REAL", O_P_AMOUNT);
+                op.put("O_P_NUM_FINISH", O_P_NUM);
+                op.put("O_P_DISCOUNT", -1);
+                op.put("O_P_PRICE", O_P_PRICE);
+
+                P.data(op).create();
+//                P.clearData();
+            }
+        }
+        query.free();
+        LogAction.add(getClient(), 4, O_IDS);
+        D.put("O_ID", O_IDS);
+        D.put("STATUS", CloverManager.CODE_SUCCESS);
+        return D;
+    }
+
+    public int set(Form form) {
+        if(!isLogin()){
+            return CloverManager.CODE_FAILED;
+        }
+        Map data = form.getValuesMap();
+        String O_ID = StringUtils.toString(data.get("O_ID"));
+        int O_DINE_NOP = NumberUtils.toInt(data.get("O_DINE_NOP"));
+
+        if(O_ID.length() == 0){
+            return CloverManager.CODE_FAILED;
+        }
+        String ACCOUNT_ID = StringUtils.toString(getClient().getCookies().get("ACCOUNT_ID"));
+        IQuery query = getQuery();
+        ITable o = getTable("X_O").clearData();
+        int result = o.data(data).where(o.column("O_ID").eq(O_ID)).update();
+        if (result < 0) {
+            query.free();
+            return CloverManager.CODE_FAILED;
+        }
+        if(O_DINE_NOP == 0){
+            query.free();
+            return CloverManager.CODE_SUCCESS;
+        }
+        LogAction.add(getClient(), 5, O_ID);
+        String sql = "SELECT A.* FROM X_P A WHERE A.P_DEF_TYPE IN (1, 2) AND A.P_STATUS = 1";
+        OrderDishAction a = new OrderDishAction();
+        List<Map> list = query.doQuery(sql).tables();
+        String now = DateUtils.getNow();
+        ITable P = getTable("X_O_P").clearData();
+        for(int i=0;i<list.size();i++){
+            Map m = list.get(i);
+            Map op = new Hashtable();
+            String P_DEF_TYPE = StringUtils.toString(m.get("P_DEF_TYPE"));
+            int P_DEF_NUM = NumberUtils.toInt(m.get("P_DEF_NUM"));
+            if(P_DEF_NUM == 0){
+                continue;
+            }
+            float O_P_PRICE = a.getSpecialPrice(O_ID, StringUtils.toString(m.get("P_ID")));
+            int O_P_NUM = 0;
+
+            if(P_DEF_TYPE.equals("1")){
+                O_P_NUM += P_DEF_NUM;
+            }
+            else if(P_DEF_TYPE.equals("2")){
+                O_P_NUM += P_DEF_NUM * O_DINE_NOP;
+            }
+            float O_P_AMOUNT =  O_P_PRICE * O_P_NUM;
+            op.put("O_P_NUM", O_P_NUM);
+            op.put("O_P_AMOUNT", O_P_AMOUNT);
+            op.put("O_P_AMOUNT_REAL", O_P_AMOUNT);
+            op.put("O_P_NUM_FINISH", O_P_NUM);
+             op.put("O_P_PRICE", O_P_PRICE);
+            sql = "SELECT O_P_NO FROM X_O_P WHERE O_ID = " + O_ID + " AND O_P_ID = " + StringUtils.toString(m.get("P_ID"));
+            long O_P_NO = NumberUtils.toInt(query.doQuery(sql).getValue());
+            if(O_P_NO == 0){
+                O_P_NO = P.getMaxID("O_P_NO");
+                op.put("O_P_NO", O_P_NO);
+                op.put("O_ID", O_ID);
+                op.put("O_P_ID", StringUtils.toString(m.get("P_ID")));
+                op.put("O_P_NAME", StringUtils.toString(m.get("P_NAME")));
+                op.put("O_P_TYPE_ID", StringUtils.toString(m.get("P_TYPE_ID")));
+                op.put("O_P_UNIT_ID", StringUtils.toString(m.get("P_UNIT_ID")));
+                op.put("O_P_STATUS", 10);
+                op.put("O_P_PRICE", StringUtils.toString(m.get("P_PRICE")));
+                op.put("O_P_DT_ORDER", now);
+                op.put("O_P_DT_FINISH", now);
+                op.put("O_P_DT", now);
+                op.put("O_P_KEY", StringUtils.UUID());
+                op.put("O_P_DISCOUNT", -1);
+                P.data(op).create();
+            }
+            else{
+                P.data(op).where(P.column("O_P_NO").eq(O_P_NO)).update();
+            }
+            P.clearData();
+        }
+        query.free();
+        return CloverManager.CODE_SUCCESS;
+    }
+
+    public Map info(String O_ID){
+        String sql = "SELECT * FROM X_O WHERE O_ID = " + O_ID;
+        IQuery query = getQuery();
+        Map m = query.doQuery(sql).table();
+        query.free();
+        return m;
+    }
+
+    public int clear(Form form){
+        if(!isLogin()){
+            return CloverManager.CODE_FAILED;
+        }
+        Map data = form.getValuesMap();
+
+        System.out.println("CLEAR---IP = " + getClient().getAddress() + ", O_ID = " + StringUtils.toString(data.get("O_ID")));
+        String O_IDS = StringUtils.toString(data.get("O_ID"));
+        if(O_IDS.length() == 0){
+            return CloverManager.CODE_FAILED;
+        }
+        String[] O_ID_ARR = StringUtils.split(O_IDS, ",");
+        IQuery query = getQuery();
+        String NOW = DateUtils.getNow();
+        for (String O_ID : O_ID_ARR) {
+            String[] ARR = query.doQuery("SELECT O_STATUS, O_TYPE, O_UNION_ID  FROM X_O WHERE O_ID = " + O_ID).get();
+            if (ARR[2].length() > 0) {
+                breakUnion(O_ID);
+            }
+            if (ARR[0].equals("3")) {
+                if(ARR[1].equals("1")){
+                    query.doExec("UPDATE X_O SET O_STATUS=-1, O_DT_FINISH = '"+NOW+"'  WHERE O_ID = " + O_ID);
+                }
+                else{
+                    query.doExec("DELETE FROM X_O WHERE O_ID = " + O_ID);
+                    query.doExec("DELETE FROM X_O_P WHERE O_ID = " + O_ID);
+                }
+            }
+            else if(ARR[0].equals("1")) {
+                query.doExec("UPDATE X_O SET O_STATUS=-1, O_DT_FINISH = '"+NOW+"'  WHERE O_ID = " + O_ID);
+            }
+            else if(ARR[0].equals("2")) {
+                query.doExec("UPDATE X_O SET O_STATUS=-1, O_DT_FINISH = '"+NOW+"'  WHERE O_ID = " + O_ID);
+            }
+            else if(ARR[0].equals("6")) {
+                query.doExec("UPDATE X_O SET O_STATUS=10, O_DT_FINISH = '"+NOW+"'  WHERE O_ID = " + O_ID);
+                query.doExec("UPDATE X_O_P SET O_P_STATUS=10 WHERE O_P_STATUS > 0 AND O_ID = " + O_ID);
+            }
+        }
+        LogAction.add(getClient(), 8, O_IDS);
+        query.free();
+        return CloverManager.CODE_SUCCESS;
+    }
+
+    public int transfer(Form form){
+        if(!isLogin()){
+            return CloverManager.CODE_FAILED;
+        }
+        Map data = form.getValuesMap();
+        String O_ID = StringUtils.toString(data.get("O_ID"));
+        String O_ID_TARGET = StringUtils.toString(data.get("O_ID_TARGET"));
+        if(O_ID.length() == 0 || O_ID_TARGET.length() == 0){
+            return CloverManager.CODE_FAILED;
+        }
+
+        String sql = "SELECT O_P_NO FROM X_O_P WHERE O_ID = " + O_ID;
+        IQuery query = getQuery();
+        List<Map> list = query.doQuery(sql).tables();
+        String O_P_NOS = "";
+        for(int i=0;i<list.size();i++){
+            Map m = list.get(i);
+            if(i > 0){
+                O_P_NOS += ",";
+            }
+            O_P_NOS += StringUtils.toString(m.get("O_P_NO"));
+        }
+        int result = 0;
+        if(O_P_NOS.length() > 0){
+            sql = "UPDATE X_O_P SET O_ID=" + O_ID_TARGET + " WHERE O_P_NO IN ("+O_P_NOS+")";
+            result = query.doExec(sql);
+            if(result <0){
+                query.free();
+                return CloverManager.CODE_FAILED;
+            }
+        }
+        sql = "SELECT O_STATUS, O_DINE_NOP FROM X_O WHERE O_ID=" +O_ID;
+        String[] ARR = query.doQuery(sql).get();
+        int O_STATUS = NumberUtils.toInt(ARR[0]);
+        int O_DINE_NOP = NumberUtils.toInt(ARR[1]);
+        sql = "SELECT O_STATUS FROM X_O WHERE O_ID=" +O_ID_TARGET;
+        int O_STATUS_TARGET = NumberUtils.toInt(query.doQuery(sql).getValue());
+        O_STATUS = O_STATUS > O_STATUS_TARGET ? O_STATUS : O_STATUS_TARGET;
+        sql = "UPDATE X_O SET O_STATUS="+O_STATUS+", O_DINE_NOP = O_DINE_NOP + "+O_DINE_NOP+" WHERE O_ID=" + O_ID_TARGET;
+        result = query.doExec(sql);
+        sql = "UPDATE X_O SET O_STATUS = -2 WHERE O_ID=" + O_ID;
+        result = query.doExec(sql);
+        if(isUnion(O_ID) || isUnion(O_ID_TARGET)){
+            setUnion(O_ID + "," + O_ID_TARGET);
+            breakUnion(O_ID);
+        }
+        query.free();
+        if(result <0){
+            return CloverManager.CODE_FAILED;
+        }
+        LogAction.add(getClient(), 7, O_ID + "," + O_ID_TARGET);
+        Map params = new Hashtable();
+        params.put("O_ID", O_ID);
+        params.put("O_ID_TARGET", O_ID_TARGET);
+        PrintManager.getInstance().addJob(PrintJob.COMMAND_ORDER_TRANSFER, params);
+        return CloverManager.CODE_SUCCESS;
+    }
+
+    public int exchange(Form form){
+        if(!isLogin()){
+            return CloverManager.CODE_FAILED;
+        }
+        Map data = form.getValuesMap();
+        String O_ID = StringUtils.toString(data.get("O_ID"));
+        String DESK_ID = StringUtils.toString(data.get("DESK_ID"));
+        String O_ID_TARGET = StringUtils.toString(data.get("O_ID_TARGET"));
+        String DESK_ID_TARGET = StringUtils.toString(data.get("DESK_ID_TARGET"));
+        if(O_ID.length() == 0 || DESK_ID.length() == 0 || DESK_ID_TARGET.length() == 0){
+            return CloverManager.CODE_FAILED;
+        }
+
+        IQuery query = getQuery();
+        String sql = "UPDATE X_O SET O_DESK_ID=" + DESK_ID_TARGET + " WHERE O_ID="+O_ID;
+        int result = query.doExec(sql);
+        if(result < 0){
+            query.free();
+            return CloverManager.CODE_FAILED;
+        }
+        if(O_ID_TARGET.length() > 0){
+            sql = "UPDATE X_O SET O_DESK_ID=" + DESK_ID + " WHERE O_ID="+O_ID_TARGET;
+            result = query.doExec(sql);
+            if(result < 0){
+                query.free();
+                return CloverManager.CODE_FAILED;
+            }
+        }
+        query.free();
+
+        LogAction.add(getClient(), 6, (O_ID_TARGET.length() > 0?O_ID + "," + O_ID_TARGET:O_ID), null, null, DESK_ID_TARGET);
+        Map params = new Hashtable();
+        params.put("O_ID", O_ID);
+        params.put("DESK_ID", DESK_ID);
+        params.put("O_ID_TARGET", O_ID_TARGET);
+        params.put("DESK_ID_TARGET", DESK_ID_TARGET);
+        PrintManager.getInstance().addJob(PrintJob.COMMAND_ORDER_EXCHANGE, params);
+        return CloverManager.CODE_SUCCESS;
+    }
+
+    public  boolean breakUnion(String O_ID){
+        IQuery query = getQuery();
+        String sql = "SELECT O_UNION_ID FROM X_O WHERE O_ID = " + O_ID;
+        String O_UNION_ID = query.doQuery(sql).getValue();
+        if(O_UNION_ID.length() == 0){
+            query.free();
+            return false;
+        }
+        sql = "UPDATE X_O SET O_UNION_ID = NULL WHERE O_ID = " + O_ID;
+        query.doExec(sql);
+        sql = "SELECT O_ID FROM X_O WHERE O_UNION_ID = " + O_UNION_ID;
+        String O_IDS = query.doQuery(sql).getValueString();
+        if(O_IDS.length() == 0){
+            sql = "DELETE FROM X_O_UNION WHERE O_UNION_ID = " + O_UNION_ID;
+        }
+        else{
+            if(O_IDS.indexOf(",") == -1){
+                sql = "UPDATE X_O SET O_UNION_ID = NULL WHERE O_ID = " + O_IDS;
+                query.doExec(sql);
+                sql = "DELETE FROM X_O_UNION WHERE O_UNION_ID = " + O_UNION_ID;
+            }
+            else{
+                sql = "UPDATE X_O_UNION SET O_IDS = '"+O_IDS+"' WHERE O_UNION_ID = " + O_UNION_ID;
+            }
+        }
+        query.doExec(sql);
+        query.free();
+        return true;
+    }
+
+    public boolean setUnion(String O_IDS){
+        System.out.println("O_IDS = " + O_IDS);
+        if(O_IDS.length() == 0 || O_IDS.indexOf(",") == -1){
+            return false;
+        }
+
+        String[] arr = O_IDS.split(",");
+
+        String O_IDS_NEW = "";
+        for(int i=0;i<arr.length; i++){
+            if(i>0){
+                O_IDS_NEW += ",";
+            }
+            if(isUnion(arr[i])){
+                O_IDS_NEW += getUnion(arr[i]);
+            }
+            else{
+                O_IDS_NEW += arr[i];
+            }
+        }
+        IQuery query = getQuery();
+        arr = ArrayUtils.unique(O_IDS_NEW.split(","));
+        O_IDS_NEW = ArrayUtils.join(",", arr);
+       // for(int i=0;i<arr.length; i++){
+            query.doExec("DELETE FROM X_O_UNION WHERE O_UNION_ID IN (SELECT O_UNION_ID FROM X_O WHERE O_ID IN ("+O_IDS_NEW+"))");
+       //}
+       // O_IDS_NEW = ArrayUtils.join(",", arr);
+
+        ITable t = getTable("X_O_UNION");
+        Map data = new Hashtable();
+        long O_UNION_ID =  t.getMaxID("O_UNION_ID");
+        data.put("O_UNION_ID", O_UNION_ID);
+        data.put("O_UNION_DT", DateUtils.getNow());
+        data.put("O_IDS", O_IDS_NEW);
+        data.put("O_UNION_BILL", 1);
+        int result = t.data(data).create();
+        if(result < 0){
+            query.free();
+            return false;
+        }
+        String sql = "UPDATE X_O SET O_UNION_ID = "+O_UNION_ID+" WHERE O_ID IN ("+O_IDS_NEW + ")";
+        result = query.doExec(sql);
+        query.free();
+        if(result < 0){
+            return false;
+        }
+        return true;
+    }
+
+    public boolean isUnion(String O_ID){
+        IQuery query = getQuery();
+        String sql = "SELECT O_UNION_ID FROM X_O WHERE O_ID="+O_ID;
+        String O_UNION_ID = query.doQuery(sql).getValue();
+        if(O_UNION_ID.length() == 0){
+            query.free();
+            return false;
+        }
+        sql = "SELECT * FROM X_O_UNION WHERE O_UNION_ID=" + O_UNION_ID;
+        int count = query.rowCount(sql);
+        query.free();
+        if(count > 0){
+            return true;
+        }
+        return false;
+    }
+
+    public boolean isUnionBill(String O_ID){
+        IQuery query = getQuery();
+        String sql = "SELECT O_UNION_ID FROM X_O WHERE O_ID="+O_ID;
+        String O_UNION_ID = query.doQuery(sql).getValue();
+        if(O_UNION_ID.length() == 0){
+            query.free();
+            return false;
+        }
+        sql = "SELECT * FROM X_O_UNION WHERE O_UNION_BILL = 1 AND O_UNION_ID=" + O_UNION_ID;
+        int count = query.rowCount(sql);
+        query.free();
+        if(count > 0){
+            return true;
+        }
+        return false;
+    }
+
+    public String getUnion(String O_ID){
+        IQuery query = getQuery();
+        String sql = "SELECT O_IDS FROM X_O_UNION WHERE O_UNION_ID IN (SELECT O_UNION_ID FROM X_O WHERE O_ID="+O_ID+")";
+        String O_IDS = query.doQuery(sql).getValue();
+        query.free();
+        return O_IDS;
+    }
+
+    public float getDeskFee(String DESK_ID, String DINE_DT, float DINE_AMOUNT){
+        IQuery query = getQuery();
+        String sql = "SELECT DESK_FEE_TYPE, DESK_FEE_TIME, DESK_FEE, DESK_FEE_COND_1, DESK_FEE_COND_2, DESK_FEE_COND_3 FROM X_DESK_FEE WHERE DESK_ID = " + DESK_ID;
+        String[] DESK_FEE_SET = query.doQuery(sql).get();
+        float DESK_FEE = 0;
+        if(DESK_FEE_SET.length == 0){
+            query.free();
+            return DESK_FEE;
+        }
+        if(DESK_FEE_SET[0].equals("1")){
+            float DESK_FEE_TIME = NumberUtils.toFloat(DESK_FEE_SET[1]);
+            if(DESK_FEE_TIME == 0){
+                query.free();
+                return DESK_FEE;
+            }
+            DESK_FEE = NumberUtils.toFloat(DESK_FEE_SET[2]);
+            float DINE_TIME = DateUtils.getDateMinusMinutes(new Date(), DateUtils.toFullDate(DINE_DT));
+            float TIMEOUT = DINE_TIME - DESK_FEE_TIME * 60;
+            //DESK_FEE += TIMEOUT/60 * NumberUtils.toFloat(DESK_FEE_SET[5]);
+            if(TIMEOUT%60 > NumberUtils.toFloat(DESK_FEE_SET[3])){
+                DESK_FEE += NumberUtils.toFloat(DESK_FEE_SET[4]) * NumberUtils.toFloat(DESK_FEE_SET[5]);
+            }
+        }
+        else if(DESK_FEE_SET[0].equals("3")){
+            sql = "SELECT DESK_FEE_RATE FROM X_DESK_FEE_AREA WHERE DESK_ID=" + DESK_ID + " AND DESK_FEE_AREA >= " + DINE_AMOUNT + " ORDER BY DESK_FEE_AREA";
+            String DESK_FEE_RATE_STR = query.doQuery(sql).getValue();
+            if(DESK_FEE_RATE_STR.length() == 0){
+                sql = "SELECT DESK_FEE_RATE FROM X_DESK_FEE_AREA WHERE DESK_ID=" + DESK_ID + " AND DESK_FEE_AREA <= " + DINE_AMOUNT + " ORDER BY DESK_FEE_AREA DESC";
+                DESK_FEE_RATE_STR  = query.doQuery(sql).getValue();
+            }
+            if(DESK_FEE_RATE_STR.length() == 0){
+                query.free();
+                return DESK_FEE;
+            }
+            float DESK_FEE_RATE = NumberUtils.toFloat(DESK_FEE_RATE_STR);
+            DESK_FEE = NumberUtils.clearZero(DINE_AMOUNT * DESK_FEE_RATE / 100);
+        }
+        query.free();
+        return DESK_FEE;
+    }
+
+    public float getDeskFeeMin(String DESK_ID, String DINE_DT){
+        String[] MT = new MarketTypeAction().getMT(DINE_DT);
+        if(MT.length == 0){
+            return 0;
+        }
+        IQuery query = getQuery();
+        String sql = "SELECT DESK_FEE_MIN FROM X_DESK_FEE_MIN WHERE DESK_ID = " + DESK_ID + " AND DESK_MT_ID = " + MT[0];
+        String  DESK_FEE_MIN = query.doQuery(sql).getValue();
+        float FEE = 0;
+        if(DESK_FEE_MIN.length() > 0){
+            //query.free();
+
+            FEE = NumberUtils.toFloat(DESK_FEE_MIN);
+            //return NumberUtils.toFloat(DESK_FEE_MIN);
+        }
+        if(FEE > 0){
+            query.free();
+            return FEE;
+        }
+        sql = "SELECT DESK_FEE_MIN FROM X_DESK_FEE_MIN WHERE DESK_ID = " + DESK_ID + " AND DESK_MT_ID = 0";
+        DESK_FEE_MIN = query.doQuery(sql).getValue();
+        query.free();
+        if(DESK_FEE_MIN.length() > 0){
+            return NumberUtils.toFloat(DESK_FEE_MIN);
+        }
+        return 0;
+    }
+}

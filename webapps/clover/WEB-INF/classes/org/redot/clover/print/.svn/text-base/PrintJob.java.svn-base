@@ -1,0 +1,181 @@
+package org.redot.clover.print;
+
+import org.redot.clover.print.cases.*;
+import org.redot.library.lang.NumberUtils;
+import org.redot.library.lang.StringUtils;
+
+import java.util.Hashtable;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 11-4-13
+ * Time: 下午9:57
+ * To change this template use File | Settings | File Templates.
+ */
+public class PrintJob extends Thread{
+    public final static int COMMAND_DISH_ORDER = 1;
+    public final static int COMMAND_DISH_ORDER_ADD = 2;
+    public final static int COMMAND_DISH_CANCEL = 3;
+    public final static int COMMAND_DISH_HANG = 4;
+    public final static int COMMAND_DISH_CALL = 5;
+    public final static int COMMAND_DISH_HURRY = 6;
+    public final static int COMMAND_DISH_TRANSFER = 7;
+    public final static int COMMAND_ORDER_BOOK = 8;
+    public final static int COMMAND_ORDER_BILL_PRE = 9;
+    public final static int COMMAND_ORDER_BILL_CHECK = 13;
+    public final static int COMMAND_ORDER_BILL = 10;
+    public final static int COMMAND_ORDER_TRANSFER = 22;
+    public final static int COMMAND_ORDER_EXCHANGE = 21;
+    public final static int COMMAND_ORDER_BILL_ARREAR = 23;
+    public final static int COMMAND_ORDER_BILL_FREE = 24;
+    public final static int COMMAND_ORDER_BILL_LOST = 25;
+
+    public final static int COMMAND_KITCHEN = 11;
+    public final static int COMMAND_KITCHEN_SAME = 12;
+    
+    public final static int COMMAND_PURCHASE_ORDER = 40;
+    public final static int COMMAND_CLIENT_CHARGE = 70;
+    private int command;
+    private Map params = new Hashtable();
+
+    private boolean ok = false;
+
+
+    @Override
+    public void run() {
+        doJob();
+        try {
+            this.finalize();
+        } catch (Throwable throwable) {
+            throwable.printStackTrace();
+        }
+    }
+
+    public boolean isOk() {
+        return ok;
+    }
+
+    private void doJob(){
+        List<Map> caseConfig =  PrintManager.getInstance().getCaseConfig(getCommand());
+        if(caseConfig.size() == 0){
+            System.out.println("case is empty");
+            return;
+        }
+        for(int i=0;i<caseConfig.size();i++){
+            doCase(caseConfig.get(i));
+        }
+        ok = true;
+
+    }
+
+    private synchronized void doCase(Map config){
+        AbstractPrintCase printCase = null;
+        switch (getCommand()){
+            case COMMAND_DISH_ORDER:
+//                printCase = new DishOrderPrintCase();
+                printCase = new DishOrderAddPrintCase();
+                break;
+            case COMMAND_DISH_ORDER_ADD:
+                printCase = new DishOrderAddPrintCase();
+                break;
+            case COMMAND_DISH_CANCEL :
+                printCase = new DishCancelPrintCase();
+                break;
+            case COMMAND_DISH_HANG :
+                printCase = new DishHangPrintCase();
+                break;
+            case COMMAND_DISH_CALL :
+                printCase = new DishCallPrintCase();
+                break;
+            case COMMAND_DISH_HURRY :
+                printCase = new DishHurryPrintCase();
+                break;
+            case COMMAND_DISH_TRANSFER :
+                printCase = new DishTransferPrintCase();
+                break;
+            case COMMAND_KITCHEN :
+                printCase = new KitchenPrintCase();
+                break;
+            case COMMAND_KITCHEN_SAME :
+                printCase = new KitchenPrintCaseSame();
+                break;
+            case COMMAND_ORDER_BOOK :
+                printCase = new OrderBookPrintCase();
+                break;
+            case COMMAND_ORDER_BILL_PRE :
+                printCase = new OrderPreBillPrintCase();
+                break;
+            case COMMAND_ORDER_BILL_CHECK :
+                printCase = new OrderCheckBillPrintCase();
+                break;
+            case COMMAND_ORDER_BILL_ARREAR :
+                printCase = new OrderBillArrearPrintCase();
+                break;
+            case COMMAND_ORDER_BILL_FREE :
+                printCase = new OrderBillFreePrintCase();
+                break;
+            case COMMAND_ORDER_BILL_LOST :
+                printCase = new OrderBillLostPrintCase();
+                break;
+            case COMMAND_ORDER_BILL :
+                printCase = new OrderBillPrintCase();
+                break;
+            case COMMAND_ORDER_TRANSFER :
+                printCase = new OrderTransferPrintCase();
+                break;
+            case COMMAND_ORDER_EXCHANGE :
+                printCase = new OrderExchangePrintCase();
+                break;
+            case COMMAND_PURCHASE_ORDER :
+                printCase = new PurchaseOrderPrintCase();
+                break;
+            case COMMAND_CLIENT_CHARGE :
+                printCase = new ClientChargePrintCase();
+                break;
+            default:
+                printCase = null;
+            break;
+        }
+//        System.out.println("COMMAND = " + getCommand());
+        if(printCase == null){
+            return;
+        }
+        getParams().put("CASE_PS", config.get("CASE_PS"));
+        getParams().put("CASE_PSX", config.get("CASE_PSX"));
+        getParams().put("CASE_PS_AREA", config.get("CASE_PS_AREA"));
+        printCase.setPrams(getParams());
+        printCase.setTemplate(StringUtils.toString(config.get("CASE_TEMPLATE")));
+        printCase.setPrintNum(NumberUtils.toInt(config.get("CASE_NUM")));
+        printCase.setPrinter((Printer)config.get("CASE_PRINTER"));
+        if(NumberUtils.toInt(config.get("CASE_MONEY_BOX")) == 1){
+            printCase.setMoneyBox(true);
+        }
+        printCase.setPrintType(NumberUtils.toInt(config.get("CASE_TYPE")));
+        printCase.process();
+        printCase.print();
+    }
+
+    public PrintJob(int command, Map params) {
+        this.command = command;
+        this.params = params;
+    }
+
+    public int getCommand() {
+        return command;
+    }
+
+    public void setCommand(int command) {
+        this.command = command;
+    }
+
+    public Map getParams() {
+        return params;
+    }
+
+    public void setParams(Map params) {
+        this.params = params;
+    }
+}

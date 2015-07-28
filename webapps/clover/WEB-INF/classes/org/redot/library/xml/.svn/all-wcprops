@@ -1,0 +1,29 @@
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/svn/yee/!svn/ver/12/server/Redot/LiveLibrary/src/org/redot/library/xml
+END
+BeanToXml.java
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/yee/!svn/ver/12/server/Redot/LiveLibrary/src/org/redot/library/xml/BeanToXml.java
+END
+XmlUtils.java
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/yee/!svn/ver/12/server/Redot/LiveLibrary/src/org/redot/library/xml/XmlUtils.java
+END
+XmlReader.java
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/yee/!svn/ver/12/server/Redot/LiveLibrary/src/org/redot/library/xml/XmlReader.java
+END
+XmlToBean.java
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/yee/!svn/ver/12/server/Redot/LiveLibrary/src/org/redot/library/xml/XmlToBean.java
+END

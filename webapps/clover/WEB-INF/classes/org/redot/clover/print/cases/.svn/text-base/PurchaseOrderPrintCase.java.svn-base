@@ -1,0 +1,76 @@
+package org.redot.clover.print.cases;
+
+
+import org.redot.clover.core.CloverManager;
+import org.redot.library.db.IQuery;
+import org.redot.library.lang.NumberUtils;
+import org.redot.library.lang.StringUtils;
+
+import java.util.List;
+import java.util.Map;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 12-11-7
+ * Time: 下午4:49
+ * To change this template use File | Settings | File Templates.
+ */
+public class PurchaseOrderPrintCase extends AbstractPrintCase{
+
+    @Override
+    public void process() {
+        String PO_ID = StringUtils.toString(getPrams().get("PO_ID"));
+        if(PO_ID.length() == 0){
+            setOK(false);
+            return;
+        }
+
+        IQuery query = CloverManager.getInstance().getQuery();
+        String sql = "SELECT A.PO_NO,A.PO_DT_REQ,B.ITEM_NAME,C.UNIT_NAME,A.PO_ITEM_NUM_REQ,A.PO_ITEM_PRICE_REQ,A.PO_AMOUNT,D.ACCOUNT_NAME FROM X_PO A " +
+                "LEFT JOIN X_ITEM B ON B.ITEM_ID = A.PO_ITEM_ID LEFT JOIN X_UNIT C ON C.UNIT_ID = A.PO_ITEM_UNIT_ID " +
+                "LEFT JOIN X_ACCOUNT D ON D.ACCOUNT_ID = A.PO_MAKER WHERE  PO_ID IN ( " + PO_ID + ")";
+        System.out.println(sql);
+        List<Map> POP = query.doQuery(sql).tables();
+        int count = POP.size();
+        if(count == 0){
+            setOK(false);
+            query.free();
+            return;
+        }
+        String[] PO_NO = new String[count];
+        String[] PO_DT_REQ = new String[count]; 
+        String[] ITEM_NAME = new String[count];
+        String[] UNIT_NAME = new String[count];
+        String[] PO_ITEM_NUM_REQ = new String[count];
+        String[] PO_ITEM_PRICE_REQ = new String[count];
+        String[] PO_AMOUNT = new String[count];
+        String[] ACCOUNT_NAME = new String[count];
+        setDataLen(count);
+
+        for(int i=0; i<POP.size(); i++){
+            Map P = POP.get(i);
+            PO_NO[i] = StringUtils.toString(P.get("PO_NO"));
+            PO_DT_REQ[i] = StringUtils.toString(P.get("PO_DT_REQ"));
+            ITEM_NAME[i] = StringUtils.toString(P.get("ITEM_NAME"));
+            UNIT_NAME[i] = StringUtils.toString(P.get("UNIT_NAME"));
+            PO_ITEM_NUM_REQ[i] = StringUtils.toString(P.get("PO_ITEM_NUM_REQ"));
+            float PRICE = NumberUtils.toFloat(P.get("PO_ITEM_PRICE_REQ"));
+            PO_ITEM_PRICE_REQ[i] = StringUtils.toString(NumberUtils.toDecimal(PRICE, 1));
+            float AMOUNT = NumberUtils.toFloat(P.get("PO_AMOUNT"));
+            PO_AMOUNT[i] = StringUtils.toString(NumberUtils.toDecimal(AMOUNT,1));
+            ACCOUNT_NAME[i] = StringUtils.toString(P.get("ACCOUNT_NAME"));
+        }
+
+        getData().put("采购单号", PO_NO);
+        getData().put("申请采购时间", PO_DT_REQ);
+        getData().put("采购物料", ITEM_NAME);
+        getData().put("单位", UNIT_NAME);
+        getData().put("申请数量", PO_ITEM_NUM_REQ);
+        getData().put("参考价格", PO_ITEM_PRICE_REQ);
+        getData().put("总金额", PO_AMOUNT);
+        getData().put("申请人", ACCOUNT_NAME);
+
+        query.free();
+    }
+}

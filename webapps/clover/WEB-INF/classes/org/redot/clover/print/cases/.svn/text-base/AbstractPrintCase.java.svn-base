@@ -1,0 +1,206 @@
+package org.redot.clover.print.cases;
+
+import org.redot.clover.print.PrintManager;
+import org.redot.clover.print.PrintProxy;
+import org.redot.clover.print.PrintService;
+import org.redot.clover.print.Printer;
+
+import java.util.*;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 11-4-13
+ * Time: 下午11:22
+ * To change this template use File | Settings | File Templates.
+ */
+public abstract class AbstractPrintCase {
+    private HashMap<String, String[]> data = new HashMap<String, String[]>();
+    private HashMap<String, String[]> dataX = new HashMap<String, String[]>();
+    private int dataLen = 0;
+    private Printer printer;
+
+    private int printNum = 1;
+
+
+
+    private int printType = 0;
+
+    private boolean moneyBox = false;
+
+    private String template;
+
+    private List<Printer> printerList;
+
+    private boolean isOK = true ;
+
+    public void setOK(boolean OK) {
+        isOK = OK;
+    }
+
+    public Map getPrams() {
+        return prams;
+    }
+
+    public void setPrams(Map prams) {
+        this.prams = prams;
+    }
+
+    private Map prams;
+
+    public AbstractPrintCase(){
+
+    }
+
+    public abstract void process();
+
+    public HashMap<String, String[]> getData() {
+        return data;
+    }
+
+    public void setData(HashMap<String, String[]> data) {
+        this.data = data;
+    }
+
+    public void print(){
+        if(!isOK){
+            return;
+        }
+//        if(getData().get("菜品名称") == null || getData().get("菜品名称").length == 0){
+//            return;
+//        }
+//        System.out.println("打印中");
+        if(getDataX().size()  == 0 || getDataLen() == 0){
+            PrintManager.getInstance().addProxy(new PrintProxy(getPrinter(), getData(), getTemplate(), getPrintNum(), isMoneyBox()));
+            return;
+        }
+        if(getPrintType() == 1){
+
+            Set<String> keys = getDataX().keySet();
+            for(int i=0;i<getDataLen();i++){
+                HashMap<String, String[]> d = new HashMap<String, String[]>();
+                for(String key : keys){
+                    String[] values = getDataX().get(key);
+                    String value = i < values.length ? values[i]:"";
+                    d.put(key, new String[]{value});
+                }
+                d.putAll(getData());
+                PrintManager.getInstance().addProxy(new PrintProxy(getPrinter(), d, getTemplate(), getPrintNum(), isMoneyBox()));
+            }
+            return;
+        }
+        if(getPrintType() == 2){
+            String[] P_TYPE = getDataX().get("菜品类别ID");
+            if(P_TYPE == null || P_TYPE.length == 0){
+                PrintManager.getInstance().addProxy(new PrintProxy(getPrinter(), getData(), getTemplate(), getPrintNum(), isMoneyBox()));
+                return;
+            }
+            List<String> types = new ArrayList<String>();
+            for(int i=0; i<P_TYPE.length; i++){
+                if(types.contains(P_TYPE[i])){
+                    continue;
+                }
+                types.add(P_TYPE[i]);
+            }
+            Set<String> keys = getDataX().keySet();
+            for(String type : types){
+                HashMap<String, String[]> d = new HashMap<String, String[]>();
+                String[] ts = getDataX().get("菜品类别ID");
+                List<Integer> index = new ArrayList<Integer>();
+                for(int i=0;i<ts.length;i++){
+                    if(ts[i].equals(type)){
+                        index.add(i);
+                    }
+                }
+                for(String key : keys){
+                    String[] values = getDataX().get(key);
+                    String[] vx = new String[index.size()];
+                    for(int i=0;i<index.size();i++){
+                        vx[i] = values[index.get(i)];
+                    }
+                    d.put(key, vx);
+                }
+                d.putAll(getData());
+                PrintManager.getInstance().addProxy(new PrintProxy(getPrinter(), d, getTemplate(), getPrintNum(), isMoneyBox()));
+            }
+
+            return;
+        }
+
+        getData().putAll(getDataX());
+        PrintManager.getInstance().addProxy(new PrintProxy(getPrinter(), getData(), getTemplate(), getPrintNum(), isMoneyBox()));
+
+
+        //PrintService.doPrint(getPrinter(), getData(), getTemplate(), getPrintNum(), isMoneyBox());
+        return;
+    }
+
+       public void print2(){
+           if(!isOK){
+            return;
+        }
+//        System.out.println("打印中");
+       //rintService.doPrint(getPrinterList(), getData(), getTemplate(),  isMoneyBox());
+       // return;
+    }
+
+    public Printer getPrinter() {
+        return printer;
+    }
+
+    public void setPrinter(Printer printer) {
+        this.printer = printer;
+    }
+
+    public int getPrintNum() {
+        return printNum;
+    }
+
+    public void setPrintNum(int printNum) {
+        this.printNum = printNum;
+    }
+
+    public boolean isMoneyBox() {
+        return moneyBox;
+    }
+
+    public void setMoneyBox(boolean moneyBox) {
+        this.moneyBox = moneyBox;
+    }
+
+    public String getTemplate() {
+        return template;
+    }
+
+    public void setTemplate(String template) {
+        this.template = template;
+    }
+
+    public void setPrinterList(List<Printer> printerList) {
+        this.printerList = printerList;
+    }
+
+    public List<Printer>  getPrinterList() {
+        return printerList;
+    }
+
+    public int getPrintType() {
+        return printType;
+    }
+
+    public void setPrintType(int printType) {
+        this.printType = printType;
+    }
+
+    public HashMap<String, String[]> getDataX() {
+        return dataX;
+    }
+
+    public int getDataLen() {
+        return dataLen;
+    }
+
+    public void setDataLen(int dataLen) {
+        this.dataLen = dataLen;
+    }
+}

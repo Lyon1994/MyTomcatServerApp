@@ -1,0 +1,124 @@
+package org.redot.library.db;
+
+import com.jolbox.bonecp.BoneCP;
+import com.jolbox.bonecp.BoneCPConfig;
+import com.jolbox.bonecp.BoneCPDataSource;
+import com.mchange.v2.c3p0.ComboPooledDataSource;
+
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.beans.PropertyVetoException;
+
+import org.apache.log4j.Logger;
+
+/**
+ * Copyright By Redot.
+ * User: CASH
+ * Date: 2009-10-14
+ * Time: 14:40:22
+ */
+public class IDataSource {
+
+    Logger logger = Logger.getLogger(this.getClass());
+
+    private IDataBase db = null;
+
+    private BoneCP ds;
+//    private ComboPooledDataSource ds;
+
+    public IDataSource(IDataBase db) {
+        this.db = db;
+//        ds = new ComboPooledDataSource();
+        //ds = new BoneCPDataSource();
+
+    }
+
+    public boolean init(){
+        try {
+             logger.info("databse:"+db.getName()+",set db driver");
+			Class.forName(IDataBaseType.getDriver(db.getType()));
+		} catch (Exception e) {
+			logger.error("databse:"+db.getName()+",can't set db driver");
+            logger.error(e);
+            return false;
+		}
+        BoneCPConfig config = new BoneCPConfig();
+
+        config.setUsername(db.getUser());
+		config.setPassword(db.getPass());
+		config.setJdbcUrl(db.getUrl());
+		config.setMaxConnectionsPerPartition(20);
+		config.setMinConnectionsPerPartition(5);
+		config.setIdleConnectionTestPeriod(60);
+		config.setIdleMaxAge(240);
+		config.setAcquireIncrement(5);
+		config.setReleaseHelperThreads(3);
+
+        config.setPartitionCount(5);
+//        config.setCloseConnectionWatch(true);
+        try {
+            ds = new BoneCP(config);
+        } catch (SQLException e) {
+            logger.error("databse:" + db.getName() + ",can't init");
+            logger.error(e);
+            return false;
+        }
+//        ds.setIdleConnectionTestPeriodInSeconds(60);
+//        ds.setIdleMaxAgeInSeconds(240);
+//        ds.setDisableConnectionTracking(true);
+//        ds.setCloseConnectionWatch(true);
+//        ds.getConfig().setCloseConnectionWatch(true);
+        /*
+        try {
+            logger.info("databse:"+db.getName()+",set db driver");
+            ds.setDriverClass(IDataBaseType.getDriver(db.getType()));
+        } catch (PropertyVetoException e) {
+            logger.error("databse:"+db.getName()+",can't set db driver");
+            logger.error(e);
+            return false;
+        }
+        ds.setJdbcUrl(db.getUrl());
+        ds.setUser(db.getUser());
+        ds.setPassword(db.getPass());
+        ds.setCheckoutTimeout(3000);
+        ds.setInitialPoolSize(1);
+        ds.setMaxPoolSize(20);
+        ds.setMaxIdleTime(5);
+        ds.setAcquireIncrement(1);
+        ds.setAcquireRetryAttempts(30);
+        ds.setAcquireRetryDelay(1000);
+        ds.setTestConnectionOnCheckin(true);
+        ds.setAutomaticTestTable("C3P0_TEST");
+        ds.setIdleConnectionTestPeriod(18000);
+        */
+        Connection conn = getConnection();
+        if(conn == null){
+            logger.error("databse:"+db.getName()+",can't init db pool : get a connection");
+            return false;
+        }
+        
+        //db.setQuery(new IQuery(db));
+        return true;
+    }
+
+    public synchronized final Connection getConnection(){
+        try {
+            return ds.getConnection();
+        } catch (SQLException e) {
+            logger.error("databse:"+db.getName()+",can't get connection");
+            logger.error(e);
+            //e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+        }
+        return null;
+    }
+
+    protected void destroy(){
+        ds.shutdown();
+//        ds.close();
+        //ds = null;
+    }
+
+
+
+
+}

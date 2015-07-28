@@ -1,0 +1,944 @@
+package org.redot.clover.app.order;
+
+import org.redot.clover.app.system.MarketTypeAction;
+import org.redot.clover.core.CloverManager;
+import org.redot.clover.core.ext.BaseAction;
+import org.redot.clover.core.ext.Params;
+import org.redot.library.db.IQuery;
+import org.redot.library.db.ITable;
+import org.redot.library.lang.ArrayUtils;
+import org.redot.library.lang.DateUtils;
+import org.redot.library.lang.NumberUtils;
+import org.redot.library.lang.StringUtils;
+import org.restlet.data.Form;
+
+import javax.xml.crypto.Data;
+import java.util.*;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 11-8-19
+ * Time: 下午2:51
+ * To change this template use File | Settings | File Templates.
+ */
+public class OrderReportAction extends BaseAction {
+
+    public Map cash() {
+        IQuery query = getQuery();
+        String sql = "SELECT SUM(TAKE_MONEY_AMOUNT) FROM X_TAKE_MONEY";
+        float TAKE_MONEY_AMOUNT = NumberUtils.toFloat(query.doQuery(sql).getValue());
+        sql = "SELECT SUM(BILL_PAY_AMOUNT) FROM X_BILL_PAY WHERE BILL_PAY_TYPE = 1";
+        float CASH = NumberUtils.toFloat(query.doQuery(sql).getValue()) - TAKE_MONEY_AMOUNT;
+        query.free();
+        Map data = new Hashtable();
+        data.put("CASH", CASH);
+        return data;
+    }
+
+    public List<Map> listTakeMoney(Params params) {
+        String DATE_S = StringUtils.toString(params.val("DATE_S"));
+        String DATE_E = StringUtils.toString(params.val("DATE_E"));
+        if (DATE_S.length() == 0) {
+            DATE_S = DateUtils.getNowDate();
+        }
+        if (DATE_E.length() == 0) {
+            DATE_E = DateUtils.getNowDate();
+        }
+        if (DATE_S.compareTo(DATE_E) > 0) {
+            DATE_S = DateUtils.getNowDate();
+            DATE_E = DateUtils.getNowDate();
+        }
+        String TAKER_ID = StringUtils.toString(params.val("TAKER_ID"));
+        String FROM_USER_ID = StringUtils.toString(params.val("FROM_USER_ID"));
+        String CS = "";
+        if (TAKER_ID.length() > 0) {
+            CS += " AND TAKE_MONEY_TAKER_ID = " + TAKER_ID;
+        }
+        if (FROM_USER_ID.length() > 0) {
+            CS += " AND TAKE_MONEY_FROM_USER_ID = " + FROM_USER_ID;
+        }
+        String sql = "SELECT * FROM X_TAKE_MONEY WHERE SUBSTRING(TAKE_MONEY_DT, 1, 10) >= '" + DATE_S + "' AND SUBSTRING(TAKE_MONEY_DT, 1, 10) <= '" + DATE_E + "'" + CS + " ORDER BY TAKE_MONEY_DT DESC";
+        System.out.println(sql);
+        IQuery query = getQuery();
+        List<Map> data = query.doQuery(sql).tables();
+        query.free();
+        return data;
+    }
+
+    public int takeMoney(Form form) {
+        Map data = form.getValuesMap();
+        String TAKE_MONEY_AMOUNT = StringUtils.toString(data.get("TAKE_MONEY_AMOUNT"));
+        String TAKE_MONEY_TAKER_ID = StringUtils.toString(data.get("TAKE_MONEY_TAKER_ID"));
+        if (TAKE_MONEY_AMOUNT.length() == 0 || TAKE_MONEY_TAKER_ID.length() == 0) {
+            return CloverManager.CODE_FAILED;
+        }
+        String ACCOUNT_ID = StringUtils.toString(getClient().getCookies().get("ACCOUNT_ID"));
+        String ACCOUNT_NAME = StringUtils.toString(getClient().getCookies().get("ACCOUNT_NAME"));
+        if (ACCOUNT_ID.length() == 0 || ACCOUNT_NAME.length() == 0) {
+            return CloverManager.CODE_FAILED;
+        }
+        ITable T = getTable("X_TAKE_MONEY").clearData();
+        data.put("TAKE_MONEY_ID", T.getMaxID("TAKE_MONEY_ID"));
+        data.put("TAKE_MONEY_DT", DateUtils.getNow());
+        data.put("TAKE_MONEY_FROM_USER", ACCOUNT_NAME);
+        data.put("TAKE_MONEY_FROM_USER_ID", ACCOUNT_ID);
+        int result = T.data(data).create();
+        if (result < 0) {
+            return CloverManager.CODE_FAILED;
+        }
+        return CloverManager.CODE_SUCCESS;
+    }
+
+    public Map<String, Float> createDayMap(List<Map> MTS) {
+        Map<String, Float> m = new Hashtable<String, Float>();
+        m.put("0", 0F);
+        for (Map MT : MTS) {
+            m.put(StringUtils.toString(MT.get("MT_ID")), 0F);
+        }
+        return m;
+    }
+
+    public void setDayMap(Map<String, Float> m, String key, Float val, boolean isPlus) {
+        if (m.containsKey(key)) {
+            if (isPlus) {
+                m.put(key, m.get(key) + val);
+            } else {
+                m.put(key, m.get(key) - val);
+            }
+        } else {
+            if (isPlus) {
+                m.put(key, val);
+            } else {
+                m.put(key, -val);
+            }
+        }
+    }
+
+    public Float getDayMapValue(Map data, String key, String subkey) {
+        if (!data.containsKey(key)) {
+            return 0F;
+        }
+        Map<String, Float> d = (Map<String, Float>) data.get(key);
+        if (!d.containsKey(subkey)) {
+            return 0F;
+        }
+        return d.get(subkey);
+    }
+
+    public Map<String, Float> getDayMapValue(Map data, String key) {
+        Map<String, Float> d = (Map<String, Float>) data.get(key);
+        return d;
+    }
+
+    public void processDayMap(Map data, Map dataWeek, Map dataMonth, Map dataMonthPrevious, String key) {
+        Map<String, Float> m = getDayMapValue(data, key);
+//        String percent = NumberUtils.toPercent(NumberUtils.toDouble( m.get("0") /  getDayMapValue(dataMonth, key, "0")), 2);
+        //data.put(key + "_PERCENT", percent);
+        m.put("WEEK", getDayMapValue(dataWeek, key, "0"));
+        m.put("MONTH", getDayMapValue(dataMonth, key, "0"));
+        m.put("MONTH_PREV", getDayMapValue(dataMonthPrevious, key, "0"));
+    }
+     public void processDayMap_(Map data, String key) {
+         Map<String, Float> m = getDayMapValue(data, key);
+        String[] keys = m.keySet().toArray(new String[m.size()]);
+        for (String _key : keys) {
+
+            if (_key.indexOf("0-") == -1) {
+                continue;
+            }
+            float amount = 0f;
+            for (String __key : keys) {
+                if (__key.indexOf("0-") == -1) {
+                    continue;
+                }
+                amount += m.get(__key);
+            }
+            String percent = NumberUtils.toPercent(NumberUtils.toDouble(m.get(_key) / amount), 2);
+            data.put(key + "_PERCENT-" + _key, percent);
+        }
+    }
+
+    public void processDayMapX(Map data, String key, String keyP) {
+         Map<String, Float> m = getDayMapValue(data, key);
+         Map<String, Float> mx = getDayMapValue(data, keyP);
+        String[] keys = m.keySet().toArray(new String[m.size()]);
+        float amount = mx.get("0");
+        for (String _key : keys) {
+
+            if (_key.indexOf("0-") == -1) {
+                continue;
+            }
+
+//            for (String __key : keys) {
+//                if (__key.indexOf("0-") == -1) {
+//                    continue;
+//                }
+//                amount += m.get(__key);
+//            }
+            String percent = NumberUtils.toPercent(NumberUtils.toDouble(m.get(_key) / amount), 2);
+            data.put(key + "_PERCENT-" + _key, percent);
+        }
+    }
+
+    public void processDayMapX_(Map data, String key, String keyP) {
+         Map<String, Float> m = getDayMapValue(data, key);
+         Map<String, Float> mx = getDayMapValue(data, keyP);
+        float amount = mx.get("0");
+
+        String percent = NumberUtils.toPercent(NumberUtils.toDouble(m.get("0") / amount), 2);
+         data.put(key + "_PERCENT", percent);
+    }
+
+    public void processDayMap_(Map data, Map dataWeek, Map dataMonth, Map dataMonthPrevious, String key) {
+        Map<String, Float> m = getDayMapValue(data, key);
+        String[] keys = m.keySet().toArray(new String[m.size()]);
+        for (String _key : keys) {
+
+            if (_key.indexOf("0-") == -1) {
+                continue;
+            }
+            float amount = 0f;
+            for (String __key : keys) {
+                if (__key.indexOf("0-") == -1) {
+                    continue;
+                }
+                amount += m.get(__key);
+            }
+            String percent = NumberUtils.toPercent(NumberUtils.toDouble(m.get(_key) / amount), 2);
+            data.put(key + "_PERCENT-" + _key, percent);
+            m.put(_key + "-WEEK", getDayMapValue(dataWeek, key, _key));
+            m.put(_key + "-MONTH", getDayMapValue(dataMonth, key, _key));
+            m.put(_key + "-MONTH_PREV", getDayMapValue(dataMonthPrevious, key, _key));
+        }
+
+    }
+
+    public Map reportDay(Form form) {
+        if(form == null){
+            form = new Form();
+        }
+//        String QUERY_DATE = "";
+        String DATE_S = StringUtils.toString(form.getFirstValue("DATE_S"));
+        String DATE_E = StringUtils.toString(form.getFirstValue("DATE_E"));
+
+        if (DATE_S.length() == 0) {
+            DATE_S = DateUtils.getNowDate();
+        }
+        if (DATE_E.length() == 0) {
+            DATE_E = DateUtils.getNowDate();
+        }
+        if (DATE_S.compareTo(DATE_E) > 0) {
+            DATE_S = DateUtils.getNowDate();
+            DATE_E = DateUtils.getNowDate();
+        }
+
+        System.out.println("DATE_S = " + DATE_S);
+        System.out.println("DATE_E = " + DATE_E);
+
+        Map data = reportDay(DATE_S, DATE_E);
+        data.put("DATE_S", DATE_S);
+        data.put("DATE_E", DATE_E);
+//        String DATE_WEEK_FIRST = DateUtils.formatDate(DateUtils.getFirstDateOfWeek(DateUtils.toDate(QUERY_DATE)));
+//        String DATE_WEEK_LAST = DateUtils.formatDate(DateUtils.getLastDateOfWeek(DateUtils.toDate(QUERY_DATE)));
+//        Map dataWeek = reportDay(DATE_WEEK_FIRST, DATE_WEEK_LAST);
+//        String DATE_MONTH_FIRST = DateUtils.formatDate(DateUtils.getFirstDateOfMonth(DateUtils.toDate(QUERY_DATE)));
+//        String DATE_MONTH_LAST = DateUtils.formatDate(DateUtils.getLastDateOfMonth(DateUtils.toDate(QUERY_DATE)));
+//        String DATE_MONTH_PREV = DateUtils.formatDate(DateUtils.getDateOfPreviousMonth(DateUtils.toDate(QUERY_DATE)));
+//        Map dataMonth = reportDay(DATE_MONTH_FIRST, DATE_MONTH_LAST);
+//        Map dataMonthPrevious = reportDay(DATE_MONTH_PREV, DATE_MONTH_PREV);
+//        processDayMap(data, dataWeek, dataMonth, dataMonthPrevious, "O_NUM");
+//        processDayMap(data, dataWeek, dataMonth, dataMonthPrevious, "O_DINE_NOP");
+//        processDayMap(data, dataWeek, dataMonth, dataMonthPrevious, "AMOUNT_AVG");
+//        processDayMap(data, dataWeek, dataMonth, dataMonthPrevious, "AMOUNT_P");
+//        processDayMap(data, dataWeek, dataMonth, dataMonthPrevious, "AMOUNT_DP");
+//        processDayMap(data, dataWeek, dataMonth, dataMonthPrevious, "AMOUNT_P_GIVE");
+//        processDayMap(data, dataWeek, dataMonth, dataMonthPrevious, "AMOUNT_P_DISCOUNT");
+//        processDayMap(data, dataWeek, dataMonth, dataMonthPrevious, "AMOUNT_FREE");
+//        processDayMap(data, dataWeek, dataMonth, dataMonthPrevious, "AMOUNT_LOST");
+//        processDayMap(data, dataWeek, dataMonth, dataMonthPrevious, "AMOUNT_DESK_FEE_MIN");
+//        processDayMap(data, dataWeek, dataMonth, dataMonthPrevious, "AMOUNT_SC");
+//        processDayMap(data, dataWeek, dataMonth, dataMonthPrevious, "AMOUNT_DISCOUNT");
+//        processDayMap(data, dataWeek, dataMonth, dataMonthPrevious, "AMOUNT_ZERO");
+//        processDayMap(data, dataWeek, dataMonth, dataMonthPrevious, "AMOUNT_FAVORABLE");
+//        processDayMap(data, dataWeek, dataMonth, dataMonthPrevious, "AMOUNT_HANG");
+//        processDayMap(data, dataWeek, dataMonth, dataMonthPrevious, "AMOUNT_ARREAR");
+//        processDayMap(data, dataWeek, dataMonth, dataMonthPrevious, "AMOUNT");
+//        processDayMap_(data, dataWeek, dataMonth, dataMonthPrevious, "AMOUNT_P_TYPE");
+//        processDayMap_(data, dataWeek, dataMonth, dataMonthPrevious, "AMOUNT_PAY_TYPE");
+        processDayMapX(data, "AMOUNT_PAY_TYPE", "AMOUNT_ALL");
+        processDayMapX(data, "AMOUNT_P_TYPE", "AMOUNT_ALL_P");
+        processDayMapX_(data, "AMOUNT_ARREAR", "AMOUNT_ALL");
+        processDayMapX_(data, "AMOUNT_NOT", "AMOUNT_ALL");
+
+
+//        Map<String, Float> AMOUNT_DESK_FEE_MIN = getDayMapValue(data, "AMOUNT_DESK_FEE_MIN");
+//        Map<String, Float> AMOUNT_SC = getDayMapValue(data, "AMOUNT_SC");
+//        Map<String, Float> AMOUNT_DISCOUNT = getDayMapValue(data, "AMOUNT_DISCOUNT");
+//        Map<String, Float> AMOUNT_ZERO = getDayMapValue(data, "AMOUNT_ZERO");
+//        Map<String, Float> AMOUNT_FAVORABLE = getDayMapValue(data, "AMOUNT_FAVORABLE");
+//        Map<String, Float> AMOUNT_HANG = getDayMapValue(data, "AMOUNT_HANG");
+//        Map<String, Float> AMOUNT_ARREAR = getDayMapValue(data, "AMOUNT_ARREAR");
+//        Map<String, Float> AMOUNT = getDayMapValue(data, "AMOUNT");
+//        String percent = NumberUtils.toPercent(NumberUtils.toDouble( O_DINE_NOP.get("0") /  getDayMapValue(dataMonth, "O_DINE_NOP", "0")), 2);
+//        data.put("O_DINE_NOP_PERCENT", percent);
+//        O_DINE_NOP.put("WEEK", getDayMapValue(dataWeek, "O_DINE_NOP", "0"));
+//        O_DINE_NOP.put("MONTH", getDayMapValue(dataMonth, "O_DINE_NOP", "0"));
+//        O_DINE_NOP.put("MONTH_PREV", getDayMapValue(dataMonthPrevious, "O_DINE_NOP", "0"));
+        return data;
+    }
+
+    public void processDayMapClearZero(Map<String, Float> data) {
+        String[] keys = data.keySet().toArray(new String[data.size()]);
+        for (String key : keys) {
+            data.put(key, NumberUtils.clearZero(data.get(key)) + 0F);
+        }
+    }
+
+    public Map reportDay(String DATE_S, String DATE_E) {
+        Map data = new Hashtable();
+        MarketTypeAction mta = new MarketTypeAction();
+        String[] MT = mta.getMTX(DATE_S, DATE_E, "0");
+        String MT_DT_S = MT[2];
+        String MT_DT_E = MT[3];
+        IQuery query = getQuery();
+        data.clear();
+        List<Map> MTS = mta.list();
+        data.put("MT", MTS);
+        String sql = "SELECT P_TYPE_ID, P_TYPE_NAME FROM X_P_TYPE WHERE P_TYPE_PARENT = 0 AND P_TYPE_STATUS = 1 ORDER BY P_TYPE_SORT";
+        List<Map> P_TYPES = query.doQuery(sql).tables();
+        Map<String, Float> AMOUNT_P_TYPE = new Hashtable<String, Float>();
+        for (Map P_TYPE : P_TYPES) {
+            String P_TYPE_ID = StringUtils.toString(P_TYPE.get("P_TYPE_ID"));
+            AMOUNT_P_TYPE.put("0-" + P_TYPE_ID, 0F);
+            for (Map _MT : MTS) {
+                AMOUNT_P_TYPE.put(StringUtils.toString(_MT.get("MT_ID")) + "-" + P_TYPE_ID, 0F);
+            }
+        }
+        data.put("P_TYPE", P_TYPES);
+        sql = "SELECT PAY_TYPE_ID, PAY_TYPE_NAME FROM X_PAY_TYPE ORDER BY PAY_TYPE_ID";
+        List<Map> PAY_TYPES = query.doQuery(sql).tables();
+        Map<String, Float> AMOUNT_PAY_TYPE = new Hashtable<String, Float>();
+        for (Map PAY_TYPE : PAY_TYPES) {
+            String PAY_TYPE_ID = StringUtils.toString(PAY_TYPE.get("PAY_TYPE_ID"));
+            AMOUNT_PAY_TYPE.put("0-" + PAY_TYPE_ID, 0F);
+            for (Map _MT : MTS) {
+                AMOUNT_PAY_TYPE.put(StringUtils.toString(_MT.get("MT_ID")) + "-" + PAY_TYPE_ID, 0F);
+            }
+        }
+        data.put("PAY_TYPE", PAY_TYPES);
+        sql = "SELECT A.* FROM X_O A " +
+                "WHERE A.O_STATUS >=4 AND A.O_DINE_DT >= '" + MT_DT_S + "' AND A.O_DINE_DT <= '" + MT_DT_E + "' ORDER BY A.O_DINE_DT";
+        System.out.println(sql);
+        List<Map> OS = query.doQuery(sql).tables();
+        Map<String, Float> O_NUM = createDayMap(MTS);
+        Map<String, Float> O_DINE_NOP = createDayMap(MTS);
+        Map<String, Float> AMOUNT_AVG_P = createDayMap(MTS);
+        Map<String, Float> AMOUNT_AVG_O = createDayMap(MTS);
+        Map<String, Float> AMOUNT_P = createDayMap(MTS);
+        Map<String, Float> AMOUNT_ALL_P = createDayMap(MTS);
+        Map<String, Float> AMOUNT_DP = createDayMap(MTS);
+        Map<String, Float> AMOUNT_P_CANCEL = createDayMap(MTS);
+        Map<String, Float> AMOUNT_P_GIVE = createDayMap(MTS);
+        Map<String, Float> AMOUNT_P_DISCOUNT = createDayMap(MTS);
+        Map<String, Float> AMOUNT_FREE = createDayMap(MTS);
+        Map<String, Float> AMOUNT_LOST = createDayMap(MTS);
+        Map<String, Float> AMOUNT_DESK_FEE_MIN = createDayMap(MTS);
+        Map<String, Float> AMOUNT_SC = createDayMap(MTS);
+        Map<String, Float> AMOUNT_DISCOUNT = createDayMap(MTS);
+        Map<String, Float> AMOUNT_ZERO = createDayMap(MTS);
+        Map<String, Float> AMOUNT_FAVORABLE_CASE = createDayMap(MTS);
+//        Map<String, Float> AMOUNT_FAVORABLE_ALL = createDayMap(MTS);
+        Map<String, Float> AMOUNT_HANG = createDayMap(MTS);
+        Map<String, Float> AMOUNT_ARREAR = createDayMap(MTS);
+        Map<String, Float> AMOUNT = createDayMap(MTS);
+        Map<String, Float> AMOUNT_PAY = createDayMap(MTS);
+        Map<String, Float> AMOUNT_NOT = createDayMap(MTS);
+        Map<String, Float> AMOUNT_ALL = createDayMap(MTS);
+        Map<String, Float> AMOUNT_ALLX = createDayMap(MTS);
+        Map<String, String> BM = new Hashtable<String, String>();
+        Map<String, String> OM = new Hashtable<String, String>();
+        Map<String, String> OMN = new Hashtable<String, String>();
+        for (Map O : OS) {
+            String O_MT_ID = StringUtils.toString(O.get("O_MT_ID"));
+            String O_ID = StringUtils.toString(O.get("O_ID"));
+            String O_BILL_ID = StringUtils.toString(O.get("O_BILL_ID"));
+            int O_STATUS = NumberUtils.toInt(O.get("O_STATUS"));
+            int _O_DINE_NOP = NumberUtils.toInt(O.get("O_DINE_NOP"));
+            float DP = NumberUtils.toFloat(O.get("O_DP"));
+
+            setDayMap(O_NUM, "0", 1f, true);
+            setDayMap(O_NUM, O_MT_ID, 1f, true);
+
+            setDayMap(O_DINE_NOP, "0", _O_DINE_NOP + 0f, true);
+            setDayMap(O_DINE_NOP, O_MT_ID, _O_DINE_NOP + 0f, true);
+
+            OM.put(O_ID, O_MT_ID);
+            if (O_BILL_ID.length() > 0) {
+                BM.put(O_BILL_ID, O_MT_ID);
+            }
+            else{
+                OMN.put(O_ID, O_MT_ID);
+            }
+//            if (O_STATUS < 6) {
+//                OMN.put(O_ID, O_MT_ID);
+//            }
+
+            setDayMap(AMOUNT_DP, "0", DP, true);
+            setDayMap(AMOUNT_DP, O_MT_ID, DP, true);
+        }
+        String O_IDS = ArrayUtils.join(",", OM.keySet().toArray());
+        String BILL_IDS = ArrayUtils.join(",", BM.keySet().toArray());
+        if (O_IDS.length() > 0) {
+            if (BILL_IDS.length() > 0) {
+
+                sql = "SELECT A.* FROM X_BILL A " +
+                        "INNER JOIN (" +
+                        "SELECT O_BILL_ID FROM X_O WHERE O_STATUS >=4 AND O_DINE_DT >= '" + MT_DT_S + "' AND O_DINE_DT <= '" + MT_DT_E + "' GROUP BY O_BILL_ID" +
+                        ") B ON A.BILL_ID = B.O_BILL_ID ";
+//                System.out.println(sql);
+                List<Map> BS = query.doQuery(sql).tables();
+                for (Map B : BS) {
+                    String BILL_ID = StringUtils.toString(B.get("BILL_ID"));
+                    float BILL_AMOUNT_P = NumberUtils.toFloat(B.get("BILL_AMOUNT_P"));
+                    float BILL_DISCOUNT = NumberUtils.toFloat(B.get("BILL_DISCOUNT"));
+                    float BILL_AMOUNT = NumberUtils.toFloat(B.get("BILL_AMOUNT"));
+                    float BILL_AMOUNT_PAY = NumberUtils.toFloat(B.get("BILL_AMOUNT_PAY"));
+                    float BILL_AMOUNT_DESK_FEE_MIN = NumberUtils.toFloat(query.doQuery("SELECT BILL_FEE FROM X_BILL_FEE WHERE BILL_FEE_TYPE=3 AND BILL_ID=" + BILL_ID).getValue());
+                    //float BILL_AMOUNT_DESK_FEE_MIN = NumberUtils.toFloat(B.get("BILL_AMOUNT_DESK_FEE_MIN"));
+                    float BILL_AMOUNT_SC = NumberUtils.toFloat(B.get("BILL_AMOUNT_SC"));
+                    float BILL_AMOUNT_ZERO = NumberUtils.toFloat(B.get("BILL_AMOUNT_ZERO"));
+                    float BILL_AMOUNT_FAVORABLE_ALL = NumberUtils.toFloat(B.get("BILL_AMOUNT_FAVORABLE_ALL"));
+                    float BILL_AMOUNT_FAVORABLE_CASE = NumberUtils.toFloat(B.get("BILL_AMOUNT_FAVORABLE_CASE"));
+                    float BILL_AMOUNT_FAVORABLE_DISCOUNT = NumberUtils.toFloat(B.get("BILL_AMOUNT_FAVORABLE_DISCOUNT"));
+                    String BILL_STATUS = StringUtils.toString(B.get("BILL_STATUS"));
+                    float BILL_AMOUNT_NOT = BILL_AMOUNT - BILL_AMOUNT_PAY;
+                    if(BILL_AMOUNT_NOT < 0){
+                        BILL_AMOUNT_NOT = 0;
+                    }
+                    String MT_ID = BM.get(BILL_ID);
+                    setDayMap(AMOUNT_P, "0", BILL_AMOUNT_P, true);
+                    setDayMap(AMOUNT_P, MT_ID, BILL_AMOUNT_P, true);
+
+                    setDayMap(AMOUNT_DESK_FEE_MIN, "0", BILL_AMOUNT_DESK_FEE_MIN, true);
+                    setDayMap(AMOUNT_DESK_FEE_MIN, MT_ID, BILL_AMOUNT_DESK_FEE_MIN, true);
+
+                    setDayMap(AMOUNT_SC, "0", BILL_AMOUNT_SC, true);
+                    setDayMap(AMOUNT_SC, MT_ID, BILL_AMOUNT_SC, true);
+
+                    setDayMap(AMOUNT_ZERO, "0", BILL_AMOUNT_ZERO, true);
+                    setDayMap(AMOUNT_ZERO, MT_ID, BILL_AMOUNT_ZERO, true);
+
+                    setDayMap(AMOUNT_FAVORABLE_CASE, "0", BILL_AMOUNT_FAVORABLE_CASE, true);
+                    setDayMap(AMOUNT_FAVORABLE_CASE, MT_ID, BILL_AMOUNT_FAVORABLE_CASE, true);
+
+                    setDayMap(AMOUNT_ALLX, "0", BILL_AMOUNT_FAVORABLE_CASE, true);
+                    setDayMap(AMOUNT_ALLX, MT_ID, BILL_AMOUNT_FAVORABLE_CASE, true);
+                    setDayMap(AMOUNT_ALLX, "0", BILL_AMOUNT_ZERO, true);
+                    setDayMap(AMOUNT_ALLX, MT_ID, BILL_AMOUNT_ZERO, true);
+
+
+                    if (BILL_DISCOUNT > 0) {
+                        setDayMap(AMOUNT_DISCOUNT, "0", BILL_AMOUNT_FAVORABLE_DISCOUNT, true);
+                        setDayMap(AMOUNT_DISCOUNT, MT_ID, BILL_AMOUNT_FAVORABLE_DISCOUNT, true);
+                        setDayMap(AMOUNT_ALLX, "0", BILL_AMOUNT_FAVORABLE_DISCOUNT, true);
+                        setDayMap(AMOUNT_ALLX, MT_ID, BILL_AMOUNT_FAVORABLE_DISCOUNT, true);
+
+                    }
+                    if (BILL_STATUS.equals("1")) {
+                        setDayMap(AMOUNT_HANG, "0", BILL_AMOUNT_NOT, true);
+                        setDayMap(AMOUNT_HANG, MT_ID, BILL_AMOUNT_NOT, true);
+                        setDayMap(AMOUNT_NOT, "0", BILL_AMOUNT_NOT, true);
+                        setDayMap(AMOUNT_NOT, MT_ID, BILL_AMOUNT_NOT, true);
+                        setDayMap(AMOUNT, "0", BILL_AMOUNT, true);
+                        setDayMap(AMOUNT, MT_ID, BILL_AMOUNT, true);
+                    }
+                    else if (BILL_STATUS.equals("2")) {
+                        setDayMap(AMOUNT_ARREAR, "0", BILL_AMOUNT_NOT, true);
+                        setDayMap(AMOUNT_ARREAR, MT_ID, BILL_AMOUNT_NOT, true);
+                        setDayMap(AMOUNT, "0", BILL_AMOUNT, true);
+                        setDayMap(AMOUNT, MT_ID, BILL_AMOUNT, true);
+                        //setDayMap(AMOUNT_ALL, "0", BILL_AMOUNT, true);
+                        //setDayMap(AMOUNT_ALL, MT_ID, BILL_AMOUNT, true);
+                    }
+                    else if (BILL_STATUS.equals("3")) {
+                        setDayMap(AMOUNT_LOST, "0", BILL_AMOUNT_NOT, true);
+                        setDayMap(AMOUNT_LOST, MT_ID, BILL_AMOUNT_NOT, true);
+                        setDayMap(AMOUNT_ALLX, "0", BILL_AMOUNT_NOT, true);
+                        setDayMap(AMOUNT_ALLX, MT_ID, BILL_AMOUNT_NOT, true);
+                        BILL_AMOUNT_NOT = 0;
+                    }
+                    else if (BILL_STATUS.equals("4")) {
+                        setDayMap(AMOUNT_FREE, "0", BILL_AMOUNT_NOT, true);
+                        setDayMap(AMOUNT_FREE, MT_ID, BILL_AMOUNT_NOT, true);
+                        setDayMap(AMOUNT_ALLX, "0", BILL_AMOUNT_NOT, true);
+                        setDayMap(AMOUNT_ALLX, MT_ID, BILL_AMOUNT_NOT, true);
+                        BILL_AMOUNT_NOT = 0;
+                    }
+                    else{
+                        setDayMap(AMOUNT_NOT, "0", BILL_AMOUNT_NOT, true);
+                        setDayMap(AMOUNT_NOT, MT_ID, BILL_AMOUNT_NOT, true);
+                        setDayMap(AMOUNT, "0", BILL_AMOUNT, true);
+                        setDayMap(AMOUNT, MT_ID, BILL_AMOUNT, true);
+                    }
+
+                    setDayMap(AMOUNT_PAY, "0", BILL_AMOUNT_PAY, true);
+                    setDayMap(AMOUNT_PAY, MT_ID, BILL_AMOUNT_PAY, true);
+//                        setDayMap(AMOUNT_ALL, "0", BILL_AMOUNT_PAY, true);
+//                        setDayMap(AMOUNT_ALL, MT_ID, BILL_AMOUNT_PAY, true);
+                    //setDayMap(AMOUNT_NOT, "0", BILL_AMOUNT_NOT, true);
+                    //setDayMap(AMOUNT_NOT, MT_ID, BILL_AMOUNT_NOT, true);
+                    setDayMap(AMOUNT_ALL, "0", BILL_AMOUNT_PAY + BILL_AMOUNT_NOT, true);
+                    setDayMap(AMOUNT_ALL, MT_ID, BILL_AMOUNT_PAY + BILL_AMOUNT_NOT, true);
+                }
+                sql = "SELECT * FROM X_BILL_PAY WHERE BILL_ID IN (" + BILL_IDS + ")";
+                List<Map> BPS = query.doQuery(sql).tables();
+                for (Map BP : BPS) {
+                    String BILL_ID = StringUtils.toString(BP.get("BILL_ID"));
+                    String BILL_PAY_TYPE = StringUtils.toString(BP.get("BILL_PAY_TYPE"));
+                    float BILL_PAY_AMOUNT = NumberUtils.toFloat(BP.get("BILL_PAY_AMOUNT"));
+                    String MT_ID = BM.get(BILL_ID);
+                    //System.out.println("MT_ID = " + MT_ID + ", BILL_PAY_TYPE = " + BILL_PAY_TYPE + ", BILL_PAY_AMOUNT = " + BILL_PAY_AMOUNT);
+                    setDayMap(AMOUNT_PAY_TYPE, "0-" + BILL_PAY_TYPE, BILL_PAY_AMOUNT, true);
+                    //System.out.println("0-" + BILL_PAY_TYPE + "=" + AMOUNT_PAY_TYPE.get("0-" + BILL_PAY_TYPE));
+                    setDayMap(AMOUNT_PAY_TYPE, MT_ID + "-" + BILL_PAY_TYPE, BILL_PAY_AMOUNT, true);
+
+                }
+            }
+            String COND = "SELECT O_ID FROM X_O " +
+                            "WHERE O_STATUS >=4 AND O_DINE_DT >= '" + MT_DT_S + "' AND O_DINE_DT <= '" + MT_DT_E + "'";
+
+            sql = "SELECT A.O_ID, A.O_P_STATUS, A.O_P_DISCOUNT, A.O_P_AMOUNT, A.O_P_AMOUNT_REAL,  B.P_TYPE_PARENT FROM X_O_P A " +
+                    "LEFT JOIN X_P_TYPE B ON A.O_P_TYPE_ID=B.P_TYPE_ID " +
+                    "WHERE A.O_P_STATUS <> 0 AND A.O_P_COMBO = 0 AND A.O_ID IN (" + COND + ")";
+            //System.out.println(sql);
+            List<Map> OPS = query.doQuery(sql).tables();
+            for (Map OP : OPS) {
+                String O_ID = StringUtils.toString(OP.get("O_ID"));
+                int O_P_STATUS = NumberUtils.toInt(OP.get("O_P_STATUS"));
+                float O_P_DISCOUNT = NumberUtils.toFloat(OP.get("O_P_DISCOUNT"));
+                float O_P_AMOUNT = NumberUtils.toFloat(OP.get("O_P_AMOUNT"));
+                float O_P_AMOUNT_REAL = NumberUtils.toFloat(OP.get("O_P_AMOUNT_REAL"));
+                String MT_ID = OM.get(O_ID);
+
+                if (O_P_STATUS == -1) {
+                    setDayMap(AMOUNT_P_CANCEL, "0", O_P_AMOUNT, true);
+                    setDayMap(AMOUNT_P_CANCEL, MT_ID, O_P_AMOUNT, true);
+                    setDayMap(AMOUNT_ALLX, "0", O_P_AMOUNT, true);
+                    setDayMap(AMOUNT_ALLX, MT_ID, O_P_AMOUNT, true);
+                }
+                else{
+                    if (O_P_DISCOUNT >= 0) {
+                        if (O_P_DISCOUNT == 0) {
+                            setDayMap(AMOUNT_P_GIVE, "0", O_P_AMOUNT, true);
+                            setDayMap(AMOUNT_P_GIVE, MT_ID, O_P_AMOUNT, true);
+                            setDayMap(AMOUNT_ALLX, "0", O_P_AMOUNT, true);
+                            setDayMap(AMOUNT_ALLX, MT_ID, O_P_AMOUNT, true);
+                        } else {
+                            float DISCOUNT_AMOUNT = O_P_AMOUNT * (1 - (O_P_DISCOUNT / 10));
+                            setDayMap(AMOUNT_P_DISCOUNT, "0", DISCOUNT_AMOUNT, true);
+                            setDayMap(AMOUNT_P_DISCOUNT, MT_ID, DISCOUNT_AMOUNT, true);
+                            setDayMap(AMOUNT_ALLX, "0", DISCOUNT_AMOUNT, true);
+                            setDayMap(AMOUNT_ALLX, MT_ID, DISCOUNT_AMOUNT, true);
+                        }
+                    }
+                }
+                String P_TYPE_ID = StringUtils.toString(OP.get("P_TYPE_PARENT"));
+                setDayMap(AMOUNT_P_TYPE, "0-" + P_TYPE_ID, O_P_AMOUNT_REAL, true);
+                setDayMap(AMOUNT_P_TYPE, MT_ID + "-" + P_TYPE_ID, O_P_AMOUNT_REAL, true);
+                setDayMap(AMOUNT_ALL_P, "0", O_P_AMOUNT_REAL, true);
+                setDayMap(AMOUNT_ALL_P, MT_ID, O_P_AMOUNT_REAL, true);
+                if (OMN.containsKey(O_ID)) {
+                    setDayMap(AMOUNT_NOT, "0", O_P_AMOUNT_REAL, true);
+                    setDayMap(AMOUNT_NOT, MT_ID, O_P_AMOUNT_REAL, true);
+                    setDayMap(AMOUNT_ALL, "0", O_P_AMOUNT_REAL, true);
+                    setDayMap(AMOUNT_ALL, MT_ID, O_P_AMOUNT_REAL, true);
+                }
+            }
+
+            for (Map _MT : MTS) {
+                String MT_ID = StringUtils.toString(_MT.get("MT_ID"));
+                float _AMOUNT = AMOUNT_ALL.get(MT_ID);
+                //float _AMOUNT_NOT = AMOUNT_NOT.get(MT_ID);
+                float DINE_NOP = O_DINE_NOP.get(MT_ID);
+                float NUM = O_NUM.get(MT_ID);
+                if (_AMOUNT > 0 && DINE_NOP > 0) {
+                    AMOUNT_AVG_P.put(MT_ID, NumberUtils.clearZero(NumberUtils.toFloat(_AMOUNT / DINE_NOP)) + 0F);
+                }
+                if (_AMOUNT > 0 && NUM > 0) {
+                    AMOUNT_AVG_O.put(MT_ID, NumberUtils.clearZero(NumberUtils.toFloat(_AMOUNT / NUM)) + 0F);
+                }
+
+            }
+            float _AMOUNT = AMOUNT_ALL.get("0");
+            float DINE_NOP = O_DINE_NOP.get("0");
+            float NUM = O_NUM.get("0");
+            if (_AMOUNT > 0 && DINE_NOP > 0) {
+                AMOUNT_AVG_P.put("0", NumberUtils.clearZero(NumberUtils.toFloat(_AMOUNT / DINE_NOP)) + 0F);
+            }
+            if (_AMOUNT > 0 && NUM > 0) {
+                AMOUNT_AVG_O.put("0", NumberUtils.clearZero(NumberUtils.toFloat(_AMOUNT / NUM)) + 0F);
+            }
+        }
+        processDayMapClearZero(AMOUNT_P);
+        processDayMapClearZero(AMOUNT_P_CANCEL);
+        processDayMapClearZero(AMOUNT_P_GIVE);
+        processDayMapClearZero(AMOUNT_P_DISCOUNT);
+        processDayMapClearZero(AMOUNT_FREE);
+        processDayMapClearZero(AMOUNT_LOST);
+        processDayMapClearZero(AMOUNT_DESK_FEE_MIN);
+        processDayMapClearZero(AMOUNT_P_DISCOUNT);
+        processDayMapClearZero(AMOUNT_SC);
+        processDayMapClearZero(AMOUNT_DISCOUNT);
+        processDayMapClearZero(AMOUNT_ZERO);
+        processDayMapClearZero(AMOUNT_FAVORABLE_CASE);
+        processDayMapClearZero(AMOUNT_ARREAR);
+        processDayMapClearZero(AMOUNT_HANG);
+        processDayMapClearZero(AMOUNT);
+        processDayMapClearZero(AMOUNT_ALL);
+        processDayMapClearZero(AMOUNT_ALLX);
+        processDayMapClearZero(AMOUNT_PAY);
+        processDayMapClearZero(AMOUNT_NOT);
+        processDayMapClearZero(AMOUNT_P_TYPE);
+        processDayMapClearZero(AMOUNT_PAY_TYPE);
+        processDayMapClearZero(AMOUNT_ALL_P);
+
+        data.put("O_NUM", O_NUM);
+        data.put("O_DINE_NOP", O_DINE_NOP);
+        data.put("AMOUNT_AVG_P", AMOUNT_AVG_P);
+        data.put("AMOUNT_AVG_O", AMOUNT_AVG_O);
+        data.put("AMOUNT_DP", AMOUNT_DP);
+        data.put("AMOUNT_P", AMOUNT_P);
+        data.put("AMOUNT_P_CANCEL", AMOUNT_P_CANCEL);
+        data.put("AMOUNT_P_GIVE", AMOUNT_P_GIVE);
+        data.put("AMOUNT_P_DISCOUNT", AMOUNT_P_DISCOUNT);
+        data.put("AMOUNT_FREE", AMOUNT_FREE);
+        data.put("AMOUNT_LOST", AMOUNT_LOST);
+        data.put("AMOUNT_DESK_FEE_MIN", AMOUNT_DESK_FEE_MIN);
+        data.put("AMOUNT_P_DISCOUNT", AMOUNT_P_DISCOUNT);
+        data.put("AMOUNT_SC", AMOUNT_SC);
+        data.put("AMOUNT_DISCOUNT", AMOUNT_DISCOUNT);
+        data.put("AMOUNT_ZERO", AMOUNT_ZERO);
+        data.put("AMOUNT_FAVORABLE_CASE", AMOUNT_FAVORABLE_CASE);
+        data.put("AMOUNT_ARREAR", AMOUNT_ARREAR);
+        data.put("AMOUNT_HANG", AMOUNT_HANG);
+        data.put("AMOUNT", AMOUNT);
+        data.put("AMOUNT_PAY", AMOUNT_PAY);
+        data.put("AMOUNT_NOT", AMOUNT_NOT);
+        data.put("AMOUNT_ALL", AMOUNT_ALL);
+        data.put("AMOUNT_ALLX", AMOUNT_ALLX);
+        data.put("AMOUNT_ALL_P", AMOUNT_ALL_P);
+
+        data.put("AMOUNT_P_TYPE", AMOUNT_P_TYPE);
+        data.put("AMOUNT_PAY_TYPE", AMOUNT_PAY_TYPE);
+        query.free();
+        return data;
+    }
+
+    public List<Map> reportProduct(Form form) {
+        if (form == null) {
+            form = new Form();
+        }
+        String DATE_S = StringUtils.toString(form.getFirstValue("DATE_S"));
+        String DATE_E = StringUtils.toString(form.getFirstValue("DATE_E"));
+        String MT_ID = StringUtils.toString(form.getFirstValue("MT_ID"));
+        String P_TYPE_ID = StringUtils.toString(form.getFirstValue("P_TYPE_ID"));
+        String ORDER_STATUS = StringUtils.toString(form.getFirstValue("ORDER_STATUS"));
+        if (DATE_S.length() == 0) {
+            DATE_S = DateUtils.getNowDate();
+        }
+        if (DATE_E.length() == 0) {
+            DATE_E = DateUtils.getNowDate();
+        }
+        if (DATE_S.compareTo(DATE_E) > 0) {
+            DATE_S = DateUtils.getNowDate();
+            DATE_E = DateUtils.getNowDate();
+        }
+
+        String CS = "";
+        if (MT_ID.length() == 0) {
+            MT_ID = "0";
+        }
+        MarketTypeAction mta = new MarketTypeAction();
+        String[] MT = mta.getMTX(DATE_S, DATE_E, MT_ID);
+        String MT_DT_S = MT[2];
+        String MT_DT_E = MT[3];
+        CS += " WHERE 1=1";
+        if (P_TYPE_ID.length() > 0) {
+            CS += " AND B.P_TYPE_PARENT = " + P_TYPE_ID;
+        }
+        if(ORDER_STATUS.length() > 0){
+            if(ORDER_STATUS.equals("1")){
+                CS += " AND X1.O_P_NUM_ORDER > 0";
+            }
+            else if(ORDER_STATUS.equals("2")){
+                CS += " AND (X1.O_P_NUM_ORDER = 0 OR X1.O_P_NUM_ORDER IS NULL)";
+            }
+        }
+        String sql = "SELECT A.P_CODE, A.P_NAME, A.P_PRICE, A.P_TAG_WEIGHT, C.UNIT_NAME AS P_UNIT_NAME, X1.*, X2.*, X3.*, x4.*  FROM X_P A " +
+                "LEFT JOIN X_P_TYPE B ON A.P_TYPE_ID = B.P_TYPE_ID " +
+                "LEFT JOIN X_UNIT C ON A.P_UNIT_ID = C.UNIT_ID " +
+                "LEFT JOIN (SELECT O_P_ID, SUM(CONVERT(O_P_NUM, DECIMAL(10,1))) AS O_P_NUM_ORDER, SUM(CONVERT(O_P_WEIGHT, DECIMAL(10,1))) AS O_P_WEIGHT_ORDER, SUM(CONVERT(O_P_AMOUNT, DECIMAL(10,1))) AS O_P_AMOUNT_ALL,SUM(CONVERT(O_P_AMOUNT_REAL, DECIMAL(10,1))) AS O_P_AMOUNT FROM X_O_P WHERE O_ID IN (SELECT O_ID FROM X_O WHERE O_STATUS >=4 AND O_DINE_DT >= '" + MT_DT_S + "' AND O_DINE_DT <= '" + MT_DT_E + "') AND O_P_STATUS <> 0 AND O_P_COMBO = 0  GROUP BY O_P_ID) X1 ON A.P_ID = X1.O_P_ID " +
+                "LEFT JOIN (SELECT O_P_ID, SUM(CONVERT(O_P_NUM, DECIMAL(10,1))) AS O_P_NUM_BILL, SUM(CONVERT(O_P_WEIGHT, DECIMAL(10,1))) AS O_P_WEIGHT_BILL, SUM(CONVERT(O_P_AMOUNT_REAL, DECIMAL(10,1))) AS O_P_AMOUNT_REAL FROM X_O_P WHERE O_ID IN (SELECT O_ID FROM X_O WHERE O_STATUS >=6 AND O_DINE_DT >= '" + MT_DT_S + "' AND O_DINE_DT <= '" + MT_DT_E + "') AND O_P_STATUS > 0 AND O_P_COMBO = 0  GROUP BY O_P_ID) X4 ON A.P_ID = X4.O_P_ID " +
+                "LEFT JOIN (SELECT O_P_ID, SUM(CONVERT(O_P_NUM, DECIMAL(10,1))) AS O_P_NUM_CANCEL, SUM(CONVERT(O_P_WEIGHT, DECIMAL(10,1))) AS O_P_WEIGHT_CANCEL FROM X_O_P WHERE O_ID IN (SELECT O_ID FROM X_O WHERE O_STATUS >=6 AND O_DINE_DT >= '" + MT_DT_S + "' AND O_DINE_DT <= '" + MT_DT_E + "') AND O_P_STATUS = -1 AND O_P_COMBO = 0 GROUP BY O_P_ID) X2 ON A.P_ID = X2.O_P_ID " +
+                "LEFT JOIN (SELECT O_P_ID, SUM(CONVERT(O_P_NUM, DECIMAL(10,1))) AS O_P_NUM_GIVE, SUM(CONVERT(O_P_WEIGHT, DECIMAL(10,1))) AS O_P_WEIGHT_GIVE FROM X_O_P WHERE O_ID IN (SELECT O_ID FROM X_O WHERE O_STATUS >= 6 AND O_DINE_DT >= '" + MT_DT_S + "' AND O_DINE_DT <= '" + MT_DT_E + "') AND O_P_STATUS > 0 AND O_P_COMBO = 0 AND O_P_DISCOUNT = 0 GROUP BY O_P_ID) X3 ON A.P_ID = X3.O_P_ID " +
+                CS + " ORDER BY O_P_NUM_BILL DESC";
+        System.out.println(sql);
+        IQuery query = getQuery();
+        List<Map> data = query.doQuery(sql).tables();
+        //float NUM = 0;
+        int x = 0;
+        for (Map m : data) {
+            x++;
+            float O_P_NUM_ORDER = NumberUtils.toFloat(m.get("O_P_NUM_ORDER"));
+            float O_P_NUM_BILL = NumberUtils.toFloat(m.get("O_P_NUM_BILL"));
+            float O_P_NUM_CANCEL = NumberUtils.toFloat(m.get("O_P_NUM_CANCEL"));
+            float O_P_NUM_GIVE = NumberUtils.toFloat(m.get("O_P_NUM_GIVE"));
+            float O_P_AMOUNT = NumberUtils.toFloat(m.get("O_P_AMOUNT"));
+            float O_P_AMOUNT_ALL = NumberUtils.toFloat(m.get("O_P_AMOUNT_ALL"));
+            float O_P_AMOUNT_REAL = NumberUtils.toFloat(m.get("O_P_AMOUNT_REAL"));
+
+            float O_P_WEIGHT_ORDER = NumberUtils.toFloat(m.get("O_P_WEIGHT_ORDER"));
+            float O_P_WEIGHT_BILL = NumberUtils.toFloat(m.get("O_P_WEIGHT_BILL"));
+            float O_P_WEIGHT_CANCEL = NumberUtils.toFloat(m.get("O_P_WEIGHT_CANCEL"));
+            float O_P_WEIGHT_GIVE = NumberUtils.toFloat(m.get("O_P_WEIGHT_GIVE"));
+            String P_TAG_WEIGHT = StringUtils.toString(m.get("P_TAG_WEIGHT"));
+            if(P_TAG_WEIGHT.equals("1")){
+                m.put("O_P_NUM_BILL", O_P_WEIGHT_BILL);
+                m.put("O_P_NUM_ORDER", O_P_WEIGHT_ORDER);
+                m.put("O_P_NUM_CANCEL", O_P_WEIGHT_CANCEL);
+                m.put("O_P_NUM_GIVE", O_P_WEIGHT_GIVE);
+            }
+            else{
+                m.put("O_P_NUM_BILL", O_P_NUM_BILL);
+                m.put("O_P_NUM_ORDER", O_P_NUM_ORDER);
+                m.put("O_P_NUM_CANCEL", O_P_NUM_CANCEL);
+                m.put("O_P_NUM_GIVE", O_P_NUM_GIVE);
+            }
+
+            m.put("O_P_AMOUNT_REAL", O_P_AMOUNT_REAL);
+            m.put("O_P_AMOUNT", O_P_AMOUNT);
+            m.put("O_P_AMOUNT_ALL", O_P_AMOUNT_ALL);
+            m.put("P_X", x);
+
+            //NUM += (O_P_NUM_ORDER - O_P_NUM_CANCEL);
+        }
+//        System.out.println("NUM = " + NUM);
+//        for (Map m : data) {
+//            float O_P_NUM_BILL = NumberUtils.toFloat(m.get("O_P_NUM_BILL"));
+////            System.out.println("O_P_NUM_BILL = " + O_P_NUM_BILL);
+////            System.out.println("O_P_NUM_BILL = " + O_P_NUM_BILL/NUM);
+//            m.put("O_P_NUM_PERCENT", NumberUtils.toPercent(NumberUtils.toDouble(O_P_NUM_BILL / NUM), 2));
+//        }
+        query.free();
+        return data;
+    }
+
+    public Map reportMonth(Form form) {
+        if (form == null) {
+            form = new Form();
+        }
+        String QUERY_YEAR = StringUtils.toString(form.getFirstValue("QUERY_YEAR"));
+        String QUERY_MONTH = StringUtils.toString(form.getFirstValue("QUERY_MONTH"));
+        if (QUERY_YEAR.length() == 0) {
+
+            QUERY_YEAR = DateUtils.getNowYear();
+        }
+        if (QUERY_MONTH.length() == 0) {
+            QUERY_MONTH = DateUtils.getNowMonth();
+        }
+        int days = DateUtils.getMaxDayOfMonth(DateUtils.toDate(QUERY_YEAR + "-" + QUERY_MONTH + "-01"));
+
+        String DATE_S = QUERY_YEAR + "-" + QUERY_MONTH + "-01";
+        String DATE_E = QUERY_YEAR + "-" + QUERY_MONTH + "-" + days;
+        Map data = reportDay(DATE_S, DATE_E);
+        data.put("QUERY_YEAR", QUERY_YEAR);
+        data.put("QUERY_MONTH", QUERY_MONTH);
+        processDayMapX(data, "AMOUNT_PAY_TYPE", "AMOUNT_ALL");
+        processDayMapX(data, "AMOUNT_P_TYPE", "AMOUNT_ALL_P");
+        processDayMapX_(data, "AMOUNT_ARREAR", "AMOUNT_ALL");
+        processDayMapX_(data, "AMOUNT_NOT", "AMOUNT_ALL");
+        return data;
+    }
+
+
+    public Map reportDayX(String DATE_S, String DATE_E, List<Map> P_TYPES, List<Map> PAY_TYPES) {
+        Map data = new Hashtable();
+        MarketTypeAction mta = new MarketTypeAction();
+        String[] MT = mta.getMTX(DATE_S, DATE_E, "0");
+        String MT_DT_S = MT[2];
+        String MT_DT_E = MT[3];
+        IQuery query = getQuery();
+
+        Map<String, Float> AMOUNT_P_TYPE = new Hashtable<String, Float>();
+        for (Map P_TYPE : P_TYPES) {
+            String P_TYPE_ID = StringUtils.toString(P_TYPE.get("P_TYPE_ID"));
+            AMOUNT_P_TYPE.put(P_TYPE_ID, 0F);
+        }
+        Map<String, Float> AMOUNT_PAY_TYPE = new Hashtable<String, Float>();
+        for (Map PAY_TYPE : PAY_TYPES) {
+            String PAY_TYPE_ID = StringUtils.toString(PAY_TYPE.get("PAY_TYPE_ID"));
+            AMOUNT_PAY_TYPE.put(PAY_TYPE_ID, 0F);
+        }
+        String sql = "SELECT A.* FROM X_O A " +
+                "WHERE A.O_STATUS = 10 AND A.O_DINE_DT >= '" + MT_DT_S + "' AND A.O_DINE_DT <= '" + MT_DT_E + "' ORDER BY A.O_DINE_DT";
+        List<Map> OS = query.doQuery(sql).tables();
+        float O_NUM = 0;
+        float O_DINE_NOP = 0;
+        float AMOUNT_AVG = 0;
+        float AMOUNT_P = 0;
+        float AMOUNT_DP = 0;
+        float AMOUNT_P_CANCEL = 0;
+        float AMOUNT_P_GIVE = 0;
+        float AMOUNT_P_DISCOUNT = 0;
+        float AMOUNT_FREE = 0;
+        float AMOUNT_LOST = 0;
+        float AMOUNT_DESK_FEE_MIN = 0;
+        float AMOUNT_SC = 0;
+        float AMOUNT_DISCOUNT = 0;
+        float AMOUNT_ZERO = 0;
+        float AMOUNT_FAVORABLE = 0;
+        float AMOUNT_HANG = 0;
+        float AMOUNT_ARREAR = 0;
+        float AMOUNT = 0;
+        Map<String, String> BM = new Hashtable<String, String>();
+        Map<String, String> OM = new Hashtable<String, String>();
+        for (Map O : OS) {
+            String O_MT_ID = StringUtils.toString(O.get("O_MT_ID"));
+            String O_ID = StringUtils.toString(O.get("O_ID"));
+            String O_BILL_ID = StringUtils.toString(O.get("O_BILL_ID"));
+            O_NUM += 1;
+
+            int _O_DINE_NOP = NumberUtils.toInt(O.get("O_DINE_NOP"));
+            O_DINE_NOP += _O_DINE_NOP;
+
+            OM.put(O_ID, O_MT_ID);
+            BM.put(O_BILL_ID, O_MT_ID);
+            float DP = NumberUtils.toFloat(O.get("O_DP"));
+            AMOUNT_DP -= DP;
+        }
+        String O_IDS = ArrayUtils.join(",", OM.keySet().toArray());
+        String BILL_IDS = ArrayUtils.join(",", BM.keySet().toArray());
+        if (O_IDS.length() > 0) {
+            sql = "SELECT * FROM X_BILL WHERE BILL_ID IN (" + BILL_IDS + ")";
+            List<Map> BS = query.doQuery(sql).tables();
+            for (Map B : BS) {
+                float BILL_AMOUNT_P = NumberUtils.toFloat(B.get("BILL_AMOUNT_P"));
+                float BILL_DISCOUNT = NumberUtils.toFloat(B.get("BILL_DISCOUNT"));
+                float BILL_AMOUNT = NumberUtils.toFloat(B.get("BILL_AMOUNT"));
+                float BILL_AMOUNT_DESK_FEE_MIN = NumberUtils.toFloat(B.get("BILL_AMOUNT_DESK_FEE_MIN"));
+                float BILL_AMOUNT_SC = NumberUtils.toFloat(B.get("BILL_AMOUNT_SC"));
+                float BILL_AMOUNT_ZERO = NumberUtils.toFloat(B.get("BILL_AMOUNT_ZERO"));
+                float BILL_AMOUNT_FAVORABLE_ALL = NumberUtils.toFloat(B.get("BILL_AMOUNT_FAVORABLE_ALL"));
+                float BILL_AMOUNT_FAVORABLE_DISCOUNT = NumberUtils.toFloat(B.get("BILL_AMOUNT_FAVORABLE_DISCOUNT"));
+                String BILL_STATUS = StringUtils.toString(B.get("BILL_STATUS"));
+                AMOUNT_P += BILL_AMOUNT_P;
+                AMOUNT_DESK_FEE_MIN += BILL_AMOUNT_DESK_FEE_MIN;
+                AMOUNT_SC += BILL_AMOUNT_SC;
+                AMOUNT_ZERO -= BILL_AMOUNT_ZERO;
+                AMOUNT_FAVORABLE += BILL_AMOUNT_FAVORABLE_ALL;
+                if (BILL_STATUS.equals("3")) {
+                    AMOUNT_LOST -= BILL_AMOUNT;
+                }
+                if (BILL_DISCOUNT > 0) {
+                    AMOUNT_DISCOUNT -= BILL_AMOUNT_FAVORABLE_DISCOUNT;
+                }
+                if (BILL_STATUS.equals("4")) {
+                    AMOUNT_FREE -= BILL_AMOUNT;
+                }
+                if (!BILL_STATUS.equals("3") || !BILL_STATUS.equals("4")) {
+                    if (BILL_STATUS.equals("1")) {
+                        AMOUNT_HANG += BILL_AMOUNT;
+                    }
+                    if (BILL_STATUS.equals("2")) {
+                        AMOUNT_ARREAR += BILL_AMOUNT;
+                    }
+                    AMOUNT += BILL_AMOUNT;
+                }
+            }
+
+            sql = "SELECT A.*, B.P_TYPE_PARENT FROM X_O_P A " +
+                    "LEFT JOIN X_P_TYPE B ON A.O_P_TYPE_ID=B.P_TYPE_ID " +
+                    "WHERE A.O_P_COMBO = 0 AND A.O_ID IN (" + O_IDS + ")";
+            List<Map> OPS = query.doQuery(sql).tables();
+            for (Map OP : OPS) {
+                int O_P_STATUS = NumberUtils.toInt(OP.get("O_P_STATUS"));
+                float O_P_DISCOUNT = NumberUtils.toFloat(OP.get("O_P_DISCOUNT"));
+                float O_P_AMOUNT = NumberUtils.toFloat(OP.get("O_P_AMOUNT"));
+                float O_P_AMOUNT_REAL = NumberUtils.toFloat(OP.get("O_P_AMOUNT_REAL"));
+
+                if (O_P_STATUS == -1) {
+                    AMOUNT_P_CANCEL += O_P_AMOUNT_REAL;
+                }
+                else if (O_P_STATUS > 0) {
+                    if (O_P_DISCOUNT >= 0) {
+                        if (O_P_DISCOUNT == 0) {
+                            AMOUNT_P_GIVE -= O_P_AMOUNT;
+                            O_P_AMOUNT_REAL = 0;
+                        } else {
+                            float DISCOUNT_AMOUNT = O_P_AMOUNT * O_P_DISCOUNT / 10;
+                            AMOUNT_P_DISCOUNT -= DISCOUNT_AMOUNT;
+                        }
+                    }
+                    String P_TYPE_ID = StringUtils.toString(OP.get("P_TYPE_PARENT"));
+                    setDayMap(AMOUNT_P_TYPE, P_TYPE_ID, O_P_AMOUNT_REAL, true);
+                }
+
+            }
+            sql = "SELECT * FROM X_BILL_PAY WHERE BILL_ID IN (" + BILL_IDS + ")";
+            List<Map> BPS = query.doQuery(sql).tables();
+            for (Map BP : BPS) {
+                String BILL_PAY_TYPE = StringUtils.toString(BP.get("BILL_PAY_TYPE"));
+                float BILL_PAY_AMOUNT = NumberUtils.toFloat(BP.get("BILL_PAY_AMOUNT"));
+                setDayMap(AMOUNT_PAY_TYPE, BILL_PAY_TYPE, BILL_PAY_AMOUNT, true);
+            }
+            if (AMOUNT > 0 && O_DINE_NOP > 0) {
+                AMOUNT_AVG = NumberUtils.clearZero(NumberUtils.toFloat(AMOUNT / O_DINE_NOP));
+            }
+
+        }
+        AMOUNT_P = NumberUtils.clearZero(AMOUNT_P);
+        AMOUNT_P_CANCEL = NumberUtils.clearZero(AMOUNT_P_CANCEL);
+        AMOUNT_P_GIVE = NumberUtils.clearZero(AMOUNT_P_GIVE);
+        AMOUNT_P_DISCOUNT = NumberUtils.clearZero(AMOUNT_P_DISCOUNT);
+        AMOUNT_FREE = NumberUtils.clearZero(AMOUNT_FREE);
+        AMOUNT_LOST = NumberUtils.clearZero(AMOUNT_LOST);
+        AMOUNT_DESK_FEE_MIN = NumberUtils.clearZero(AMOUNT_DESK_FEE_MIN);
+        AMOUNT_P_DISCOUNT = NumberUtils.clearZero(AMOUNT_P_DISCOUNT);
+        AMOUNT_SC = NumberUtils.clearZero(AMOUNT_SC);
+        AMOUNT_DISCOUNT = NumberUtils.clearZero(AMOUNT_DISCOUNT);
+        AMOUNT_ZERO = NumberUtils.clearZero(AMOUNT_ZERO);
+        AMOUNT_FAVORABLE = NumberUtils.clearZero(AMOUNT_FAVORABLE);
+        AMOUNT_ARREAR = NumberUtils.clearZero(AMOUNT_ARREAR);
+        AMOUNT_ZERO = NumberUtils.clearZero(AMOUNT_ZERO);
+        AMOUNT_HANG = NumberUtils.clearZero(AMOUNT_HANG);
+        AMOUNT = NumberUtils.clearZero(AMOUNT);
+        processDayMapClearZero(AMOUNT_P_TYPE);
+        processDayMapClearZero(AMOUNT_PAY_TYPE);
+
+        data.put("O_NUM", O_NUM);
+        data.put("O_DINE_NOP", O_DINE_NOP);
+        data.put("AMOUNT_AVG", AMOUNT_AVG);
+        data.put("AMOUNT_DP", AMOUNT_DP);
+        data.put("AMOUNT_P", AMOUNT_P);
+        data.put("AMOUNT_P_CANCEL", AMOUNT_P_CANCEL);
+        data.put("AMOUNT_P_GIVE", AMOUNT_P_GIVE);
+        data.put("AMOUNT_P_DISCOUNT", AMOUNT_P_DISCOUNT);
+        data.put("AMOUNT_FREE", AMOUNT_FREE);
+        data.put("AMOUNT_LOST", AMOUNT_LOST);
+        data.put("AMOUNT_DESK_FEE_MIN", AMOUNT_DESK_FEE_MIN);
+        data.put("AMOUNT_P_DISCOUNT", AMOUNT_P_DISCOUNT);
+        data.put("AMOUNT_SC", AMOUNT_SC);
+        data.put("AMOUNT_DISCOUNT", AMOUNT_DISCOUNT);
+        data.put("AMOUNT_ZERO", AMOUNT_ZERO);
+        data.put("AMOUNT_FAVORABLE", AMOUNT_FAVORABLE);
+        data.put("AMOUNT_ARREAR", AMOUNT_ARREAR);
+        data.put("AMOUNT_HANG", AMOUNT_HANG);
+        data.put("AMOUNT", AMOUNT);
+
+        data.put("AMOUNT_P_TYPE", AMOUNT_P_TYPE);
+        data.put("AMOUNT_PAY_TYPE", AMOUNT_PAY_TYPE);
+        query.free();
+        return data;
+    }
+}

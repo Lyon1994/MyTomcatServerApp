@@ -1,0 +1,31 @@
+package org.redot.clover.core.ext;
+
+import org.redot.library.lang.StringUtils;
+import org.restlet.data.Form;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: CASH
+ * Date: 10-12-17
+ * Time: 下午3:10
+ * To change this template use File | Settings | File Templates.
+ */
+public class Params {
+    public String[] names = new String[0];
+
+    protected Form query;
+
+    public String[] vals(String name){
+       return this.query.getValuesArray(name);
+    }
+
+    public String val(String name){
+       return StringUtils.toString(this.query.getFirstValue(name));
+    }
+
+    public Params(Form query){
+       this.query = query;
+       this.names = query.getNames().toArray(new String[0]);
+
+    }
+}

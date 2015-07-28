@@ -1,0 +1,25 @@
+package org.redot.clover.app.order.rest;
+
+import org.redot.clover.app.order.OrderBillAction;
+import org.redot.clover.core.data.DataPackage;
+import org.redot.clover.core.ext.BaseResource;
+import org.restlet.resource.Get;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 10-12-21
+ * Time: 上午10:43
+ * To change this template use File | Settings | File Templates.
+ */
+public class OrderBillListArrear extends BaseResource {
+
+    @Get("json")
+    public String doGet(){
+        DataPackage dp = new DataPackage();
+        OrderBillAction a = new OrderBillAction();
+
+        dp.addTable("table", a.listArrear(params));
+        return dp.toJSON();
+    }
+}

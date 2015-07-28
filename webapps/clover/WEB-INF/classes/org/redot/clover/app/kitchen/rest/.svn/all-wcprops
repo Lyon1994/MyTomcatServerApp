@@ -1,0 +1,161 @@
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/kitchen/rest
+END
+KitchenSignProduct.java
+K 25
+svn:wc:ra_dav:version-url
+V 108
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/kitchen/rest/KitchenSignProduct.java
+END
+KitchenClearPushDelete.java
+K 25
+svn:wc:ra_dav:version-url
+V 112
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/kitchen/rest/KitchenClearPushDelete.java
+END
+KitchenPlan.java
+K 25
+svn:wc:ra_dav:version-url
+V 101
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/kitchen/rest/KitchenPlan.java
+END
+KitchenSignInfoDesk.java
+K 25
+svn:wc:ra_dav:version-url
+V 109
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/kitchen/rest/KitchenSignInfoDesk.java
+END
+KitchenPlanDesk.java
+K 25
+svn:wc:ra_dav:version-url
+V 105
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/kitchen/rest/KitchenPlanDesk.java
+END
+KitchenWeightInfoProduct.java
+K 25
+svn:wc:ra_dav:version-url
+V 114
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/kitchen/rest/KitchenWeightInfoProduct.java
+END
+KitchenCutInfoDesk.java
+K 25
+svn:wc:ra_dav:version-url
+V 108
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/kitchen/rest/KitchenCutInfoDesk.java
+END
+KitchenCutInfoProduct.java
+K 25
+svn:wc:ra_dav:version-url
+V 111
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/kitchen/rest/KitchenCutInfoProduct.java
+END
+KitchenWeightInfoDesk.java
+K 25
+svn:wc:ra_dav:version-url
+V 111
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/kitchen/rest/KitchenWeightInfoDesk.java
+END
+KitchenClearPush.java
+K 25
+svn:wc:ra_dav:version-url
+V 106
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/kitchen/rest/KitchenClearPush.java
+END
+KitchenPlanProduct.java
+K 25
+svn:wc:ra_dav:version-url
+V 108
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/kitchen/rest/KitchenPlanProduct.java
+END
+KitchenSign.java
+K 25
+svn:wc:ra_dav:version-url
+V 101
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/kitchen/rest/KitchenSign.java
+END
+KitchenClearPushList.java
+K 25
+svn:wc:ra_dav:version-url
+V 110
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/kitchen/rest/KitchenClearPushList.java
+END
+KitchenSignInfoProduct.java
+K 25
+svn:wc:ra_dav:version-url
+V 112
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/kitchen/rest/KitchenSignInfoProduct.java
+END
+KitchenCaseDelete.java
+K 25
+svn:wc:ra_dav:version-url
+V 107
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/kitchen/rest/KitchenCaseDelete.java
+END
+KitchenCut.java
+K 25
+svn:wc:ra_dav:version-url
+V 100
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/kitchen/rest/KitchenCut.java
+END
+KitchenWeight.java
+K 25
+svn:wc:ra_dav:version-url
+V 103
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/kitchen/rest/KitchenWeight.java
+END
+KitchenSignDesk.java
+K 25
+svn:wc:ra_dav:version-url
+V 105
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/kitchen/rest/KitchenSignDesk.java
+END
+KitchenCutDesk.java
+K 25
+svn:wc:ra_dav:version-url
+V 104
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/kitchen/rest/KitchenCutDesk.java
+END
+KitchenWeightDesk.java
+K 25
+svn:wc:ra_dav:version-url
+V 107
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/kitchen/rest/KitchenWeightDesk.java
+END
+KitchenPlanInfoProduct.java
+K 25
+svn:wc:ra_dav:version-url
+V 112
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/kitchen/rest/KitchenPlanInfoProduct.java
+END
+KitchenCase.java
+K 25
+svn:wc:ra_dav:version-url
+V 101
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/kitchen/rest/KitchenCase.java
+END
+KitchenPlanInfoDesk.java
+K 25
+svn:wc:ra_dav:version-url
+V 109
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/kitchen/rest/KitchenPlanInfoDesk.java
+END
+KitchenWeightProduct.java
+K 25
+svn:wc:ra_dav:version-url
+V 110
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/kitchen/rest/KitchenWeightProduct.java
+END
+KitchenCaseList.java
+K 25
+svn:wc:ra_dav:version-url
+V 105
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/kitchen/rest/KitchenCaseList.java
+END
+KitchenCutProduct.java
+K 25
+svn:wc:ra_dav:version-url
+V 107
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/kitchen/rest/KitchenCutProduct.java
+END

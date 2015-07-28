@@ -1,0 +1,431 @@
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/order/rest
+END
+OrderBillDiscountCancel.java
+K 25
+svn:wc:ra_dav:version-url
+V 111
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/order/rest/OrderBillDiscountCancel.java
+END
+OrderBillFavorableCaseCancel.java
+K 25
+svn:wc:ra_dav:version-url
+V 116
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/order/rest/OrderBillFavorableCaseCancel.java
+END
+OrderBillPrintPre.java
+K 25
+svn:wc:ra_dav:version-url
+V 105
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/order/rest/OrderBillPrintPre.java
+END
+OrderBillArrear.java
+K 25
+svn:wc:ra_dav:version-url
+V 103
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/order/rest/OrderBillArrear.java
+END
+OrderBillListArrear.java
+K 25
+svn:wc:ra_dav:version-url
+V 107
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/order/rest/OrderBillListArrear.java
+END
+OrderBillDetail.java
+K 25
+svn:wc:ra_dav:version-url
+V 103
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/order/rest/OrderBillDetail.java
+END
+OrderDishCancel.java
+K 25
+svn:wc:ra_dav:version-url
+V 103
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/order/rest/OrderDishCancel.java
+END
+OrderBillFree.java
+K 25
+svn:wc:ra_dav:version-url
+V 101
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/order/rest/OrderBillFree.java
+END
+OrderBillClearZero.java
+K 25
+svn:wc:ra_dav:version-url
+V 106
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/order/rest/OrderBillClearZero.java
+END
+OrderDishQuery.java
+K 25
+svn:wc:ra_dav:version-url
+V 102
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/order/rest/OrderDishQuery.java
+END
+OrderPrint.java
+K 25
+svn:wc:ra_dav:version-url
+V 98
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/order/rest/OrderPrint.java
+END
+OrderDishRequire.java
+K 25
+svn:wc:ra_dav:version-url
+V 104
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/order/rest/OrderDishRequire.java
+END
+OrderBillUnion.java
+K 25
+svn:wc:ra_dav:version-url
+V 102
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/order/rest/OrderBillUnion.java
+END
+OrderDishHang.java
+K 25
+svn:wc:ra_dav:version-url
+V 101
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/order/rest/OrderDishHang.java
+END
+OrderReportTakeMoney.java
+K 25
+svn:wc:ra_dav:version-url
+V 108
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/order/rest/OrderReportTakeMoney.java
+END
+OrderReportCash.java
+K 25
+svn:wc:ra_dav:version-url
+V 103
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/order/rest/OrderReportCash.java
+END
+OrderBillList.java
+K 25
+svn:wc:ra_dav:version-url
+V 101
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/order/rest/OrderBillList.java
+END
+OrderBillFavorableCase.java
+K 25
+svn:wc:ra_dav:version-url
+V 110
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/order/rest/OrderBillFavorableCase.java
+END
+OrderBillPay.java
+K 25
+svn:wc:ra_dav:version-url
+V 100
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/order/rest/OrderBillPay.java
+END
+OrderBillPrepare.java
+K 25
+svn:wc:ra_dav:version-url
+V 104
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/order/rest/OrderBillPrepare.java
+END
+TakeAwayDeliver.java
+K 25
+svn:wc:ra_dav:version-url
+V 103
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/order/rest/TakeAwayDeliver.java
+END
+OrderBillFavorableClient.java
+K 25
+svn:wc:ra_dav:version-url
+V 112
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/order/rest/OrderBillFavorableClient.java
+END
+OrderBookArrive.java
+K 25
+svn:wc:ra_dav:version-url
+V 103
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/order/rest/OrderBookArrive.java
+END
+OrderDishDiscount.java
+K 25
+svn:wc:ra_dav:version-url
+V 105
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/order/rest/OrderDishDiscount.java
+END
+OrderDishUrgent.java
+K 25
+svn:wc:ra_dav:version-url
+V 103
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/order/rest/OrderDishUrgent.java
+END
+OrderDishCall.java
+K 25
+svn:wc:ra_dav:version-url
+V 101
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/order/rest/OrderDishCall.java
+END
+OrderUnion.java
+K 25
+svn:wc:ra_dav:version-url
+V 98
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/order/rest/OrderUnion.java
+END
+OrderTransfer.java
+K 25
+svn:wc:ra_dav:version-url
+V 101
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/order/rest/OrderTransfer.java
+END
+IncomeExt.java
+K 25
+svn:wc:ra_dav:version-url
+V 97
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/order/rest/IncomeExt.java
+END
+OrderBillInvoice.java
+K 25
+svn:wc:ra_dav:version-url
+V 104
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/order/rest/OrderBillInvoice.java
+END
+OrderOpen.java
+K 25
+svn:wc:ra_dav:version-url
+V 97
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/order/rest/OrderOpen.java
+END
+TakeAway.java
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/order/rest/TakeAway.java
+END
+OrderDishTransfer.java
+K 25
+svn:wc:ra_dav:version-url
+V 105
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/order/rest/OrderDishTransfer.java
+END
+OrderBillPrintCheck.java
+K 25
+svn:wc:ra_dav:version-url
+V 107
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/order/rest/OrderBillPrintCheck.java
+END
+OrderBillFavorableClientCancel.java
+K 25
+svn:wc:ra_dav:version-url
+V 118
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/order/rest/OrderBillFavorableClientCancel.java
+END
+OrderBillHang.java
+K 25
+svn:wc:ra_dav:version-url
+V 101
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/order/rest/OrderBillHang.java
+END
+OrderDesk.java
+K 25
+svn:wc:ra_dav:version-url
+V 97
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/order/rest/OrderDesk.java
+END
+OrderDishOrder.java
+K 25
+svn:wc:ra_dav:version-url
+V 102
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/order/rest/OrderDishOrder.java
+END
+OrderBillActivationCancel.java
+K 25
+svn:wc:ra_dav:version-url
+V 113
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/order/rest/OrderBillActivationCancel.java
+END
+OrderDishHurry.java
+K 25
+svn:wc:ra_dav:version-url
+V 102
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/order/rest/OrderDishHurry.java
+END
+OrderDishPrior.java
+K 25
+svn:wc:ra_dav:version-url
+V 102
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/order/rest/OrderDishPrior.java
+END
+OrderDishPack.java
+K 25
+svn:wc:ra_dav:version-url
+V 101
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/order/rest/OrderDishPack.java
+END
+OrderInfo.java
+K 25
+svn:wc:ra_dav:version-url
+V 97
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/order/rest/OrderInfo.java
+END
+OrderReportDay.java
+K 25
+svn:wc:ra_dav:version-url
+V 102
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/order/rest/OrderReportDay.java
+END
+OrderDishGive.java
+K 25
+svn:wc:ra_dav:version-url
+V 101
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/order/rest/OrderDishGive.java
+END
+OrderBillLost.java
+K 25
+svn:wc:ra_dav:version-url
+V 101
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/order/rest/OrderBillLost.java
+END
+OrderBookPrint.java
+K 25
+svn:wc:ra_dav:version-url
+V 102
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/order/rest/OrderBookPrint.java
+END
+OrderDishInfo.java
+K 25
+svn:wc:ra_dav:version-url
+V 101
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/order/rest/OrderDishInfo.java
+END
+OrderBillDiscount.java
+K 25
+svn:wc:ra_dav:version-url
+V 105
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/order/rest/OrderBillDiscount.java
+END
+OrderDishBatchByBook.java
+K 25
+svn:wc:ra_dav:version-url
+V 108
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/order/rest/OrderDishBatchByBook.java
+END
+OrderDishBatch.java
+K 25
+svn:wc:ra_dav:version-url
+V 102
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/order/rest/OrderDishBatch.java
+END
+OrderBookCancel.java
+K 25
+svn:wc:ra_dav:version-url
+V 103
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/order/rest/OrderBookCancel.java
+END
+OrderBillCheckoutArrear.java
+K 25
+svn:wc:ra_dav:version-url
+V 111
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/order/rest/OrderBillCheckoutArrear.java
+END
+OrderReportProduct.java
+K 25
+svn:wc:ra_dav:version-url
+V 106
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/order/rest/OrderReportProduct.java
+END
+OrderBillActivation.java
+K 25
+svn:wc:ra_dav:version-url
+V 107
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/order/rest/OrderBillActivation.java
+END
+OrderBillBreak.java
+K 25
+svn:wc:ra_dav:version-url
+V 102
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/order/rest/OrderBillBreak.java
+END
+OrderDish.java
+K 25
+svn:wc:ra_dav:version-url
+V 97
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/order/rest/OrderDish.java
+END
+OrderDishMinus.java
+K 25
+svn:wc:ra_dav:version-url
+V 102
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/order/rest/OrderDishMinus.java
+END
+OrderDishPlus.java
+K 25
+svn:wc:ra_dav:version-url
+V 101
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/order/rest/OrderDishPlus.java
+END
+OrderBillDelete.java
+K 25
+svn:wc:ra_dav:version-url
+V 103
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/order/rest/OrderBillDelete.java
+END
+OrderClear.java
+K 25
+svn:wc:ra_dav:version-url
+V 98
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/order/rest/OrderClear.java
+END
+OrderReportMonth.java
+K 25
+svn:wc:ra_dav:version-url
+V 104
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/order/rest/OrderReportMonth.java
+END
+OrderBillPayDelete.java
+K 25
+svn:wc:ra_dav:version-url
+V 106
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/order/rest/OrderBillPayDelete.java
+END
+OrderDishCopy.java
+K 25
+svn:wc:ra_dav:version-url
+V 101
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/order/rest/OrderDishCopy.java
+END
+OrderDishTemp.java
+K 25
+svn:wc:ra_dav:version-url
+V 101
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/order/rest/OrderDishTemp.java
+END
+OrderBillCheckout.java
+K 25
+svn:wc:ra_dav:version-url
+V 105
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/order/rest/OrderBillCheckout.java
+END
+OrderBillPrint.java
+K 25
+svn:wc:ra_dav:version-url
+V 102
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/order/rest/OrderBillPrint.java
+END
+OrderBook.java
+K 25
+svn:wc:ra_dav:version-url
+V 97
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/order/rest/OrderBook.java
+END
+OrderSet.java
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/order/rest/OrderSet.java
+END
+OrderDishDelete.java
+K 25
+svn:wc:ra_dav:version-url
+V 103
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/order/rest/OrderDishDelete.java
+END
+OrderExchange.java
+K 25
+svn:wc:ra_dav:version-url
+V 101
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/order/rest/OrderExchange.java
+END

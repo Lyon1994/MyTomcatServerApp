@@ -1,0 +1,227 @@
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/yee/!svn/ver/16/server/Redot/CloverServer/src/org/redot/clover/app/product/rest
+END
+ProductTypeLargeSort.java
+K 25
+svn:wc:ra_dav:version-url
+V 110
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/product/rest/ProductTypeLargeSort.java
+END
+ProductPictureUpload.java
+K 25
+svn:wc:ra_dav:version-url
+V 110
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/product/rest/ProductPictureUpload.java
+END
+ProductSeasonList.java
+K 25
+svn:wc:ra_dav:version-url
+V 107
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/product/rest/ProductSeasonList.java
+END
+ProductPicture.java
+K 25
+svn:wc:ra_dav:version-url
+V 104
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/product/rest/ProductPicture.java
+END
+ProductMenu.java
+K 25
+svn:wc:ra_dav:version-url
+V 101
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/product/rest/ProductMenu.java
+END
+ProductMenuTree.java
+K 25
+svn:wc:ra_dav:version-url
+V 105
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/product/rest/ProductMenuTree.java
+END
+ProductMenuShow.java
+K 25
+svn:wc:ra_dav:version-url
+V 105
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/product/rest/ProductMenuShow.java
+END
+ProductType.java
+K 25
+svn:wc:ra_dav:version-url
+V 101
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/product/rest/ProductType.java
+END
+ProductMenuShowReal.java
+K 25
+svn:wc:ra_dav:version-url
+V 109
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/product/rest/ProductMenuShowReal.java
+END
+ProductComboPictureSmall.java
+K 25
+svn:wc:ra_dav:version-url
+V 114
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/product/rest/ProductComboPictureSmall.java
+END
+ProductTypeTree.java
+K 25
+svn:wc:ra_dav:version-url
+V 105
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/product/rest/ProductTypeTree.java
+END
+ProductTypeList.java
+K 25
+svn:wc:ra_dav:version-url
+V 105
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/product/rest/ProductTypeList.java
+END
+ProductChange.java
+K 25
+svn:wc:ra_dav:version-url
+V 103
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/product/rest/ProductChange.java
+END
+ProductHot.java
+K 25
+svn:wc:ra_dav:version-url
+V 100
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/product/rest/ProductHot.java
+END
+ProductTypeSmallSelect.java
+K 25
+svn:wc:ra_dav:version-url
+V 112
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/product/rest/ProductTypeSmallSelect.java
+END
+ProductMenuDelete.java
+K 25
+svn:wc:ra_dav:version-url
+V 107
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/product/rest/ProductMenuDelete.java
+END
+ProductMT.java
+K 25
+svn:wc:ra_dav:version-url
+V 99
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/product/rest/ProductMT.java
+END
+ProductTypeDelete.java
+K 25
+svn:wc:ra_dav:version-url
+V 107
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/product/rest/ProductTypeDelete.java
+END
+Product.java
+K 25
+svn:wc:ra_dav:version-url
+V 97
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/product/rest/Product.java
+END
+ProductTypeSmallChange.java
+K 25
+svn:wc:ra_dav:version-url
+V 112
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/product/rest/ProductTypeSmallChange.java
+END
+ProductTypeLargeSelect.java
+K 25
+svn:wc:ra_dav:version-url
+V 112
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/product/rest/ProductTypeLargeSelect.java
+END
+ProductTree.java
+K 25
+svn:wc:ra_dav:version-url
+V 101
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/product/rest/ProductTree.java
+END
+ProductList.java
+K 25
+svn:wc:ra_dav:version-url
+V 101
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/product/rest/ProductList.java
+END
+ProductSort.java
+K 25
+svn:wc:ra_dav:version-url
+V 101
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/product/rest/ProductSort.java
+END
+ProductComboPictureUpload.java
+K 25
+svn:wc:ra_dav:version-url
+V 115
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/product/rest/ProductComboPictureUpload.java
+END
+ProductCombo.java
+K 25
+svn:wc:ra_dav:version-url
+V 102
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/product/rest/ProductCombo.java
+END
+ProductComboPicture.java
+K 25
+svn:wc:ra_dav:version-url
+V 109
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/product/rest/ProductComboPicture.java
+END
+ProductTypeSmall.java
+K 25
+svn:wc:ra_dav:version-url
+V 106
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/product/rest/ProductTypeSmall.java
+END
+ProductComboList.java
+K 25
+svn:wc:ra_dav:version-url
+V 106
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/product/rest/ProductComboList.java
+END
+ProductTypeSmallSort.java
+K 25
+svn:wc:ra_dav:version-url
+V 110
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/product/rest/ProductTypeSmallSort.java
+END
+ProductDelete.java
+K 25
+svn:wc:ra_dav:version-url
+V 103
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/product/rest/ProductDelete.java
+END
+ProductQuery.java
+K 25
+svn:wc:ra_dav:version-url
+V 102
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/product/rest/ProductQuery.java
+END
+ProductPictureSmall.java
+K 25
+svn:wc:ra_dav:version-url
+V 109
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/product/rest/ProductPictureSmall.java
+END
+ProductListExt.java
+K 25
+svn:wc:ra_dav:version-url
+V 104
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/product/rest/ProductListExt.java
+END
+ProductSeason.java
+K 25
+svn:wc:ra_dav:version-url
+V 103
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/product/rest/ProductSeason.java
+END
+ProductTypeLarge.java
+K 25
+svn:wc:ra_dav:version-url
+V 106
+/svn/yee/!svn/ver/16/server/Redot/CloverServer/src/org/redot/clover/app/product/rest/ProductTypeLarge.java
+END
+ProductConfig.java
+K 25
+svn:wc:ra_dav:version-url
+V 103
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/product/rest/ProductConfig.java
+END

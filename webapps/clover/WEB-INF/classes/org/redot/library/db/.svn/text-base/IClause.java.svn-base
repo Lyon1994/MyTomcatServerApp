@@ -1,0 +1,268 @@
+package org.redot.library.db;
+
+import org.redot.library.lang.ArrayUtils;
+import org.redot.library.lang.StringUtils;
+
+import java.util.List;
+import java.util.ArrayList;
+
+/**
+ * Copyright By Redot.
+ * User: CASH
+ * Date: 2009-10-16
+ * Time: 17:39:16
+ */
+public class IClause {
+
+    public static final int COND_EQ = 1;//equals
+    public static final int COND_NE = 2;//not equals
+    public static final int COND_GT = 3;//great than
+    public static final int COND_LT = 4;//low than
+    public static final int COND_GE = 5;//great than or equals
+    public static final int COND_LE = 6;//low than or equals
+    public static final int COND_IN = 7;//in
+    public static final int COND_NI = 8;//not in
+    public static final int COND_ISNULL = 9;//is null
+    public static final int COND_ISNOTNULL = 10;//is not null
+    public static final int COND_LIKE = 11;//like '%s%'
+    public static final int COND_LIKE_S = 12;//like 's%'
+    public static final int COND_LIKE_E = 13;//like '%s'
+
+    public static final String COLUMN_TYPE_NUMBER = "INT,LONG,NUMBER,FLOAT";
+
+    public static final int TYPE_AND = 0;
+    public static final int TYPE_OR = 1;
+
+    private IColumn column = null;
+
+    private int condType = 1;
+
+    private Object[] values;
+
+    private IClause head = null;
+
+    private List<IClause> tails = new ArrayList<IClause>();
+
+    private int type = TYPE_AND;
+
+    public IClause(IColumn column, int condType, Object... values) {
+        setColumn(column);
+        setCondType(condType);
+        setValues(values);
+    }
+
+    public String sql() {
+        if (getValues().length == 0) {
+            return "";
+        }
+        //System.out.println("col=" + getColumn().alias());
+        //System.out.println("getTails().size()="+getTails().size());
+        //System.out.println("getType()="+getType());
+        StringBuffer sb = new StringBuffer();
+        switch (getCondType()) {
+            case COND_EQ:
+                sb.append(createEQ());
+                break;
+            case COND_NE:
+                sb.append(createNE());
+                break;
+            case COND_GT:
+                sb.append(createComm(">"));
+                break;
+            case COND_LT:
+                sb.append(createComm("<"));
+                break;
+            case COND_GE:
+                sb.append(createComm(">="));
+                break;
+            case COND_LE:
+                sb.append(createComm("<="));
+                break;
+            case COND_IN:
+                sb.append(createCommIN("IN"));
+                break;
+            case COND_NI:
+                sb.append(createCommIN("NOT IN"));
+                break;
+            case COND_LIKE:
+                sb.append(createCommLIKE(" %", "%"));
+                break;
+            case COND_LIKE_S:
+                sb.append(createCommLIKE("", "%"));
+                break;
+            case COND_LIKE_E:
+                sb.append(createCommLIKE("%", ""));
+                break;
+            default:
+                sb.append("1=1");
+        }
+        for (int i = 0; i < getTails().size(); i++) {
+            boolean haveTails = getTails().get(i).getTails().size() > 0;
+            if (getTails().get(i).getType() == TYPE_AND) {
+                sb.append(" AND " + (haveTails ? "( " : ""));
+            } else {
+                sb.append(" OR " + (haveTails ? "( " : ""));
+            }
+            sb.append(getTails().get(i).sql());
+            sb.append(" " + (haveTails ? ")" : ""));
+        }
+
+        return sb.toString();
+    }
+
+    public String createEQ() {
+        String str = getColumn().alias();
+        if (COLUMN_TYPE_NUMBER.indexOf(getColumn().getType()) > -1) {
+            if (getValues().length > 1) {
+                str += " IN (" + ArrayUtils.join(",", getValues()) + ")";
+            } else {
+                str += " = " + StringUtils.toString(getValues()[0]);
+            }
+        } else {
+            if (getValues().length > 1) {
+                str += " IN (" + ArrayUtils.join(",", "'", getValues()) + ")";
+            } else {
+                str += " = '" + StringUtils.toString(getValues()[0]) + "'";
+            }
+        }
+        return str;
+    }
+
+    public String createNE() {
+        String str = getColumn().alias();
+        if (COLUMN_TYPE_NUMBER.indexOf(getColumn().getType()) > -1) {
+            if (getValues().length > 1) {
+                str += " NOT IN (" + ArrayUtils.join(",", getValues()) + ")";
+            } else {
+                str += " <> " + StringUtils.toString(getValues()[0]);
+            }
+        } else {
+            if (getValues().length > 1) {
+                str += " NOT IN (" + ArrayUtils.join(",", "'", getValues()) + ")";
+            } else {
+                str += " <> '" + StringUtils.toString(getValues()[0]) + "'";
+            }
+        }
+        return str;
+    }
+
+    public String createCommLIKE(String sign1, String sign2) {
+        String str = getColumn().alias();
+        if (getValues().length > 1) {
+            str = "(" + str;
+            for (int i = 0; i < getValues().length; i++) {
+                if (i > 0) {
+                    str += " AND";
+                }
+                str += " '" + sign1 + StringUtils.toString(getValues()[i]) + sign2 + "'";
+            }
+            str += ")";
+        } else {
+            str += " '" + sign1 + StringUtils.toString(getValues()[0]) + sign2 + "'";
+        }
+
+        return str;
+    }
+
+    public String createCommIN(String sign) {
+        String str = getColumn().alias();
+        if (COLUMN_TYPE_NUMBER.indexOf(getColumn().getType()) > -1) {
+            str += " " + sign + " (" + ArrayUtils.join(",", getValues()) + ")";
+        } else {
+            str += " " + sign + " (" + ArrayUtils.join(",", "'", getValues()) + ")";
+        }
+        return str;
+    }
+
+    public String createComm(String sign) {
+        String str = getColumn().alias();
+        if (COLUMN_TYPE_NUMBER.indexOf(getColumn().getType()) > -1) {
+            if (getValues().length > 1) {
+                str = "(" + str;
+                for (int i = 0; i < getValues().length; i++) {
+                    if (i > 0) {
+                        str += " AND";
+                    }
+                    str += " " + sign + " " + StringUtils.toString(getValues()[i]);
+                }
+                str += ")";
+            } else {
+                str += " " + sign + " " + StringUtils.toString(getValues()[0]);
+            }
+        } else {
+            if (getValues().length > 1) {
+                str = "(" + str;
+                for (int i = 0; i < getValues().length; i++) {
+                    if (i > 0) {
+                        str += " AND";
+                    }
+                    str += " " + sign + " '" + StringUtils.toString(getValues()[i]) + "'";
+                }
+                str += ")";
+            } else {
+                str += " " + sign + " '" + StringUtils.toString(getValues()[0]) + "'";
+            }
+        }
+        return str;
+    }
+
+    public IClause and(IClause clause) {
+
+        getTails().add(clause);
+        clause.setHead(this);
+        clause.setType(TYPE_AND);
+        return this;
+    }
+
+    public IClause or(IClause clause) {
+        getTails().add(clause);
+        clause.setHead(this);
+        clause.setType(TYPE_OR);
+        return this;
+    }
+
+    public int getCondType() {
+        return condType;
+    }
+
+    public void setCondType(int condType) {
+        this.condType = condType;
+    }
+
+    public IColumn getColumn() {
+        return column;
+    }
+
+    public void setColumn(IColumn column) {
+        this.column = column;
+    }
+
+    public Object[] getValues() {
+        return values;
+    }
+
+    public void setValues(Object[] values) {
+        this.values = values;
+    }
+
+    public IClause getHead() {
+        return head;
+    }
+
+    public void setHead(IClause head) {
+        this.head = head;
+    }
+
+    public List<IClause> getTails() {
+        return tails;
+    }
+
+
+    public int getType() {
+        return type;
+    }
+
+    public void setType(int type) {
+        this.type = type;
+    }
+}

@@ -1,0 +1,56 @@
+package org.redot.clover.app.inventory;
+
+import org.redot.clover.core.ext.BaseAction;
+import org.redot.clover.core.ext.Params;
+import org.redot.library.db.IQuery;
+import org.redot.library.lang.DateUtils;
+import org.redot.library.lang.StringUtils;
+
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: yh_admin
+ * Date: 12-11-5
+ * Time: 上午9:06
+ * To change this template use File | Settings | File Templates.
+ */
+public class SupplierAmountListAction extends BaseAction {
+    public List<Map>  list(Params params)
+    {
+        String DATE_S = StringUtils.toString(params.val("DATE_S"));
+        String DATE_E = StringUtils.toString(params.val("DATE_E"));
+        if (DATE_S.length() == 0) {
+            DATE_S = DateUtils.formatDate(DateUtils.getFirstDateOfMonth(new Date())) ;
+        }
+        if (DATE_E.length() == 0) {
+            DATE_E = DateUtils.getNowDate();
+        }
+        if(DATE_S.compareTo(DATE_E) > 0){
+            DATE_S = DateUtils.formatDate(DateUtils.getFirstDateOfMonth(new Date())) ;
+            DATE_E = DateUtils.getNowDate();
+        }
+        System.out.println(DATE_S);
+        String sql=" SELECT B.S_ID AS PO_S_ID , B.S_NAME AS PO_S_NAME ,B.S_STATUS,C.STATUS_NAME AS S_STATUS_NAME FROM X_PO A   " +
+                "  LEFT JOIN X_S B ON A.PO_S_ID=B.S_ID   " +
+                "  LEFT JOIN X_STATUS C ON B.S_STATUS=C.`STATUS`  " +
+                "  WHERE A.PO_STATUS=4  "
+                +"  GROUP BY PO_S_ID ";
+        IQuery query = getQuery();
+        List<Map> list = query.doQuery(sql).tables();
+        System.out.println(sql);
+        for (Map mx:list)
+        {
+            String   PO_S_ID=StringUtils.toString(mx.get("PO_S_ID")) ;
+            System.out.println(PO_S_ID);
+            sql="SELECT S_AMOUNT_LAST("+PO_S_ID+",'"+DATE_S+"00:00:00'"+",'"+DATE_E+"23:59:59'"+") AS S_AMOUNT_LAST,S_AMOUNT_SUM("+PO_S_ID+") AS S_AMOUNT_SUM,S_AMOUNT_NOBILL("+PO_S_ID+",'"+DATE_S+"00:00:00'"+",'"+DATE_E+"23:59:59'"+") AS S_AMOUNT_NOBILL,S_AMOUNT_BILL("+PO_S_ID+",'"+DATE_S+"00:00:00'"+",'"+DATE_E+"23:59:59'"+") AS S_AMOUNT_BILL";
+            Map  list2 =query.doQuery(sql).table();
+            mx.putAll(list2);
+        }
+        System.out.println(sql);
+        return list;
+    }
+}

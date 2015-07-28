@@ -1,0 +1,222 @@
+package org.redot.clover.app.inventory;
+
+import org.redot.clover.app.message.MessageManager;
+import org.redot.clover.app.system.SystemAction;
+import org.redot.clover.core.CloverManager;
+import org.redot.clover.core.ext.BaseAction;
+import org.redot.clover.core.ext.Params;
+import org.redot.library.db.IQuery;
+import org.redot.library.db.ITable;
+import org.redot.library.lang.DateUtils;
+import org.redot.library.lang.StringUtils;
+import org.restlet.data.Form;
+
+import java.util.Hashtable;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 11-4-30
+ * Time: 下午4:44
+ * To change this template use File | Settings | File Templates.
+ */
+public class UseAction extends BaseAction{
+
+    public List<Map> list(Params params){
+        String U_P_ID = StringUtils.toString(params.val("U_P_ID"));
+        String U_REASON = StringUtils.toString(params.val("U_REASON"));
+        String U_MAKER=StringUtils.toString(params.val("U_MAKER")) ;
+        String DATE_S = StringUtils.toString(params.val("DATE_S"));
+        String DATE_E = StringUtils.toString(params.val("DATE_E"));
+        String U_STATUS=StringUtils.toString(params.val("U_STATUS"));
+        if (DATE_S.length() == 0) {
+            DATE_S = DateUtils.getNowDate();
+        }
+        if (DATE_E.length() == 0) {
+            DATE_E = DateUtils.getNowDate();
+        }
+        if(DATE_S.compareTo(DATE_E) > 0){
+            DATE_S = DateUtils.getNowDate();
+            DATE_E = DateUtils.getNowDate();
+        }
+        String COND = " AND A.U_DT_U >= '" +DATE_S+ "' AND A.U_DT_U <= '" +DATE_E+ "'";
+        String  COND2="";
+
+        if(U_P_ID.length() > 0){
+            COND2="LEFT JOIN X_U_P B ON A.U_ID=B.U_ID"  ;
+            COND += " AND B.U_P_ID = " + U_P_ID;
+        }
+        if(U_REASON.length() > 0){
+            COND += " AND A.U_REASON = '" + U_REASON+"'";
+        }
+        if(U_MAKER.length()>0)
+        {
+            COND+=" AND  A.U_MAKER="+U_MAKER;
+        }
+        if(U_STATUS.length()>0)
+        {
+            COND+="  AND A.U_STATUS="+U_STATUS;
+        }
+        String sql="SELECT A.U_ID,A.U_NUM,A.U_DT_U,A.U_REASON,A.U_MAKER,E.ACCOUNT_NAME,A.U_CHECKER,F.ACCOUNT_NAME AS U_CHECKER_NAME,A.U_DT_CHECK,A.U_DT,A.U_STATUS,A.U_MEMO " +
+                "FROM X_U  A  LEFT JOIN X_ACCOUNT E ON A.U_MAKER=E.ACCOUNT_ID LEFT JOIN X_ACCOUNT F ON A.U_CHECKER=F.ACCOUNT_ID "+COND2+" WHERE A.U_STATUS<>2"+COND+"  ORDER BY A.U_DT";
+        IQuery query = getQuery();
+        List<Map> list = query.doQuery(sql).tables();
+        System.out.println(sql);
+
+        return list;
+    }
+
+
+    public int set(Form form){
+        if(!isLogin()){
+            return CloverManager.CODE_FAILED;
+        }
+        String U_MAKER_ID = StringUtils.toString(getClient().getCookies().get("ACCOUNT_ID"));
+
+        Map data = form.getValuesMap();
+//        String U_MAKER_ID = StringUtils.toString(data.get("ACCOUNT_ID"));
+        String U_ID=StringUtils.toString(data.get("U_ID"));
+        String[] U_P_ID_ARR = StringUtils.split(StringUtils.toString(data.get("U_P_ID")), ",");
+        String[] U_P_NUM_ARR = StringUtils.split(StringUtils.toString(data.get("U_P_NUM")), ",");
+        if (U_P_ID_ARR.length != U_P_NUM_ARR.length )
+        {
+            return CloverManager.CODE_FAILED;
+        }
+        ITable T = getTable("X_U").clearData();
+        ITable TC = getTable("X_U_P").clearData();
+
+        int num=0;
+        int result = 0;
+        if(U_ID.length() == 0){
+            U_ID = String.valueOf(T.getMaxID("U_ID"));
+            data.put("U_ID", U_ID);
+            data.put("U_DT", DateUtils.getNow());
+            data.put("U_MAKER",U_MAKER_ID) ;
+            TC.where(TC.column("U_ID").eq(U_ID)).delete();
+            result = 0;
+            for(int i = 0; i< U_P_ID_ARR.length;i++){
+                Map  m = new Hashtable();
+                m.put("U_ID",U_ID) ;
+                m.put("U_P_ID",U_P_ID_ARR[i]);
+                m.put("U_P_NUM",U_P_NUM_ARR[i]);
+                m.put("U_P_INDEX",i+1)    ;
+                num=i+1;
+                TC.data(m).create();
+                TC.clearData();
+            }
+            data.put("U_NUM",num);
+            result=T.data(data).create();
+        }
+        else{
+            String sql="SELECT U_STATUS  FROM X_U WHERE U_ID= "+U_ID;
+            IQuery query=getQuery();
+            String  status=query.doQuery(sql).getValue();
+            System.out.println("+++++++++"+status);
+            System.out.println("+++++++++"+status.equals("0"));
+            if (status.equals("0"))
+            {
+//            ITable TC = getTable("X_U_P").clearData();
+                TC.where(TC.column("U_ID").eq(U_ID)).delete();
+                result = 0;
+                for(int i = 0; i< U_P_ID_ARR.length;i++){
+                    Map  m = new Hashtable();
+                    m.put("U_ID",U_ID) ;
+                    m.put("U_P_ID",U_P_ID_ARR[i]);
+                    m.put("U_P_NUM",U_P_NUM_ARR[i]);
+                    m.put("U_P_INDEX",i+1)    ;
+                    num=i+1;
+                    TC.data(m).create();
+                    TC.clearData();
+                }
+                data.put("U_NUM",num);
+                result = T.data(data).where(T.column("U_ID").eq(U_ID)).update();
+            }
+        }
+        if(result < 0){
+            return CloverManager.CODE_FAILED;
+        }
+        MessageManager.getInstance().setVersion(MessageManager.MSG_VER_CLIENT);
+        return CloverManager.CODE_SUCCESS;
+    }
+
+    public List<Map> get(String  U_ID){
+        String sql="SELECT D.P_ID AS U_P_ID,D.P_NAME AS U_P_NAME,B.U_P_NUM,C.UNIT_ID AS U_UNIT_ID,C.UNIT_NAME AS U_UNIT_NAME FROM X_U  A LEFT JOIN X_U_P B ON A.U_ID= B.U_ID LEFT JOIN X_P D ON B.U_P_ID=D.P_ID LEFT JOIN X_UNIT C ON D.P_UNIT_ID=C.UNIT_ID LEFT JOIN X_ACCOUNT E ON A.U_MAKER=E.ACCOUNT_ID WHERE A.U_STATUS<>2 AND A.U_ID="+U_ID;
+        IQuery query=getQuery();
+        List list= query.doQuery(sql).tables();
+        System.out.println(sql);
+        return  list;
+    }
+
+
+
+    public int delete(Form form) {
+        Map data = form.getValuesMap();
+        String U_ID=StringUtils.toString(data.get("U_ID"));
+        if(U_ID.length()==0)
+        {
+            return CloverManager.CODE_FAILED;
+        }
+        String sql="SELECT U_ID  FROM X_U WHERE U_ID="+U_ID;
+        IQuery query=getQuery();
+        List<Map> list=  query.doQuery(sql).tables();
+        int result=0;
+        for (Map list1:list)
+        {
+            String U_IDX=StringUtils.toString(list1.get("U_ID"))  ;
+            sql="DELETE FROM X_U_P WHERE U_ID="+U_IDX;
+            result=query.doExec(sql);
+        }
+        sql="UPDATE X_U  SET U_STATUS=2 WHERE U_ID="+U_ID;
+        result=query.doExec(sql);
+        if(result < 0){
+            return CloverManager.CODE_FAILED;
+        }
+        MessageManager.getInstance().setVersion(MessageManager.MSG_VER_CLIENT);
+        return CloverManager.CODE_SUCCESS;
+    }
+
+    public int check(Form form){
+        if(!isLogin()){
+            return CloverManager.CODE_FAILED;
+        }
+        String ACCOUNT_ID = StringUtils.toString(getClient().getCookies().get("ACCOUNT_ID"));
+        Map data = form.getValuesMap();
+        String U_ID = StringUtils.toString(data.get("U_ID"));
+
+        ITable T = getTable("X_U").clearData();
+        int result = 0;
+        data.put("U_DT_CHECK", DateUtils.getNow());
+        data.put("U_CHECKER", ACCOUNT_ID);
+        data.put("U_STATUS", 1);
+        result = T.data(data).where(T.column("U_ID").eq(U_ID)).update();
+        if(result < 0){
+            return CloverManager.CODE_FAILED;
+        }
+        return CloverManager.CODE_SUCCESS;
+
+    }
+    public int reject(Form form){
+        if(!isLogin()){
+            return CloverManager.CODE_FAILED;
+        }
+        String U_MAKER_ID = StringUtils.toString(getClient().getCookies().get("ACCOUNT_ID"));
+        Map data = form.getValuesMap();
+//        String U_MARK_ID = StringUtils.toString(data.get("ACCOUNT_ID"));
+        String U_ID = StringUtils.toString(data.get("U_ID"));
+        String U_REJECT_REASON=StringUtils.toString(data.get("U_REJECT_REASON")) ;
+        ITable T = getTable("X_U").clearData();
+        int  result = 0;
+        data.put("U_DT_CHECK", DateUtils.getNow());
+        data.put("U_CHECKER", U_MAKER_ID);
+        data.put("U_REJECT_REASON",U_REJECT_REASON)    ;
+        data.put("U_STATUS", 3);
+        result = T.data(data).where(T.column("U_ID").eq(U_ID)).update();
+        if(result < 0){
+            return CloverManager.CODE_FAILED;
+        }
+        return CloverManager.CODE_SUCCESS;
+    }
+
+}

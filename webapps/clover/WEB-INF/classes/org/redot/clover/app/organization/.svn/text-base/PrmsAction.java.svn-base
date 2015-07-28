@@ -1,0 +1,56 @@
+package org.redot.clover.app.organization;
+
+import org.redot.clover.core.CloverManager;
+import org.redot.clover.core.ext.BaseAction;
+import org.redot.library.db.IQuery;
+import org.redot.library.db.ITable;
+import org.redot.library.lang.StringUtils;
+import org.restlet.data.Form;
+
+import java.util.ArrayList;
+import java.util.Hashtable;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 11-4-18
+ * Time: 下午8:46
+ * To change this template use File | Settings | File Templates.
+ */
+public class PrmsAction extends BaseAction{
+
+    public List<Map> tree(String PRMS_DICT_ID){
+        PRMS_DICT_ID = PRMS_DICT_ID == null || PRMS_DICT_ID.equals("") ? "0" : PRMS_DICT_ID;
+        String sql = "SELECT * FROM X_PRMS_DICT WHERE PRMS_DICT_STATUS = 0 AND PRMS_DICT_PARENT="+ PRMS_DICT_ID+" ORDER BY PRMS_DICT_SORT";
+        IQuery query = getQuery();
+        List<Map> list = query.doQuery(sql).tables();
+        List<Map> data = new ArrayList<Map>();
+        for(int i=0;i<list.size();i++){
+            Map m = list.get(i);
+            Map d = new Hashtable();
+            String PRMS_DICT_ID_ = StringUtils.toString(m.get("PRMS_DICT_ID"));
+//            d.put("ID", PRMS_DICT_ID_);
+            d.put("ID", StringUtils.toString(m.get("PRMS_CODE")));
+            d.put("NAME", StringUtils.toString(m.get("PRMS_DICT_NAME")));
+            d.put("EXT", m);
+            sql = "SELECT * FROM X_PRMS_DICT WHERE PRMS_DICT_STATUS = 0 AND PRMS_DICT_PARENT="+PRMS_DICT_ID_;
+            if(query.rowCount(sql) > 0){
+                d.put("ITEM", tree(PRMS_DICT_ID_));
+            }
+            else{
+                d.put("ITEM", new ArrayList<Map>());
+            }
+            data.add(d);
+        }
+        query.free();
+        return data;
+    }
+
+    public int checkPrms(String PRMS_KEY, String PRMS_EXT){
+
+        return CloverManager.CODE_SUCCESS;
+    }
+
+}

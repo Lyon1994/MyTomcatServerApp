@@ -1,0 +1,54 @@
+package org.redot.library.db;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 10-12-19
+ * Time: 上午11:16
+ * To change this template use File | Settings | File Templates.
+ */
+public class ITableClause {
+
+    private ITable t;
+
+    private IColumn c1;
+
+    private IColumn c2;
+
+    private String name;
+
+    public ITableClause(ITable t, IColumn c1, IColumn c2) {
+        this.t = t;
+        this.c1 = c1;
+        this.c2 = c2;
+        this.name = t.getName();
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public ITable getT() {
+        return t;
+    }
+
+    public void setT(ITable t) {
+        this.t = t;
+    }
+
+    public IColumn getC1() {
+        return c1;
+    }
+
+    public void setC1(IColumn c1) {
+        this.c1 = c1;
+    }
+
+    public IColumn getC2() {
+        return c2;
+    }
+
+    public void setC2(IColumn c2) {
+        this.c2 = c2;
+    }
+}

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<clover>
+
+    <resource class="org.redot.clover.app.order.rest.OrderReportCash">/order/report/cash</resource>
+    <resource class="org.redot.clover.app.order.rest.OrderReportTakeMoney">/order/report/take/money</resource>
+    <resource class="org.redot.clover.app.order.rest.OrderReportDay">/order/report/day</resource>
+    <resource class="org.redot.clover.app.order.rest.OrderReportProduct">/order/report/product</resource>
+    <resource class="org.redot.clover.app.order.rest.OrderReportTempProduct">/order/report/product/temp</resource>
+    <resource class="org.redot.clover.app.order.rest.OrderReportMonth">/order/report/month</resource>
+
+
+
+</clover>

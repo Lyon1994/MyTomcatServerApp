@@ -1,0 +1,25 @@
+package org.redot.clover.app.inventory.rest;
+
+import org.redot.clover.app.inventory.PurchaseAction;
+import org.redot.clover.core.data.DataPackage;
+import org.redot.clover.core.ext.BaseResource;
+import org.redot.library.lang.StringUtils;
+import org.restlet.resource.Get;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 12-9-13
+ * Time: 上午11:11
+ * To change this template use File | Settings | File Templates.
+ */
+public class PurchaseList extends BaseResource{
+
+    @Get("json")
+    public String doGet(){
+        DataPackage dp = new DataPackage();
+        PurchaseAction a = new PurchaseAction();
+        dp.addTable("table", a.list(params));
+        return dp.toJSON();
+    }
+}

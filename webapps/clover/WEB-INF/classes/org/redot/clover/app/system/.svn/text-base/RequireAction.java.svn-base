@@ -1,0 +1,86 @@
+package org.redot.clover.app.system;
+
+import org.redot.clover.app.message.MessageManager;
+import org.redot.clover.core.CloverManager;
+import org.redot.clover.core.ext.BaseAction;
+import org.redot.library.db.IQuery;
+import org.redot.library.db.ITable;
+import org.redot.library.lang.StringUtils;
+import org.restlet.data.Form;
+
+import java.util.HashMap;
+import java.util.Hashtable;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 10-12-31
+ * Time: 上午2:33
+ * To change this template use File | Settings | File Templates.
+ */
+public class RequireAction extends BaseAction {
+
+    public Map get() {
+        Map data = new Hashtable();
+        String sql = "SELECT * FROM X_REQUIRE";
+        IQuery query = getQuery();
+        List<Map> REQUIRE_DESCS = query.doQuery(sql).tables();
+        data.put("REQUIRE_DESCS", REQUIRE_DESCS);
+        query.free();
+        return data;
+    }
+
+    public List<Map> select(){
+        String sql = "SELECT * FROM X_REQUIRE";
+        IQuery query = getQuery();
+        List<Map> list = query.doQuery(sql).tables();
+        query.free();
+        return list;
+    }
+
+    public int add(String REQUIRE_DESC) {
+
+        if (StringUtils.toString(REQUIRE_DESC).length() == 0) {
+            return CloverManager.CODE_FAILED;
+        }
+        IQuery query = getQuery();
+        if(query.rowCount("SELECT * FROM X_REQUIRE WHERE REQUIRE_DESC='"+REQUIRE_DESC+"'") > 0){
+            query.free();
+            return CloverManager.CODE_SUCCESS;
+        }
+        Map d = new Hashtable();
+        d.put("REQUIRE_DESC", REQUIRE_DESC);
+        int result = getTable("X_REQUIRE").clearData().data(d).create();
+        query.free();
+        if (result < 0) {
+            return CloverManager.CODE_FAILED;
+        }
+        return CloverManager.CODE_SUCCESS;
+    }
+
+    public int set(Form form) {
+        Map data = form.getValuesMap();
+
+        ITable T = getTable("X_REQUIRE").clearData();
+        T.delete();
+
+        String[] REQUIRE_DESCS = form.getValuesArray("REQUIRE_DESC");
+        if(REQUIRE_DESCS != null && REQUIRE_DESCS.length > 0){
+            int x = 0;
+            for(String REQUIRE_DESC : REQUIRE_DESCS){
+                if(REQUIRE_DESC == null || REQUIRE_DESC.length() == 0){
+                    continue;
+                }
+                Map m = new HashMap();
+                m.put("REQUIRE_DESC", REQUIRE_DESC);
+                x++;
+                T.data(m).create();
+            }
+        }
+        MessageManager.getInstance().setVersion(MessageManager.MSG_VER_REQUIRE);
+        return CloverManager.CODE_SUCCESS;
+    }
+
+}

@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<clover>
+
+    <resource class="org.redot.clover.app.kitchen.rest.KitchenWeightProduct">/kitchen/weight/product</resource>
+    <resource class="org.redot.clover.app.kitchen.rest.KitchenWeightDesk">/kitchen/weight/desk</resource>
+    <resource class="org.redot.clover.app.kitchen.rest.KitchenWeightInfoProduct">/kitchen/weight/info/product</resource>
+    <resource class="org.redot.clover.app.kitchen.rest.KitchenWeightInfoDesk">/kitchen/weight/info/desk</resource>
+    <resource class="org.redot.clover.app.kitchen.rest.KitchenWeight">/kitchen/weight</resource>
+
+    <resource class="org.redot.clover.app.kitchen.rest.KitchenCutProduct">/kitchen/cut/product</resource>
+    <resource class="org.redot.clover.app.kitchen.rest.KitchenCutDesk">/kitchen/cut/desk</resource>
+    <resource class="org.redot.clover.app.kitchen.rest.KitchenCutInfoProduct">/kitchen/cut/info/product</resource>
+    <resource class="org.redot.clover.app.kitchen.rest.KitchenCutInfoDesk">/kitchen/cut/info/desk</resource>
+    <resource class="org.redot.clover.app.kitchen.rest.KitchenCut">/kitchen/cut</resource>
+
+    <resource class="org.redot.clover.app.kitchen.rest.KitchenPlanProduct">/kitchen/plan/product</resource>
+    <resource class="org.redot.clover.app.kitchen.rest.KitchenPlanDesk">/kitchen/plan/desk</resource>
+    <resource class="org.redot.clover.app.kitchen.rest.KitchenPlanInfoProduct">/kitchen/plan/info/product</resource>
+    <resource class="org.redot.clover.app.kitchen.rest.KitchenPlanInfoDesk">/kitchen/plan/info/desk</resource>
+    <resource class="org.redot.clover.app.kitchen.rest.KitchenPlan">/kitchen/plan</resource>
+
+    <resource class="org.redot.clover.app.kitchen.rest.KitchenSignProduct">/kitchen/sign/product</resource>
+    <resource class="org.redot.clover.app.kitchen.rest.KitchenSignDesk">/kitchen/sign/desk</resource>
+    <resource class="org.redot.clover.app.kitchen.rest.KitchenSignInfoProduct">/kitchen/sign/info/product</resource>
+    <resource class="org.redot.clover.app.kitchen.rest.KitchenSignInfoDesk">/kitchen/sign/info/desk</resource>
+    <resource class="org.redot.clover.app.kitchen.rest.KitchenSign">/kitchen/sign</resource>
+
+    <resource class="org.redot.clover.app.kitchen.rest.KitchenClearPushList">/kitchen/clear-push/list</resource>
+    <resource class="org.redot.clover.app.kitchen.rest.KitchenClearPush">/kitchen/clear-push</resource>
+    <resource class="org.redot.clover.app.kitchen.rest.KitchenClearPushDelete">/kitchen/clear-push/delete</resource>
+
+    <resource class="org.redot.clover.app.kitchen.rest.KitchenCaseList">/kitchen/case/list</resource>
+    <resource class="org.redot.clover.app.kitchen.rest.KitchenCase">/kitchen/case/info/{ID}</resource>
+    <resource class="org.redot.clover.app.kitchen.rest.KitchenCase">/kitchen/case</resource>
+    <resource class="org.redot.clover.app.kitchen.rest.KitchenCaseDelete">/kitchen/case/delete</resource>
+</clover>

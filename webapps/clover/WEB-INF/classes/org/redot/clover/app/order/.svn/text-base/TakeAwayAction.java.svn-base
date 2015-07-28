@@ -1,0 +1,90 @@
+package org.redot.clover.app.order;
+
+import org.redot.clover.core.CloverManager;
+import org.redot.clover.core.ext.BaseAction;
+import org.redot.library.db.ITable;
+import org.redot.library.lang.DateUtils;
+import org.redot.library.lang.StringUtils;
+import org.restlet.data.Form;
+
+import java.util.Hashtable;
+import java.util.Map;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 11-3-31
+ * Time: 上午10:32
+ * To change this template use File | Settings | File Templates.
+ */
+public class TakeAwayAction extends BaseAction {
+
+    public int create(Form form){
+        ITable d = getTable("X_DESK_TEMP");
+        Map data = new Hashtable();
+        long DESK_ID = d.getMaxID("DESK_ID");
+        if(DESK_ID == 1){
+            DESK_ID = 10000;
+        }
+        else{
+            DESK_ID += 1;
+        }
+        data.put("DESK_ID", DESK_ID);
+        data.put("DESK_CODE", DESK_ID);
+        data.put("DESK_NAME", "外卖");
+        int result = d.data(data).create();
+        if(result < 0){
+            return CloverManager.CODE_FAILED;
+        }
+        ITable o = getTable("X_O");
+        data.clear();
+        long O_ID = o.getMaxID("O_ID");
+        data.put("O_ID", O_ID);
+        data.put("O_NO", "O" + System.currentTimeMillis());
+        data.put("O_STATUS", 2);
+        data.put("O_DT", DateUtils.getNow());
+        data.put("O_TYPE", "1");
+        data.put("O_DESK_ID", DESK_ID);
+        result = o.data(data).create();
+        if(result < 0){
+            return CloverManager.CODE_FAILED;
+        }
+        ITable t = CloverManager.getInstance().getDB().getTable("X_TA");
+        data = form.getValuesMap();
+        data.put("TA_ID", t.getMaxID("TA_ID"));
+        data.put("TA_STATUS_ID", "1");
+        data.put("TA_DT", DateUtils.getNow());
+        data.put("O_ID", O_ID);
+        result = t.data(data).create();
+        if(result < 0){
+            return CloverManager.CODE_FAILED;
+        }
+        return CloverManager.CODE_SUCCESS;
+    }
+
+    public int update(Form form) {
+        Map data = form.getValuesMap();
+        String TA_ID = StringUtils.toString(data.get("TA_ID"));
+        ITable t = getTable("X_TA");
+        int result = t.data(data).where(t.column("TA_ID").eq(TA_ID)).update();
+        if(result < 0){
+            return CloverManager.CODE_FAILED;
+        }
+        return CloverManager.CODE_SUCCESS;
+    }
+
+    public int deliver(Form form){
+        Map data = form.getValuesMap();
+        String TA_ID = StringUtils.toString(data.get("TA_ID"));
+        if(TA_ID.length() == 0){
+            return CloverManager.CODE_FAILED;
+        }
+        ITable t = getTable("X_TA");
+        data.put("TA_STATUS_ID", "2");
+        int result = t.data(data).where(t.column("TA_ID").eq(TA_ID)).update();
+        if(result < 0){
+            return CloverManager.CODE_FAILED;
+        }
+        return CloverManager.CODE_SUCCESS;
+    }
+}

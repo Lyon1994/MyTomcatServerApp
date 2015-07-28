@@ -1,0 +1,35 @@
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/yee/!svn/ver/55/server/Redot/CloverServer/src/org/redot/clover/app/item/rest
+END
+ItemTypeLarge.java
+K 25
+svn:wc:ra_dav:version-url
+V 100
+/svn/yee/!svn/ver/16/server/Redot/CloverServer/src/org/redot/clover/app/item/rest/ItemTypeLarge.java
+END
+ItemTypeList.java
+K 25
+svn:wc:ra_dav:version-url
+V 99
+/svn/yee/!svn/ver/13/server/Redot/CloverServer/src/org/redot/clover/app/item/rest/ItemTypeList.java
+END
+ItemTypeSmall.java
+K 25
+svn:wc:ra_dav:version-url
+V 100
+/svn/yee/!svn/ver/20/server/Redot/CloverServer/src/org/redot/clover/app/item/rest/ItemTypeSmall.java
+END
+ItemList.java
+K 25
+svn:wc:ra_dav:version-url
+V 95
+/svn/yee/!svn/ver/16/server/Redot/CloverServer/src/org/redot/clover/app/item/rest/ItemList.java
+END
+ItemTree.java
+K 25
+svn:wc:ra_dav:version-url
+V 95
+/svn/yee/!svn/ver/55/server/Redot/CloverServer/src/org/redot/clover/app/item/rest/ItemTree.java
+END

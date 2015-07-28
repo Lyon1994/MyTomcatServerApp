@@ -1,0 +1,295 @@
+package org.redot.clover.app.item;
+
+import org.redot.clover.app.message.MessageManager;
+import org.redot.clover.core.CloverManager;
+import org.redot.clover.core.ext.BaseAction;
+import org.redot.library.db.IQuery;
+import org.redot.library.db.ITable;
+import org.redot.library.lang.ArrayUtils;
+import org.redot.library.lang.NumberUtils;
+import org.redot.library.lang.PinyinUtils;
+import org.redot.library.lang.StringUtils;
+import org.restlet.data.Form;
+
+import java.util.ArrayList;
+import java.util.Hashtable;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 12-8-20
+ * Time: 上午11:00
+ * To change this template use File | Settings | File Templates.
+ */
+public class ItemAction extends BaseAction{
+
+    public List<Map> list(String ITEM_TYPE_ID){
+        IQuery query= getQuery();
+        String sql="SELECT ITEM_TYPE_ID FROM X_ITEM_TYPE WHERE ITEM_TYPE_PARENT = " + ITEM_TYPE_ID;
+        System.out.println(sql);
+        List<String[]> types = query.doQuery(sql).list();
+        List<String> typeList = new ArrayList<String>();
+        typeList.add(ITEM_TYPE_ID);
+        for(Object[] arr : types){
+            typeList.add(arr[0] + "");
+        }
+        sql = "SELECT A.*, B.ITEM_TYPE_NAME " +
+                "FROM X_ITEM A " +
+                "LEFT JOIN X_ITEM_TYPE B ON A.ITEM_TYPE_ID=B.ITEM_TYPE_ID " +
+                "WHERE A.ITEM_TYPE_ID in ("+ ArrayUtils.join(",", typeList)+") AND A.ITEM_STATUS <> 2 ORDER BY A.ITEM_SORT,A.ITEM_ID";
+        System.out.println(sql);
+
+        List<Map> list = query.doQuery(sql).tables();
+        query.free();
+        return list;
+    }
+
+    public List<Map> typeList(){
+        String sql = "SELECT A.* FROM X_ITEM_TYPE A ORDER BY ITEM_TYPE_SORT";
+        IQuery query = getQuery();
+        List<Map> list = query.doQuery(sql).tables();
+        query.free();
+        return list;
+    }
+
+    public List<Map> listLarge(){
+        String sql = "SELECT A.*,(SELECT COUNT(*) FROM X_ITEM_TYPE WHERE ITEM_TYPE_PARENT=A.ITEM_TYPE_ID) AS CHILDREN FROM X_ITEM_TYPE A WHERE A.ITEM_TYPE_PARENT = 0 AND ITEM_TYPE_STATUS<>2 ORDER BY ITEM_TYPE_SORT, ITEM_TYPE_ID";
+        System.out.println(sql);
+        IQuery query = getQuery();
+        List<Map> list = query.doQuery(sql).tables();
+        query.free();
+        return list;
+    }
+
+    public List<Map> listSmall(String Q, String PARENT){
+        String sql = "SELECT A.*,(SELECT COUNT(*) FROM X_ITEM WHERE ITEM_TYPE_ID=A.ITEM_TYPE_ID) AS CHILDREN FROM X_ITEM_TYPE A WHERE A.ITEM_TYPE_PARENT  <> 0 AND A.ITEM_TYPE_PARENT = " +  PARENT + "  AND ITEM_TYPE_STATUS<>2 ORDER BY ITEM_TYPE_SORT, ITEM_TYPE_ID";
+        System.out.println(sql);
+        IQuery query = getQuery();
+        List<Map> list = query.doQuery(sql).tables();
+        query.free();
+        return list;
+    }
+
+    public int delete(Form form){
+        Map data = form.getValuesMap();
+        String ITEM_ID = StringUtils.toString(data.get("ITEM_ID"));
+        if(ITEM_ID.length() == 0){
+            return CloverManager.CODE_FAILED;
+        }
+        IQuery query = getQuery();
+        String sql = "UPDATE X_ITEM SET ITEM_STATUS = 2 WHERE ITEM_ID = " + ITEM_ID;
+        int result = query.doExec(sql);
+        query.free();
+        if(result < 0){
+            return CloverManager.CODE_FAILED;
+        }
+        MessageManager.getInstance().setVersion(MessageManager.MSG_VER_PRODUCT);
+        return CloverManager.CODE_SUCCESS;
+    }
+
+    public int deleteSmall(Form form){
+        Map data = form.getValuesMap();
+        String ITEM_TYPE_ID = StringUtils.toString(data.get("ITEM_TYPE_ID_S"));
+        if(ITEM_TYPE_ID.length() == 0){
+            return CloverManager.CODE_FAILED;
+        }
+        String sql = "SELECT * FROM X_ITEM_TYPE WHERE ITEM_TYPE_PARENT = " + ITEM_TYPE_ID;
+        IQuery query = getQuery();
+        if(query.rowCount(sql) > 0){
+            query.free();
+            return CloverManager.CODE_FAILED;
+        }
+        sql = "UPDATE X_ITEM_TYPE SET ITEM_TYPE_STATUS = 2 WHERE ITEM_TYPE_ID = " + ITEM_TYPE_ID;
+        int result = query.doExec(sql);
+        query.free();
+        if(result < 0){
+            return CloverManager.CODE_FAILED;
+        }
+        MessageManager.getInstance().setVersion(MessageManager.MSG_VER_PRODUCT_TYPE);
+        return CloverManager.CODE_SUCCESS;
+    }
+    
+    public int deleteLarge(Form form){
+        Map data = form.getValuesMap();
+        String ITEM_TYPE_ID = StringUtils.toString(data.get("ITEM_TYPE_ID_L"));
+        if(ITEM_TYPE_ID.length() == 0){
+            return CloverManager.CODE_FAILED;
+        }
+        String sql = "SELECT * FROM X_ITEM_TYPE WHERE ITEM_TYPE_PARENT = " + ITEM_TYPE_ID;
+        IQuery query = getQuery();
+        if(query.rowCount(sql) > 0){
+            query.free();
+            return CloverManager.CODE_FAILED;
+        }
+        sql = "UPDATE X_ITEM_TYPE SET ITEM_TYPE_STATUS = 2 WHERE ITEM_TYPE_ID = " + ITEM_TYPE_ID;
+        System.out.println(sql);
+        int result = query.doExec(sql);
+        query.free();
+        if(result < 0){
+            return CloverManager.CODE_FAILED;
+        }
+        MessageManager.getInstance().setVersion(MessageManager.MSG_VER_PRODUCT_TYPE);
+        return CloverManager.CODE_SUCCESS;
+    }
+
+
+    public Map set(Form form){
+        Map data = form.getValuesMap();
+        String ITEM_ID = StringUtils.toString(data.get("ITEM_ID"));
+        ITable t = getTable("X_ITEM").clearData();
+        int result = 0;
+        String ITEM_SORT = StringUtils.toString(data.get("ITEM_SORT"));
+        String ITEM_TYPE_ID = StringUtils.toString(data.get("ITEM_TYPE_ID"));
+        data.put("ITEM_NAME_EXT", PinyinUtils.getPinYinHeader(StringUtils.toString(data.get("ITEM_NAME"))));
+        data.put("ITEM_TYPE_ID",ITEM_TYPE_ID);
+        if(ITEM_ID.length() == 0){
+            ITEM_ID = String.valueOf(t.getMaxID("ITEM_ID"));
+            data.put("ITEM_ID", ITEM_ID);
+            IQuery query = getQuery();
+            String sql = "SELECT MAX(ITEM_SORT) FROM X_ITEM WHERE ITEM_TYPE_ID = "+ITEM_TYPE_ID;
+            if(ITEM_SORT.length() == 0){
+                ITEM_SORT = (NumberUtils.toInt(query.doQuery(sql).getValue()) + 1) + "";
+            }
+            query.free();
+            data.put("ITEM_SORT", ITEM_SORT);
+            result = t.data(data).create();
+        }
+        else{
+            if(ITEM_SORT.length() > 0){
+                data.put("ITEM_SORT",ITEM_SORT);
+            }
+            result = t.data(data).where(t.column("ITEM_ID").eq(ITEM_ID)).update();
+        }
+        if(result < 0){
+            data.put("STATUS", CloverManager.CODE_FAILED);
+        }
+        else{
+            data.put("STATUS", CloverManager.CODE_SUCCESS);
+        }
+        return  data;
+    }
+    
+    public Map setSmall(Form form){
+        Map data = form.getValuesMap();
+        String ITEM_TYPE_ID = StringUtils.toString(data.get("ITEM_TYPE_ID_S"));
+        String ITEM_TYPE_NAME = StringUtils.toString(data.get("ITEM_TYPE_NAME_S"));
+        String ITEM_TYPE_SORT = StringUtils.toString(data.get("ITEM_TYPE_SORT_S"));
+        String ITEM_TYPE_STATUS = StringUtils.toString(data.get("ITEM_TYPE_STATUS"));
+        String ITEM_TYPE_PARENT= StringUtils.toString(data.get("ITEM_TYPE_PARENT"));
+
+        Map d = new Hashtable();
+        d.put("ITEM_TYPE_NAME", ITEM_TYPE_NAME);
+        d.put("ITEM_TYPE_ID", ITEM_TYPE_ID);
+        d.put("ITEM_TYPE_STATUS",ITEM_TYPE_STATUS);
+        d.put("ITEM_TYPE_PARENT", ITEM_TYPE_PARENT);
+        ITable t = getTable("X_ITEM_TYPE").clearData();
+        int result;
+        if(ITEM_TYPE_ID.length() == 0){
+            ITEM_TYPE_ID = String.valueOf(t.getMaxID("ITEM_TYPE_ID"));
+            d.put("ITEM_TYPE_ID", ITEM_TYPE_ID);
+            IQuery query = getQuery();
+            String sql = "SELECT MAX(ITEM_TYPE_SORT) FROM X_ITEM_TYPE WHERE ITEM_TYPE_PARENT = " + ITEM_TYPE_PARENT;
+            if(ITEM_TYPE_SORT.length() == 0){
+                ITEM_TYPE_SORT = (NumberUtils.toInt(query.doQuery(sql).getValue()) + 1) + "";
+            }
+            query.free();
+            d.put("ITEM_TYPE_SORT", ITEM_TYPE_SORT);
+            result = t.data(d).create();
+        }
+        else{
+            if(ITEM_TYPE_SORT.length() > 0){
+                d.put("ITEM_TYPE_SORT", ITEM_TYPE_SORT);
+            }
+            result = t.data(d).where(t.column("ITEM_TYPE_ID").eq(ITEM_TYPE_ID)).update();
+        }
+        if(result < 0){
+            d.put("STATUS", CloverManager.CODE_FAILED);
+
+        }
+        else{
+
+            d.put("STATUS", CloverManager.CODE_SUCCESS);
+        }
+        return d;
+    }
+    public Map setLarge(Form form){
+        Map data = form.getValuesMap();
+        String ITEM_TYPE_ID = StringUtils.toString(data.get("ITEM_TYPE_ID_L"));
+        String ITEM_TYPE_NAME = StringUtils.toString(data.get("ITEM_TYPE_NAME_L"));
+        String ITEM_TYPE_SORT = StringUtils.toString(data.get("ITEM_TYPE_SORT_L"));
+        String ITEM_TYPE_STATUS = StringUtils.toString(data.get("ITEM_TYPE_STATUS"));
+        Map d = new Hashtable();
+
+        d.put("ITEM_TYPE_NAME", ITEM_TYPE_NAME);
+        d.put("ITEM_TYPE_ID", ITEM_TYPE_ID);
+        d.put("ITEM_TYPE_STATUS",ITEM_TYPE_STATUS);
+        ITable t = getTable("X_ITEM_TYPE").clearData();
+        int result;
+        if(ITEM_TYPE_ID.length() == 0){
+            ITEM_TYPE_ID = String.valueOf(t.getMaxID("ITEM_TYPE_ID"));
+            d.put("ITEM_TYPE_ID", ITEM_TYPE_ID);
+            IQuery query = getQuery();
+            String sql = "SELECT MAX(ITEM_TYPE_SORT) FROM X_ITEM_TYPE WHERE ITEM_TYPE_PARENT = 0";
+            if(ITEM_TYPE_SORT.length() == 0){
+                ITEM_TYPE_SORT = (NumberUtils.toInt(query.doQuery(sql).getValue()) + 1) + "";
+            }
+            query.free();
+            d.put("ITEM_TYPE_SORT", ITEM_TYPE_SORT);
+            d.put("ITEM_TYPE_PARENT", 0);
+            result = t.data(d).create();
+        }
+        else{
+            if(ITEM_TYPE_SORT.length() > 0){
+                d.put("ITEM_TYPE_SORT", ITEM_TYPE_SORT);
+            }
+            result = t.data(d).where(t.column("ITEM_TYPE_ID").eq(ITEM_TYPE_ID)).update();
+        }
+        if(result < 0){
+            d.put("STATUS", CloverManager.CODE_FAILED);
+
+        }
+        else{
+            d.put("STATUS", CloverManager.CODE_SUCCESS);
+        }
+        return d;
+    }
+    public List<Map> tree(){
+        List<Map> data = new ArrayList<Map>();
+        String sql = "SELECT ITEM_TYPE_ID AS ID, ITEM_TYPE_NAME AS NAME, ITEM_TYPE_PARENT AS PARENT,'' AS UNIT_ID,'' AS UNIT_NAME, -1  AS ITEM_PRICE,'' AS  ITEM_NAME_EXT,'' AS ITEM_CODE  FROM X_ITEM_TYPE WHERE ITEM_TYPE_STATUS <> 2 AND ITEM_TYPE_PARENT= 0 ORDER BY ITEM_TYPE_SORT, ITEM_TYPE_ID";
+        IQuery query = getQuery();
+        List<Map> list = query.doQuery(sql).tables();
+        data.addAll(list);
+//        sql="SELECT ITEM_ID,ITEM_NAME FROM X_ITEM A WHERE A.ITEM_TYPE_ID=9";
+        for(Map m : list){
+            String ITEM_TYPE_ID = StringUtils.toString(m.get("ID"));
+//             sql="SELECT A.ITEM_ID AS ID ,A.ITEM_NAME AS NAME ,A.ITEM_TYPE_ID AS PARENT FROM X_ITEM A WHERE ITEM_STATUS <> 2 AND A.ITEM_TYPE_ID="+ITEM_TYPE_ID;
+//            List<Map>   list2=query.doQuery(sql).tables();
+//            data.addAll(list2);
+            sql = "SELECT ITEM_TYPE_ID AS ID, ITEM_TYPE_NAME AS NAME, ITEM_TYPE_PARENT AS PARENT,'' AS UNIT_ID,'' AS UNIT_NAME ,-1  AS ITEM_PRICE,'' AS  ITEM_NAME_EXT,'' AS ITEM_CODE  FROM X_ITEM_TYPE WHERE ITEM_TYPE_STATUS <> 2 AND ITEM_TYPE_PARENT= "+ITEM_TYPE_ID+" ORDER BY ITEM_TYPE_SORT, ITEM_TYPE_ID";
+            List<Map>   list1=query.doQuery(sql).tables();
+            System.out.println(sql);
+            data.addAll(list1);
+            for(Map mx : list1)
+            {
+                String ITEM_TYPE_ID_=StringUtils.toString(mx.get("ID")) ;
+                sql = "SELECT A.ITEM_ID AS ID, A.ITEM_UNIT_ID AS  UNIT_ID,B.UNIT_NAME AS UNIT_NAME,A.ITEM_NAME AS NAME, A.ITEM_TYPE_ID  AS  PARENT, " +
+                        " A.ITEM_PRICE ,A.ITEM_NAME_EXT,A.ITEM_CODE" +
+                        " FROM X_ITEM  A " +
+                        " LEFT JOIN X_UNIT B ON A.ITEM_UNIT_ID=B.UNIT_ID " +
+                        " WHERE A.ITEM_STATUS <> 2 AND A.ITEM_TYPE_ID = "+ITEM_TYPE_ID_+" " +
+                        " ORDER BY A.ITEM_SORT, A.ITEM_ID";
+                List<Map> PS = query.doQuery(sql).tables();
+
+                System.out.println(sql);
+                data.addAll(PS);
+            }
+        }
+//        String ITEM_TYPE_ID = StringUtils.toString(m.get("ID"));
+//        sql= "SELECT A.ITEM_ID AS ID, A.ITEM_NAME AS NAME, A.ITEM_CODE AS CODE, A.ITEM_TYPE_ID  AS  PARENT FROM X_ITEM  A  WHERE A.ITEM_STATUS <> 2 AND A.ITEM_TYPE_ID = "+ITEM_TYPE_ID_ + " ORDER BY A.ITEM_TYPE_SORT, A.ITEM_ID";
+        query.free();
+        System.out.println( data);
+        return data;
+    }
+}

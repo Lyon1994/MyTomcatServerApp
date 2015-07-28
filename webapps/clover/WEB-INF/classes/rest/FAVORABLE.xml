@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<clover>
+    <resource class="org.redot.clover.app.favorable.rest.FavorableCaseList">/favorable/case/list</resource>
+    <resource class="org.redot.clover.app.favorable.rest.FavorableCaseAvailable">/favorable/case/available</resource>
+    <resource class="org.redot.clover.app.favorable.rest.FavorableCaseQuery">/favorable/case/query</resource>
+
+    <resource class="org.redot.clover.app.favorable.rest.FavorableCaseTypeSelect">/favorable/case/type/select</resource>
+    <resource class="org.redot.clover.app.favorable.rest.FavorableCase">/favorable/case</resource>
+    <resource class="org.redot.clover.app.favorable.rest.FavorableCase">/favorable/case/info/{ID}</resource>
+    <resource class="org.redot.clover.app.favorable.rest.FavorableCaseDelete">/favorable/case/delete</resource>
+</clover>

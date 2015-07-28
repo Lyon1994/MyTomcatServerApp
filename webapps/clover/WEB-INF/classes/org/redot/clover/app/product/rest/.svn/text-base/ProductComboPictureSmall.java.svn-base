@@ -1,0 +1,45 @@
+package org.redot.clover.app.product.rest;
+
+import org.redot.clover.app.product.ProductAction;
+import org.redot.clover.core.ext.BaseResource;
+import org.redot.library.io.FileUtils;
+import org.redot.library.lang.StringUtils;
+import org.restlet.data.MediaType;
+import org.restlet.representation.FileRepresentation;
+import org.restlet.representation.Representation;
+import org.restlet.resource.Get;
+
+import java.io.File;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 10-12-21
+ * Time: 下午5:02
+ * To change this template use File | Settings | File Templates.
+ */
+public class ProductComboPictureSmall extends BaseResource {
+
+    @Get
+    public Representation doGet() {
+
+        ProductAction a = new ProductAction();
+        String fileName = a.pictureCombo(StringUtils.toString(getRequestAttributes().get("ID")));
+        String path = this.getClass().getResource("/").getPath() + "product/images/";
+//        System.out.println(path);
+//        System.out.println(fileName);
+        if(!FileUtils.isDir(path)){
+            FileUtils.mkdir(path);
+        }
+        fileName = fileName.substring(0, fileName.lastIndexOf(".")) + "-s" + fileName.substring(fileName.lastIndexOf("."));
+        //System.out.println("fileName="+fileName);
+        File file = new File(path + "/" + fileName);
+        if(!file.exists() || !file.isFile()){
+            return null;
+        }
+        Representation result = new FileRepresentation(file, MediaType.IMAGE_ALL);
+        return result;
+    }
+
+
+}

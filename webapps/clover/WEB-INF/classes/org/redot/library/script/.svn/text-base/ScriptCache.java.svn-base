@@ -1,0 +1,123 @@
+package org.redot.library.script;
+
+import org.redot.library.io.FileMonitor;
+import org.redot.library.io.FileListener;
+
+import javax.script.*;
+import java.io.IOException;
+import java.io.File;
+import java.util.Map;
+import java.util.LinkedHashMap;
+
+/**
+ * Copyright By Redot.
+ * User: CASH
+ * Date: 2009-10-19
+ * Time: 10:00:51
+ */
+public abstract class ScriptCache {
+    public static final String ENGINE_NAME = "JavaScript";
+
+    private Compilable scriptEngine;
+
+    private LinkedHashMap<String, CachedScript> cacheMap;
+
+    private boolean precompiled = false;
+
+    private ScriptContext context = null;
+
+    public ScriptCache(final int maxCachedScripts, boolean precompiled) {
+        setPrecompiled(precompiled);
+        ScriptEngineManager manager = new ScriptEngineManager();
+        scriptEngine = (Compilable) manager.getEngineByName(ENGINE_NAME);
+        setContext(getEngine().getContext());
+        cacheMap = new LinkedHashMap<String, CachedScript>(
+            maxCachedScripts, 1, false) {
+            protected boolean removeEldestEntry(Map.Entry eldest) {
+                return size() > maxCachedScripts;
+            }
+        };
+    }
+
+
+
+    public abstract File getScriptFile(String key);
+
+    public synchronized CompiledScript getScript(String key)
+        throws ScriptException, IOException {
+        CachedScript script = cacheMap.get(key);
+        if (script == null) {
+            script = new CachedScript(scriptEngine, getScriptFile(key));
+            cacheMap.put(key, script);
+            FileMonitor.getInstance().addFile(getScriptFile(key), new ScriptListener(script));
+        }
+        CompiledScript cs = script.getCompiledScript();
+        if (isPrecompiled()) {
+            cs.eval(getContext());
+        }
+        return cs;
+    }
+
+    public ScriptEngine getEngine() {
+        return (ScriptEngine) scriptEngine;
+    }
+
+    public Object invoke(String function, Object... values) throws ScriptException, NoSuchMethodException {
+
+        Invocable invo = (Invocable) scriptEngine;
+        return invo.invokeFunction(function, values);
+    }
+
+    public void init(String... keys) throws ScriptException, IOException {
+        for (int i = 0; i < keys.length; i++) {
+            if (isPrecompiled()) {
+                getScript(keys[i]).eval(getContext());
+            } else {
+                getScript(keys[i]);
+            }
+        }
+    }
+
+    public void precompiled() throws ScriptException, IOException {
+        for (String s : cacheMap.keySet()) {
+            cacheMap.get(s).getCompiledScript().eval(getContext());
+        }
+    }
+
+    public boolean isPrecompiled() {
+        return precompiled;
+    }
+
+    public void setPrecompiled(boolean precompiled) {
+        this.precompiled = precompiled;
+    }
+
+    public ScriptContext getContext() {
+        return context;
+    }
+
+    public void setContext(ScriptContext context) {
+        this.context = context;
+    }
+
+    protected class ScriptListener implements FileListener{
+        CachedScript script = null;
+
+        ScriptListener(CachedScript script){
+            this.script = script;
+        }
+
+
+        public void fileChanged(File file) {
+            System.out.println("script : " + file.getName() + " has changed, ready to recomilpe.");
+            try {
+                script.compiledScript();
+                script.getCompiledScript().eval(getContext());
+            } catch (ScriptException e) {
+                e.printStackTrace();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+}

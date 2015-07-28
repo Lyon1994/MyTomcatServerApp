@@ -1,0 +1,161 @@
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/svn/yee/!svn/ver/131/server/Redot/CloverServer/src/org/redot/clover/app/organization/rest
+END
+DepartmentList.java
+K 25
+svn:wc:ra_dav:version-url
+V 109
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/organization/rest/DepartmentList.java
+END
+DepartmentTree.java
+K 25
+svn:wc:ra_dav:version-url
+V 109
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/organization/rest/DepartmentTree.java
+END
+DepartmentSelect.java
+K 25
+svn:wc:ra_dav:version-url
+V 111
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/organization/rest/DepartmentSelect.java
+END
+Account.java
+K 25
+svn:wc:ra_dav:version-url
+V 102
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/organization/rest/Account.java
+END
+AccountSeller.java
+K 25
+svn:wc:ra_dav:version-url
+V 108
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/organization/rest/AccountSeller.java
+END
+AccountList.java
+K 25
+svn:wc:ra_dav:version-url
+V 106
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/organization/rest/AccountList.java
+END
+RoleSelectFilter.java
+K 25
+svn:wc:ra_dav:version-url
+V 111
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/organization/rest/RoleSelectFilter.java
+END
+PartLarge.java
+K 25
+svn:wc:ra_dav:version-url
+V 105
+/svn/yee/!svn/ver/112/server/Redot/CloverServer/src/org/redot/clover/app/organization/rest/PartLarge.java
+END
+PrmsTree.java
+K 25
+svn:wc:ra_dav:version-url
+V 103
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/organization/rest/PrmsTree.java
+END
+RoleListX.java
+K 25
+svn:wc:ra_dav:version-url
+V 104
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/organization/rest/RoleListX.java
+END
+RoleDelete.java
+K 25
+svn:wc:ra_dav:version-url
+V 105
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/organization/rest/RoleDelete.java
+END
+PartSmallDelete.java
+K 25
+svn:wc:ra_dav:version-url
+V 111
+/svn/yee/!svn/ver/131/server/Redot/CloverServer/src/org/redot/clover/app/organization/rest/PartSmallDelete.java
+END
+RolePrms.java
+K 25
+svn:wc:ra_dav:version-url
+V 103
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/organization/rest/RolePrms.java
+END
+DepartmentDelete.java
+K 25
+svn:wc:ra_dav:version-url
+V 111
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/organization/rest/DepartmentDelete.java
+END
+PartListDelete.java
+K 25
+svn:wc:ra_dav:version-url
+V 110
+/svn/yee/!svn/ver/131/server/Redot/CloverServer/src/org/redot/clover/app/organization/rest/PartListDelete.java
+END
+RoleDeductConfig.java
+K 25
+svn:wc:ra_dav:version-url
+V 111
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/organization/rest/RoleDeductConfig.java
+END
+AccountCheck.java
+K 25
+svn:wc:ra_dav:version-url
+V 107
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/organization/rest/AccountCheck.java
+END
+RoleDeduct.java
+K 25
+svn:wc:ra_dav:version-url
+V 105
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/organization/rest/RoleDeduct.java
+END
+AccountDelete.java
+K 25
+svn:wc:ra_dav:version-url
+V 108
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/organization/rest/AccountDelete.java
+END
+Role.java
+K 25
+svn:wc:ra_dav:version-url
+V 99
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/organization/rest/Role.java
+END
+RoleTree.java
+K 25
+svn:wc:ra_dav:version-url
+V 103
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/organization/rest/RoleTree.java
+END
+RoleList.java
+K 25
+svn:wc:ra_dav:version-url
+V 103
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/organization/rest/RoleList.java
+END
+PartSmall.java
+K 25
+svn:wc:ra_dav:version-url
+V 105
+/svn/yee/!svn/ver/112/server/Redot/CloverServer/src/org/redot/clover/app/organization/rest/PartSmall.java
+END
+PartLargeDelete.java
+K 25
+svn:wc:ra_dav:version-url
+V 111
+/svn/yee/!svn/ver/131/server/Redot/CloverServer/src/org/redot/clover/app/organization/rest/PartLargeDelete.java
+END
+Department.java
+K 25
+svn:wc:ra_dav:version-url
+V 105
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/organization/rest/Department.java
+END
+PartList.java
+K 25
+svn:wc:ra_dav:version-url
+V 104
+/svn/yee/!svn/ver/112/server/Redot/CloverServer/src/org/redot/clover/app/organization/rest/PartList.java
+END

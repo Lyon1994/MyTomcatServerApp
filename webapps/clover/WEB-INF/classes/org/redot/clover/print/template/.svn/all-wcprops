@@ -1,0 +1,47 @@
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/print/template
+END
+PrintTemplateAction.java
+K 25
+svn:wc:ra_dav:version-url
+V 107
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/print/template/PrintTemplateAction.java
+END
+PrintTemplateUtils.java
+K 25
+svn:wc:ra_dav:version-url
+V 106
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/print/template/PrintTemplateUtils.java
+END
+PrintTemplateProcess.java
+K 25
+svn:wc:ra_dav:version-url
+V 108
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/print/template/PrintTemplateProcess.java
+END
+PrintTemplate.java
+K 25
+svn:wc:ra_dav:version-url
+V 101
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/print/template/PrintTemplate.java
+END
+PrintTemplateManager.java
+K 25
+svn:wc:ra_dav:version-url
+V 108
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/print/template/PrintTemplateManager.java
+END
+PrintTemplateRow.java
+K 25
+svn:wc:ra_dav:version-url
+V 104
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/print/template/PrintTemplateRow.java
+END
+PrintTemplateField.java
+K 25
+svn:wc:ra_dav:version-url
+V 106
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/print/template/PrintTemplateField.java
+END

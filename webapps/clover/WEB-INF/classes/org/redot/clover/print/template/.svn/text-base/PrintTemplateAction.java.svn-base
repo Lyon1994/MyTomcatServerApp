@@ -1,0 +1,174 @@
+package org.redot.clover.print.template;
+
+import org.redot.clover.core.CloverManager;
+import org.redot.clover.core.ext.BaseAction;
+import org.redot.library.db.IQuery;
+import org.redot.library.db.ITable;
+import org.redot.library.lang.NumberUtils;
+import org.redot.library.lang.StringUtils;
+import org.restlet.data.Form;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 11-4-29
+ * Time: 下午8:10
+ * To change this template use File | Settings | File Templates.
+ */
+public class PrintTemplateAction extends BaseAction{
+
+    public List<Map> list(){
+        String sql = "SELECT A.* FROM X_PRINT_TEMPLATE A WHERE A.TEMPLATE_ID <> 2 ORDER BY A.TEMPLATE_ID";
+        IQuery query = getQuery();
+        List<Map> list = query.doQuery(sql).tables();
+        query.free();
+        return list;
+    }
+
+    public List<Map> select(){
+        String sql = "SELECT A.* FROM X_PRINT_TEMPLATE A WHERE A.TEMPLATE_ID <> 2 ORDER BY A.TEMPLATE_ID";
+        IQuery query = getQuery();
+        List<Map> list = query.doQuery(sql).tables();
+        query.free();
+        return list;
+    }
+
+    public int set(Form form){
+        String TEMPLATE_ID = StringUtils.toString(form.getFirstValue("TEMPLATE_ID"));
+        if(TEMPLATE_ID.length() == 0){
+            return CloverManager.CODE_FAILED;
+        }
+        String[] FIELD_NAME = form.getValuesArray("FIELD_NAME");
+        String[] FIELD_SHOW_NAME = form.getValuesArray("FIELD_SHOW_NAME");
+        String[] FIELD_VALUE_NAME = form.getValuesArray("FIELD_VALUE_NAME");
+        String[] FIELD_LENGTH = form.getValuesArray("FIELD_LENGTH");
+        String[] FIELD_ROW = form.getValuesArray("FIELD_ROW");
+        String[] FIELD_INDEX = form.getValuesArray("FIELD_INDEX");
+        String[] FIELD_LOOP = form.getValuesArray("FIELD_LOOP");
+        String[] FIELD_ALIGN = form.getValuesArray("FIELD_ALIGN");
+        String[] FIELD_FONT_SIZE = form.getValuesArray("FIELD_FONT_SIZE");
+        String[] FIELD_FONT_STYLE = form.getValuesArray("FIELD_FONT_STYLE");
+        String[] FIELD_SPACE = form.getValuesArray("FIELD_SPACE");
+        if(FIELD_NAME.length == 0){
+            return CloverManager.CODE_FAILED;
+        }
+        ITable T = getTable("X_PRINT_TEMPLATE_FIELD").clearData();
+        int result = 0;
+        T.where(T.column("TEMPLATE_ID").eq(TEMPLATE_ID)).delete();
+
+        int x = 1;
+        for(int i=0;i<FIELD_NAME.length;i++){
+            if(StringUtils.toString(FIELD_NAME[i]).length() == 0){
+                continue;
+            }
+            Map data = new HashMap();
+            data.put("TEMPLATE_ID", TEMPLATE_ID);
+            data.put("FIELD_ID", x);
+            data.put("FIELD_NAME", FIELD_NAME[i]);
+            if(i< FIELD_SHOW_NAME.length){
+                data.put("FIELD_SHOW_NAME", StringUtils.toString(FIELD_SHOW_NAME[i]));
+            }
+            if(i< FIELD_VALUE_NAME.length){
+                data.put("FIELD_VALUE_NAME", StringUtils.toString(FIELD_VALUE_NAME[i]));
+            }
+            if(i< FIELD_LENGTH.length){
+                data.put("FIELD_LENGTH", NumberUtils.toInt(FIELD_LENGTH[i]));
+            }
+            else {
+                data.put("FIELD_LENGTH", 0);
+            }
+            if(i< FIELD_ROW.length){
+                data.put("FIELD_ROW", NumberUtils.toInt(FIELD_ROW[i]));
+            }
+            else {
+                data.put("FIELD_ROW", 0);
+            }
+            if(i< FIELD_INDEX.length){
+                data.put("FIELD_INDEX", NumberUtils.toInt(FIELD_INDEX[i]));
+            }
+            else {
+                data.put("FIELD_INDEX", 0);
+            }
+            if(i< FIELD_LOOP.length){
+                data.put("FIELD_LOOP", NumberUtils.toInt(FIELD_LOOP[i]));
+            }
+            else {
+                data.put("FIELD_LOOP", 0);
+            }
+            if(i< FIELD_ALIGN.length){
+                data.put("FIELD_ALIGN", StringUtils.toString(FIELD_ALIGN[i]));
+            }
+            else {
+                data.put("FIELD_ALIGN", 0);
+            }
+            if(i< FIELD_FONT_SIZE.length){
+                data.put("FIELD_FONT_SIZE", StringUtils.toString(FIELD_FONT_SIZE[i]));
+            }
+            else {
+                data.put("FIELD_FONT_SIZE", 0);
+            }
+            if(i< FIELD_FONT_STYLE.length){
+                data.put("FIELD_FONT_STYLE", StringUtils.toString(FIELD_FONT_STYLE[i]));
+            }
+            else {
+                data.put("FIELD_FONT_STYLE", 0);
+            }
+            if(i< FIELD_SPACE.length){
+                data.put("FIELD_SPACE", NumberUtils.toInt(FIELD_SPACE[i]));
+            }
+            else {
+                data.put("FIELD_SPACE", 0);
+            }
+            x++;
+            result = T.data(data).create();
+        }
+
+
+        if(result < 0){
+            return CloverManager.CODE_FAILED;
+        }
+
+        return CloverManager.CODE_SUCCESS;
+    }
+
+    public Map get(String TEMPLATE_ID) {
+        IQuery query = getQuery();
+        String sql = "SELECT A.* FROM X_PRINT_TEMPLATE A  WHERE TEMPLATE_ID= ?";
+        Map data = query.doQuery(sql, TEMPLATE_ID).table();
+        if(data == null){
+            data = new HashMap();
+        }
+        sql = "SELECT A.* FROM X_PRINT_TEMPLATE_FIELD A  WHERE TEMPLATE_ID= ? ORDER BY FIELD_ROW, FIELD_INDEX, FIELD_ID";
+        List<Map> list = query.doQuery(sql, TEMPLATE_ID).tables();
+        data.put("TEMPLATE_FIELD", list);
+        query.free();
+        return data;
+    }
+
+    public int delete(Form form) {
+        Map data = form.getValuesMap();
+        String TEMPLATE_ID = StringUtils.toString(data.get("TEMPLATE_ID"));
+        if(TEMPLATE_ID.length() == 0){
+            return CloverManager.CODE_FAILED;
+        }
+
+        String sql = "SELECT * FROM X_PRINT_CASE WHERE CASE_TEMPLATE = " + TEMPLATE_ID;
+        IQuery query = getQuery();
+        if(query.rowCount(sql) > 0){
+            query.free();
+            return CloverManager.CODE_FAILED;
+        }
+        sql = "DELETE FROM X_PRINT_TEMPLATE WHERE TEMPLATE_ID = " + TEMPLATE_ID;
+        int result = query.doExec(sql);
+        query.free();
+        if(result < 0){
+            return CloverManager.CODE_FAILED;
+        }
+        return CloverManager.CODE_SUCCESS;
+    }
+
+}

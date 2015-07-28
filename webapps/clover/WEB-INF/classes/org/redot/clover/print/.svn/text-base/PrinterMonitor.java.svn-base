@@ -1,0 +1,94 @@
+package org.redot.clover.print;
+
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.PrintWriter;
+import java.net.InetSocketAddress;
+import java.net.Socket;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 11-8-20
+ * Time: 下午3:14
+ * To change this template use File | Settings | File Templates.
+ */
+public class PrinterMonitor {
+
+    public static final String CODE_NORMAL = "2000";
+    public static final String CODE_BUSY = "9200";
+    public static final String CODE_UNCAP = "60012";
+    public static final String CODE_NOPAPER = "28012";
+    public static final int PRINTER_PORT = 4000;
+
+    public static final int PRINTER_AVAILABLE = 0;
+    public static final int PRINTER_BUSY = 1;
+    public static final int PRINTER_UNCAP = 2;
+    public static final int PRINTER_NOPAPER = 3;
+    public static final int PRINTER_UNAVAILABLE = 9;
+    public static final int PRINTER_UNKNOWN = 10;
+
+
+    public static int getStatus(String PRINTER_IP){
+        Socket client = new Socket();
+        InputStream is = null;
+        OutputStream os = null;
+        String code = "";
+        try {
+            client.connect(new InetSocketAddress(PRINTER_IP, PRINTER_PORT), 5000);
+            is = client.getInputStream();
+            os = client.getOutputStream();
+            os.write(new byte[]{0x1B, 0x76});
+            os.flush();
+            Thread.sleep(5);
+            if(is.available() > 0){
+                byte[] buf = new byte[is.available()];
+                is.read(buf);
+                for(byte b: buf){
+                    code += b;
+                }
+                System.out.println("STATUS CODE = " + code);
+            }
+            os.close();
+            is.close();
+            if(code.length() == 0){
+                return PRINTER_UNKNOWN;
+            }
+            if(code.indexOf(CODE_NORMAL) == 0){
+                return PRINTER_AVAILABLE;
+            }
+            if(code.indexOf(CODE_BUSY) == 0){
+                return PRINTER_BUSY;
+            }
+            if(code.indexOf(CODE_UNCAP) == 0){
+                return PRINTER_UNCAP;
+            }
+            if(code.indexOf(CODE_NOPAPER) == 0){
+                return PRINTER_NOPAPER;
+            }
+            return PRINTER_UNKNOWN;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return PRINTER_UNAVAILABLE;
+        }
+    }
+
+    public static String getStatusName(int status){
+        switch (status){
+            case PRINTER_AVAILABLE :
+                return "正常";
+            case PRINTER_BUSY :
+                return "打印机忙";
+            case PRINTER_UNCAP :
+                return "打印机上盖开启";
+            case PRINTER_NOPAPER :
+                return "打印机缺纸";
+            case PRINTER_UNKNOWN :
+                return "未知错误";
+            case PRINTER_UNAVAILABLE :
+                return "打印机不可用";
+            default:
+                return "暂无";
+        }
+    }
+}

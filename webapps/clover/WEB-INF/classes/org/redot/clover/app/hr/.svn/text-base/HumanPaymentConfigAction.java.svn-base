@@ -1,0 +1,40 @@
+package org.redot.clover.app.hr;
+
+import org.redot.clover.core.CloverManager;
+import org.redot.clover.core.ext.BaseAction;
+import org.redot.library.db.IQuery;
+import org.redot.library.db.ITable;
+import org.redot.library.lang.StringUtils;
+import org.restlet.data.Form;
+
+import java.util.Hashtable;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 11-3-27
+ * Time: 下午5:36
+ * To change this template use File | Settings | File Templates.
+ */
+public class HumanPaymentConfigAction extends BaseAction {
+
+    public Map get(){
+        String sql = "SELECT * FROM X_HUMAN_PAYMENT_CONFIG";
+        IQuery query = getQuery();
+        Map data = query.doQuery(sql).table();
+        query.free();
+        return data;
+    }
+
+
+    public int set(Form form) {
+        Map data = form.getValuesMap();
+        ITable T = getTable("X_HUMAN_PAYMENT_CONFIG").clearData();
+        T.delete();
+        T.data(data).create();
+
+        return CloverManager.CODE_SUCCESS;
+    }
+}

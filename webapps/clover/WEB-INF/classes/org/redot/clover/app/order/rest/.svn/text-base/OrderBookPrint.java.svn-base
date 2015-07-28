@@ -1,0 +1,43 @@
+package org.redot.clover.app.order.rest;
+
+import org.redot.clover.core.data.DataPackage;
+import org.redot.clover.core.ext.BaseResource;
+import org.redot.clover.print.PrintJob;
+import org.redot.clover.print.PrintManager;
+import org.redot.library.lang.StringUtils;
+import org.restlet.resource.Post;
+
+import java.util.Hashtable;
+import java.util.Map;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 10-12-21
+ * Time: 上午10:43
+ * To change this template use File | Settings | File Templates.
+ */
+public class OrderBookPrint extends BaseResource {
+
+    @Post("json")
+    public String doPost(){
+        DataPackage dp = new DataPackage();
+        //OrderBillAction a = new OrderBillAction();
+        String O_ID = StringUtils.toString(form.getFirstValue("O_ID"));
+        if(O_ID.length() == 0){
+            dp.setStatus(0);
+        }
+        else{
+           //PrintManager.getInstance().addJob(PrintJob.COMMAND_ORDER_FEE, form.getValuesMap());
+            //DishOrderPrintCase ca = new DishOrderPrintCase(O_ID);
+            //ca.setPrinter(PrintManager.getInstance().getPrinter(1));
+            //ca.setPrintNum(3);
+           // ca.print();
+            Map params = new Hashtable();
+            params.put("O_ID", O_ID);
+            PrintManager.getInstance().addJob(PrintJob.COMMAND_ORDER_BOOK,params);
+            dp.setStatus(1);
+        }
+        return dp.toJSON();
+    }
+}

@@ -1,0 +1,20 @@
+package org.redot.library.xml;
+
+/**
+ * Copyright By Redot.
+ * User: CASH
+ * Date: 2009-10-10
+ * Time: 18:46:28
+ */
+public class XmlUtils {
+
+    public static BeanToXml toXML(Object obj){
+        
+        return null;
+    }
+
+    public static String toXMLStr(Object obj){
+
+        return null;
+    }
+}

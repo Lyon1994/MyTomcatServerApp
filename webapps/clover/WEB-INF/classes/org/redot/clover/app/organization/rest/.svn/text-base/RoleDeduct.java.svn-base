@@ -1,0 +1,39 @@
+package org.redot.clover.app.organization.rest;
+
+import org.redot.clover.app.organization.RoleAction;
+import org.redot.clover.core.data.DataPackage;
+import org.redot.clover.core.ext.BaseResource;
+import org.redot.library.lang.NumberUtils;
+import org.redot.library.lang.StringUtils;
+import org.restlet.resource.Get;
+import org.restlet.resource.Post;
+
+import java.util.Map;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 11-4-18
+ * Time: 下午9:07
+ * To change this template use File | Settings | File Templates.
+ */
+public class RoleDeduct extends BaseResource{
+
+    @Get("json")
+    public String doGet(){
+        DataPackage dp = new DataPackage();
+        RoleAction a = new RoleAction();
+        dp.addTable("table", a.listDeduct(StringUtils.toString(getRequestAttributes().get("PARENT"))));
+        return dp.toJSON();
+    }
+
+    @Post("json")
+    public String doPost(){
+        DataPackage dp = new DataPackage();
+        RoleAction a = new RoleAction();
+        Map data = a.setDeduct(form);
+        dp.setStatus(NumberUtils.toInt(data.get("STATUS")));
+        dp.getData().put("form", data);
+        return dp.toJSON();
+    }
+}

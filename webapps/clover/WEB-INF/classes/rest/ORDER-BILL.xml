@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<clover>
+
+    <resource class="org.redot.clover.app.order.rest.OrderBillPrepare">/order/bill/prepare</resource>
+    <resource class="org.redot.clover.app.order.rest.OrderBillPay">/order/bill/pay</resource>
+    <resource class="org.redot.clover.app.order.rest.OrderBillPayDelete">/order/bill/pay/delete</resource>
+    <resource class="org.redot.clover.app.order.rest.OrderBillIntegral">/order/bill/integral</resource>
+    <resource class="org.redot.clover.app.order.rest.OrderBillUnion">/order/bill/union</resource>
+    <resource class="org.redot.clover.app.order.rest.OrderBillBreak">/order/bill/break</resource>
+    <resource class="org.redot.clover.app.order.rest.OrderBillDetail">/order/bill/detail</resource>
+
+
+    <resource class="org.redot.clover.app.order.rest.OrderBillInvoice">/order/bill/invoice</resource>
+    <resource class="org.redot.clover.app.order.rest.OrderBillClearZero">/order/bill/clearzero</resource>
+    <resource class="org.redot.clover.app.order.rest.OrderBillDiscount">/order/bill/discount</resource>
+    <resource class="org.redot.clover.app.order.rest.OrderBillDiscountCancel">/order/bill/discount/cancel</resource>
+    <resource class="org.redot.clover.app.order.rest.OrderBillFree">/order/bill/free</resource>
+    <resource class="org.redot.clover.app.order.rest.OrderBillLost">/order/bill/lost</resource>
+    <resource class="org.redot.clover.app.order.rest.OrderBillCheckout">/order/bill/checkout</resource>
+    <resource class="org.redot.clover.app.order.rest.OrderBillHang">/order/bill/hang</resource>
+    <resource class="org.redot.clover.app.order.rest.OrderBillArrear">/order/bill/arrear</resource>
+    <resource class="org.redot.clover.app.order.rest.OrderBillFavorableCase">/order/bill/favorable/case</resource>
+    <resource class="org.redot.clover.app.order.rest.OrderBillFavorableCaseCancel">/order/bill/favorable/case/cancel</resource>
+    <resource class="org.redot.clover.app.order.rest.OrderBillFavorableClient">/order/bill/favorable/client</resource>
+    <resource class="org.redot.clover.app.order.rest.OrderBillFavorableClientCancel">/order/bill/favorable/client/cancel</resource>
+
+    <resource class="org.redot.clover.app.order.rest.OrderBillList">/order/bill/list</resource>
+    <resource class="org.redot.clover.app.order.rest.OrderBillListArrear">/order/bill/list/arrear</resource>
+    <resource class="org.redot.clover.app.order.rest.OrderBillActivation">/order/bill/activation</resource>
+    <resource class="org.redot.clover.app.order.rest.OrderBillActivationCancel">/order/bill/activation/cancel</resource>
+    <resource class="org.redot.clover.app.order.rest.OrderBillCheckoutArrear">/order/bill/checkout/arrear</resource>
+    <resource class="org.redot.clover.app.order.rest.OrderBillPrint">/order/bill/print</resource>
+    <resource class="org.redot.clover.app.order.rest.OrderBillPrintPre">/order/bill/print/pre</resource>
+    <resource class="org.redot.clover.app.order.rest.OrderBillPrintCheck">/order/bill/print/check</resource>
+    <resource class="org.redot.clover.app.order.rest.OrderBillDelete">/order/bill/delete</resource>
+
+    <resource class="org.redot.clover.app.order.rest.DeskActionList">/order/desk/product/list</resource>
+
+</clover>

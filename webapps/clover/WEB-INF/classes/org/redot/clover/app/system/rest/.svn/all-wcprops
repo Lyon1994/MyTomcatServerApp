@@ -1,0 +1,227 @@
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/system/rest
+END
+MTNow.java
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/system/rest/MTNow.java
+END
+GiveDishReasonSelect.java
+K 25
+svn:wc:ra_dav:version-url
+V 109
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/system/rest/GiveDishReasonSelect.java
+END
+WaySelect.java
+K 25
+svn:wc:ra_dav:version-url
+V 98
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/system/rest/WaySelect.java
+END
+DishRequireSelect.java
+K 25
+svn:wc:ra_dav:version-url
+V 106
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/system/rest/DishRequireSelect.java
+END
+FreeDishReasonSelect.java
+K 25
+svn:wc:ra_dav:version-url
+V 109
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/system/rest/FreeDishReasonSelect.java
+END
+MTList.java
+K 25
+svn:wc:ra_dav:version-url
+V 95
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/system/rest/MTList.java
+END
+RequireSelect.java
+K 25
+svn:wc:ra_dav:version-url
+V 102
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/system/rest/RequireSelect.java
+END
+UnitSelect.java
+K 25
+svn:wc:ra_dav:version-url
+V 99
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/system/rest/UnitSelect.java
+END
+SystemBasic.java
+K 25
+svn:wc:ra_dav:version-url
+V 100
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/system/rest/SystemBasic.java
+END
+SystemClear.java
+K 25
+svn:wc:ra_dav:version-url
+V 100
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/system/rest/SystemClear.java
+END
+DiscountDishReasonSelect.java
+K 25
+svn:wc:ra_dav:version-url
+V 113
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/system/rest/DiscountDishReasonSelect.java
+END
+DPResource.java
+K 25
+svn:wc:ra_dav:version-url
+V 99
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/system/rest/DPResource.java
+END
+DishTasteSelect.java
+K 25
+svn:wc:ra_dav:version-url
+V 104
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/system/rest/DishTasteSelect.java
+END
+Version.java
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/system/rest/Version.java
+END
+CancelDishReason.java
+K 25
+svn:wc:ra_dav:version-url
+V 105
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/system/rest/CancelDishReason.java
+END
+LogActionList.java
+K 25
+svn:wc:ra_dav:version-url
+V 102
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/system/rest/LogActionList.java
+END
+KTResource.java
+K 25
+svn:wc:ra_dav:version-url
+V 99
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/system/rest/KTResource.java
+END
+TasteSelect.java
+K 25
+svn:wc:ra_dav:version-url
+V 100
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/system/rest/TasteSelect.java
+END
+Way.java
+K 25
+svn:wc:ra_dav:version-url
+V 92
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/system/rest/Way.java
+END
+GiveDishReason.java
+K 25
+svn:wc:ra_dav:version-url
+V 103
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/system/rest/GiveDishReason.java
+END
+WayList.java
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/system/rest/WayList.java
+END
+DishRequire.java
+K 25
+svn:wc:ra_dav:version-url
+V 100
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/system/rest/DishRequire.java
+END
+FreeDishReason.java
+K 25
+svn:wc:ra_dav:version-url
+V 103
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/system/rest/FreeDishReason.java
+END
+Require.java
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/system/rest/Require.java
+END
+Taking.java
+K 25
+svn:wc:ra_dav:version-url
+V 95
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/system/rest/Taking.java
+END
+Unit.java
+K 25
+svn:wc:ra_dav:version-url
+V 93
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/system/rest/Unit.java
+END
+Reason.java
+K 25
+svn:wc:ra_dav:version-url
+V 95
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/system/rest/Reason.java
+END
+MTSelect.java
+K 25
+svn:wc:ra_dav:version-url
+V 97
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/system/rest/MTSelect.java
+END
+TakingList.java
+K 25
+svn:wc:ra_dav:version-url
+V 99
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/system/rest/TakingList.java
+END
+LogList.java
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/system/rest/LogList.java
+END
+UnitList.java
+K 25
+svn:wc:ra_dav:version-url
+V 97
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/system/rest/UnitList.java
+END
+ReasonList.java
+K 25
+svn:wc:ra_dav:version-url
+V 99
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/system/rest/ReasonList.java
+END
+DiscountDishReason.java
+K 25
+svn:wc:ra_dav:version-url
+V 107
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/system/rest/DiscountDishReason.java
+END
+DishTaste.java
+K 25
+svn:wc:ra_dav:version-url
+V 98
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/system/rest/DishTaste.java
+END
+Taste.java
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/system/rest/Taste.java
+END
+TasteList.java
+K 25
+svn:wc:ra_dav:version-url
+V 98
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/system/rest/TasteList.java
+END
+CancelDishReasonSelect.java
+K 25
+svn:wc:ra_dav:version-url
+V 111
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/system/rest/CancelDishReasonSelect.java
+END

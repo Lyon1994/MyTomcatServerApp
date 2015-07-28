@@ -1,0 +1,43 @@
+package org.redot.clover.app.kitchen.rest;
+
+import org.redot.clover.app.kitchen.KitchenCaseAction;
+import org.redot.clover.core.data.DataPackage;
+import org.redot.clover.core.ext.BaseResource;
+import org.redot.library.lang.StringUtils;
+import org.restlet.resource.Get;
+import org.restlet.resource.Post;
+
+import java.util.Hashtable;
+import java.util.Map;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 10-12-30
+ * Time: 下午11:51
+ * To change this template use File | Settings | File Templates.
+ */
+public class KitchenCase extends BaseResource {
+
+    @Get("json")
+    public String doGet() {
+        DataPackage dp = new DataPackage();
+        KitchenCaseAction a = new KitchenCaseAction();
+        Map m = a.get(StringUtils.toString(getRequestAttributes().get("ID")));
+        if(m == null){
+            m = new Hashtable();
+        }
+        dp.getData().put("form", m);
+
+        return dp.toJSON();
+    }
+
+    @Post("json")
+    public String doPost() {
+        DataPackage dp = new DataPackage();
+        KitchenCaseAction a = new KitchenCaseAction();
+        dp.setStatus(a.set(form));
+        return dp.toJSON();
+    }
+
+}

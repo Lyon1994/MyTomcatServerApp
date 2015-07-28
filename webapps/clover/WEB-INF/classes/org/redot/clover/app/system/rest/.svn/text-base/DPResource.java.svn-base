@@ -1,0 +1,39 @@
+package org.redot.clover.app.system.rest;
+
+import org.redot.clover.app.system.DPAction;
+import org.redot.clover.core.data.DataPackage;
+import org.redot.clover.core.ext.BaseResource;
+import org.restlet.resource.Get;
+import org.restlet.resource.Post;
+
+import java.util.List;
+import java.util.Map;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 10-12-30
+ * Time: 上午4:14
+ * To change this template use File | Settings | File Templates.
+ */
+public class DPResource extends BaseResource {
+    @Get("json")
+    public String doGet() {
+        DataPackage dp = new DataPackage();
+        DPAction a = new DPAction();
+        List<Map> list = a.getDP();
+        if (list == null) {
+            return dp.toJSON();
+        }
+        dp.getData().put("DP", list);
+        return dp.toJSON();
+    }
+
+    @Post("json")
+    public String doPost() {
+        DataPackage dp = new DataPackage();
+        DPAction a = new DPAction();
+        dp.setStatus(a.setDP(form));
+        return dp.toJSON();
+    }
+}

@@ -1,0 +1,34 @@
+package org.redot.clover.app.inventory.rest;
+
+import org.redot.clover.app.inventory.SubjectAction;
+import org.redot.clover.core.data.DataPackage;
+import org.redot.clover.core.ext.BaseResource;
+import org.restlet.resource.Post;
+import org.restlet.resource.Put;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 11-3-27
+ * Time: 下午5:35
+ * To change this template use File | Settings | File Templates.
+ */
+public class Subject extends BaseResource {
+
+
+    @Post("json")
+    public String doPost() {
+        DataPackage dp = new DataPackage();
+        SubjectAction a = new SubjectAction();
+        dp.setStatus(a.set(form));
+        return dp.toJSON();
+    }
+
+    @Put("json")
+    public String doPut() {
+        DataPackage dp = new DataPackage();
+        SubjectAction a = new SubjectAction();
+        dp.setStatus(a.delete(form));
+        return dp.toJSON();
+    }
+}

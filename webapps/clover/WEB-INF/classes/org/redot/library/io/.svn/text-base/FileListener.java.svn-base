@@ -1,0 +1,14 @@
+package org.redot.library.io;
+
+import java.io.File;
+
+/**
+ * Copyright By Redot.
+ * User: CASH
+ * Date: 2009-11-5
+ * Time: 15:59:29
+ */
+public interface FileListener {
+
+    void fileChanged(File file);
+}

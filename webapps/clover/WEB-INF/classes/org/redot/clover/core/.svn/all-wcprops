@@ -1,0 +1,53 @@
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/core
+END
+CloverServer.java
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/core/CloverServer.java
+END
+CloverManager.java
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/core/CloverManager.java
+END
+RootResource.java
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/core/RootResource.java
+END
+CloverServlet.java
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/core/CloverServlet.java
+END
+CloverApplicationConfig.java
+K 25
+svn:wc:ra_dav:version-url
+V 101
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/core/CloverApplicationConfig.java
+END
+CloverApplication.java
+K 25
+svn:wc:ra_dav:version-url
+V 95
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/core/CloverApplication.java
+END
+TEST.java
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/core/TEST.java
+END
+CloverApplicationCrossDomain.java
+K 25
+svn:wc:ra_dav:version-url
+V 106
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/core/CloverApplicationCrossDomain.java
+END

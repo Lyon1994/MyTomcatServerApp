@@ -1,0 +1,96 @@
+package org.redot.clover.print;
+
+import org.redot.clover.core.CloverManager;
+import org.redot.clover.core.ext.BaseAction;
+import org.redot.library.db.IQuery;
+import org.redot.library.db.ITable;
+import org.redot.library.lang.StringUtils;
+import org.restlet.data.Form;
+
+import java.util.List;
+import java.util.Map;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 11-4-29
+ * Time: 下午8:10
+ * To change this template use File | Settings | File Templates.
+ */
+public class PrinterAction extends BaseAction{
+
+    public List<Map> list(){
+        String sql = "SELECT A.*,B.PRINTER_STATUS_NAME,C.PRINTER_NAME AS PRINTER_BAK_NAME FROM X_PRINTER A " +
+                "LEFT JOIN X_PRINTER_STATUS B ON A.PRINTER_STATUS = B.PRINTER_STATUS " +
+                "LEFT JOIN X_PRINTER C ON A.PRINTER_BAK = C.PRINTER_ID " +
+                "WHERE A.PRINTER_STATUS <> 2  ORDER BY A.PRINTER_ID";
+        IQuery query = getQuery();
+        List<Map> list = query.doQuery(sql).tables();
+        query.free();
+        return list;
+    }
+
+    public List<Map> select(){
+        String sql = "SELECT A.*  FROM X_PRINTER A " +
+                "WHERE A.PRINTER_STATUS = 1";
+        IQuery query = getQuery();
+        List<Map> list = query.doQuery(sql).tables();
+        query.free();
+        return list;
+    }
+
+    public int set(Form form){
+        Map data = form.getValuesMap();
+        String PRINTER_ID = StringUtils.toString(data.get("PRINTER_ID"));
+
+        ITable T = getTable("X_PRINTER").clearData();
+        int result = 0;
+        boolean isNew = true;
+
+        if(PRINTER_ID.length() == 0){
+            PRINTER_ID = String.valueOf(T.getMaxID("PRINTER_ID"));
+            data.put("PRINTER_ID", PRINTER_ID);
+            result = T.data(data).create();
+        }
+        else{
+            isNew = false;
+            result = T.data(data).where(T.column("PRINTER_ID").eq(PRINTER_ID)).update();
+        }
+        if(result < 0){
+            return CloverManager.CODE_FAILED;
+        }
+
+        return CloverManager.CODE_SUCCESS;
+    }
+
+    public Map get(String PRINTER_ID) {
+        IQuery query = getQuery();
+        String sql = "SELECT A.*,B.PRINTER_NAME AS PRINTER_BAK_NAME FROM X_PRINTER A LEFT JOIN X_PRINTER B ON A.PRINTER_BAK = B.PRINTER_ID WHERE A.PRINTER_ID= ?";
+        Map map = query.doQuery(sql, PRINTER_ID).table();
+        query.free();
+        return map;
+    }
+
+    public int delete(Form form) {
+        Map data = form.getValuesMap();
+        String PRINTER_ID = StringUtils.toString(data.get("PRINTER_ID"));
+        if(PRINTER_ID.length() == 0){
+            return CloverManager.CODE_FAILED;
+        }
+
+        String sql = "SELECT * FROM X_PRINT_CASE WHERE CASE_PRINTER = " + PRINTER_ID;
+        IQuery query = getQuery();
+        if(query.rowCount(sql) > 0){
+            query.free();
+            return CloverManager.CODE_FAILED;
+        }
+        sql = "DELETE FROM X_PRINTER WHERE PRINTER_ID = " + PRINTER_ID;
+        int result = query.doExec(sql);
+        query.free();
+        if(result < 0){
+            return CloverManager.CODE_FAILED;
+        }
+        return CloverManager.CODE_SUCCESS;
+    }
+
+}

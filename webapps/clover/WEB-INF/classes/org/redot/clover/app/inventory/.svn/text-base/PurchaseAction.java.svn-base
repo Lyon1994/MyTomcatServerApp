@@ -1,0 +1,334 @@
+package org.redot.clover.app.inventory;
+
+import com.sun.org.apache.xpath.internal.operations.And;
+import org.redot.clover.app.system.SystemAction;
+import org.redot.clover.core.CloverManager;
+import org.redot.clover.core.ext.BaseAction;
+import org.redot.clover.core.ext.Params;
+import org.redot.clover.print.PrintJob;
+import org.redot.clover.print.PrintManager;
+import org.redot.library.db.IQuery;
+import org.redot.library.db.ITable;
+import org.redot.library.lang.DateUtils;
+import org.redot.library.lang.NumberUtils;
+import org.redot.library.lang.StringUtils;
+import org.restlet.data.Form;
+
+import java.util.Hashtable;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 11-4-30
+ * Time: 下午4:44
+ * To change this template use File | Settings | File Templates.
+ */
+public class PurchaseAction extends BaseAction{
+
+    public List<Map> list(Params params){
+        String PO_NO = StringUtils.toString(params.val("PO_NO"));
+        String PO_S_ID = StringUtils.toString(params.val("PO_S_ID"));
+        String PO_STATUS = StringUtils.toString(params.val("PO_STATUS"));
+        String PO_STATUS_BILL = StringUtils.toString(params.val("PO_STATUS_BILL"));
+        String PO_MAKER = StringUtils.toString(params.val("PO_MAKER"));
+        String PO_ITEM_ID = StringUtils.toString(params.val("PO_ITEM_ID"));
+        String DATE_S = StringUtils.toString(params.val("DATE_S"));
+        String DATE_E = StringUtils.toString(params.val("DATE_E"));
+        if (DATE_S.length() == 0) {
+            DATE_S = DateUtils.getNowDate();
+        }
+        if (DATE_E.length() == 0) {
+            DATE_E = DateUtils.getNowDate();
+        }
+        if(DATE_S.compareTo(DATE_E) > 0){
+            DATE_S = DateUtils.getNowDate();
+            DATE_E = DateUtils.getNowDate();
+        }
+        String COND = " SUBSTRING(A.PO_DT_REQ, 1, 10)  >= '" + DATE_S.substring(0, 10)+ "' AND SUBSTRING(A.PO_DT_REQ, 1, 10) <= '" + DATE_E.substring(0, 10) + "'";
+        if(PO_S_ID.length() > 0){
+            COND += " AND A.PO_S_ID = " + PO_S_ID;
+        }
+        if(PO_STATUS_BILL.length() > 0){
+            COND += " AND A.PO_STATUS_BILL = " + PO_STATUS_BILL;
+        }
+        if(PO_STATUS.length() > 0){
+            COND += " AND A.PO_STATUS = " + PO_STATUS;
+        }
+        if(PO_NO.length() > 0){
+            COND += " AND A.PO_NO LIKE '" + PO_NO + "%'";
+        }
+        if(PO_MAKER.length() > 0){
+            COND += " AND A.PO_MAKER = " + PO_MAKER;
+        }
+        if(PO_ITEM_ID.length() > 0){
+
+            COND += " AND A.PO_ITEM_ID = " + PO_ITEM_ID;
+        }
+
+        String sql= "SELECT A.*, B.S_NAME,C.ACCOUNT_NAME AS PO_MAKER_NAME,D.ACCOUNT_NAME AS PO_USER_IN_NAME,E.ACCOUNT_NAME AS PO_USER_BILL_NAME," +
+                "F.ACCOUNT_NAME AS PO_USER_CHECK_NAME,G.ACCOUNT_NAME AS PO_USER_VERIFY_NAME," +
+                "H.ITEM_NAME AS PO_ITEM_NAME,I.UNIT_NAME AS PO_ITEM_UNIT_NAME FROM X_PO A " +
+                "LEFT JOIN X_S B ON A.PO_S_ID = B.S_ID " +
+                "LEFT JOIN X_ACCOUNT C ON A.PO_MAKER = C.ACCOUNT_ID " +
+                "LEFT JOIN X_ACCOUNT D ON A.PO_USER_IN = D.ACCOUNT_ID " +
+                "LEFT JOIN X_ACCOUNT E ON A.PO_USER_BILL = E.ACCOUNT_ID " +
+                "LEFT JOIN X_ACCOUNT F ON A.PO_USER_CHECK = F.ACCOUNT_ID " +
+                "LEFT JOIN X_ACCOUNT G ON A.PO_USER_VERIFY = G.ACCOUNT_ID " +
+                "LEFT JOIN X_ITEM H ON A.PO_ITEM_ID = H.ITEM_ID " +
+                "LEFT JOIN X_UNIT I ON A.PO_ITEM_UNIT_ID = I.UNIT_ID " +
+                "WHERE PO_STATUS <>2  AND  " + COND + " ORDER BY A.PO_DT " ;
+        System.out.println(sql);
+        IQuery query = getQuery();
+        List<Map> list = query.doQuery(sql).tables();
+        query.free();
+        return list;
+    }
+
+    public int set(Form form){
+        Map data = form.getValuesMap();
+        String PO_ID = StringUtils.toString(data.get("PO_ID"));
+        String PO_DT_REQ = StringUtils.toString(data.get("PO_DT_REQ"));
+        String PO_MEMO = StringUtils.toString(data.get("PO_MEMO"));
+        String PO_S_ID = StringUtils.toString(data.get("PO_S_ID"));
+        String PO_ITEM_ID = StringUtils.toString(data.get("PO_ITEM_ID"));
+        String PO_ITEM_NUM_REQ = StringUtils.toString(data.get("PO_ITEM_NUM_REQ"));
+        String ACCOUNT_ID = StringUtils.toString(getClient().getCookies().get("ACCOUNT_ID"));
+
+        ITable T = getTable("X_PO").clearData();
+        int result = 0;
+
+        String sql = "SELECT A.ITEM_UNIT_ID,A.ITEM_PRICE FROM X_ITEM A WHERE A.ITEM_ID = " + PO_ITEM_ID;
+        IQuery query = getQuery();
+        String ITEM_UNIT_ID = StringUtils.toString(query.doQuery(sql).table().get("ITEM_UNIT_ID"));
+        String ITEM_PRICE = StringUtils.toString(query.doQuery(sql).table().get("ITEM_PRICE"));
+
+        if(PO_ID.length() == 0){
+            PO_ID = String.valueOf(T.getMaxID("PO_ID"));
+            data.put("PO_ID", PO_ID);
+            data.put("PO_NO", SystemAction.makePOSN());
+            data.put("PO_DT", DateUtils.getNow());
+            data.put("PO_DT_REQ", PO_DT_REQ);
+            data.put("PO_MEMO", PO_MEMO);
+            data.put("PO_S_ID", PO_S_ID);
+            data.put("PO_ITEM_ID", PO_ITEM_ID);
+            data.put("PO_ITEM_UNIT_ID", ITEM_UNIT_ID);
+            data.put("PO_ITEM_NUM_REQ", PO_ITEM_NUM_REQ);
+            data.put("PO_ITEM_PRICE_REQ", ITEM_PRICE);
+            data.put("PO_STATUS_BILL", 0);
+            data.put("PO_MAKER", ACCOUNT_ID);
+            data.put("PO_STATUS", 0);
+            result = T.data(data).create();
+        }
+        else{
+            result = T.data(data).where(T.column("PO_ID").eq(PO_ID)).update();
+        }
+
+        if(result < 0){
+            return CloverManager.CODE_FAILED;
+        }
+        Map params = new Hashtable();
+        params.put("PO_ID", PO_ID);
+        PrintManager.getInstance().addJob(PrintJob.COMMAND_PURCHARSE_ORDER,params);
+        return CloverManager.CODE_SUCCESS;
+    }
+
+    public int delete(Form form) {
+        Map data = form.getValuesMap();
+        String PO_ID = StringUtils.toString(data.get("PO_ID"));
+        if(PO_ID.length() == 0){
+            return CloverManager.CODE_FAILED;
+        }
+        IQuery query = getQuery();
+        String sql = "DELETE FROM X_PO WHERE PO_ID = " + PO_ID;
+        int result = query.doExec(sql);
+        if(result < 0){
+            query.free();
+            return CloverManager.CODE_FAILED;
+        }
+        return CloverManager.CODE_SUCCESS;
+    }
+
+
+    public int check(Form form){
+        if(!isLogin()){
+            return CloverManager.CODE_FAILED;
+        }
+        String ACCOUNT_ID = StringUtils.toString(getClient().getCookies().get("ACCOUNT_ID"));
+        Map data = form.getValuesMap();
+        String PO_ID = StringUtils.toString(data.get("PO_ID"));
+        ITable T = getTable("X_PO").clearData();
+        int result = 0;
+        data.put("PO_DT_CHECK", DateUtils.getNow());
+        data.put("PO_USER_CHECK", ACCOUNT_ID);
+        data.put("PO_STATUS", 1);
+        result = T.data(data).where(T.column("PO_ID").eq(PO_ID)).update();
+        if(result < 0){
+            return CloverManager.CODE_FAILED;
+        }
+        return CloverManager.CODE_SUCCESS;
+    }
+
+    public int in(Form form){
+        if(!isLogin()){
+            return CloverManager.CODE_FAILED;
+        }
+        String ACCOUNT_ID = StringUtils.toString(getClient().getCookies().get("ACCOUNT_ID"));
+        Map data = form.getValuesMap();
+        String PO_ID = StringUtils.toString(data.get("PO_ID"));
+        ITable T = getTable("X_PO").clearData();
+        int result = 0;
+        data.put("PO_DT_IN", DateUtils.getNow());
+        data.put("PO_USER_IN", ACCOUNT_ID);
+        data.put("PO_STATUS", 4);
+        result = T.data(data).where(T.column("PO_ID").eq(PO_ID)).update();
+        if(result < 0){
+            return CloverManager.CODE_FAILED;
+        }
+        StockAction.in(PO_ID);
+        return CloverManager.CODE_SUCCESS;
+    }
+
+    public int verify(Form form){
+        if(!isLogin()){
+            return CloverManager.CODE_FAILED;
+        }
+        String ACCOUNT_ID = StringUtils.toString(getClient().getCookies().get("ACCOUNT_ID"));
+        Map data = form.getValuesMap();
+        String PO_ID = StringUtils.toString(data.get("PO_ID"));
+        String PO_S_ID = StringUtils.toString(data.get("PO_S_ID"));
+        String PO_ITEM_NUM = StringUtils.toString(data.get("PO_ITEM_NUM"));
+        String PO_ITEM_NUM_GIVE = StringUtils.toString(data.get("PO_ITEM_NUM_GIVE"));
+        String PO_ITEM_PRICE = StringUtils.toString(data.get("PO_ITEM_PRICE"));
+
+        ITable T = getTable("X_PO").clearData();
+        int result = 0;
+
+        data.put("PO_DT_VERIFY", DateUtils.getNow());
+        data.put("PO_USER_VERIFY", ACCOUNT_ID);
+        data.put("PO_STATUS", 3);
+        if(PO_S_ID.length() < 0){
+            data.put("PO_S_ID", PO_S_ID);
+        }
+        else{
+//            String sql = "SELECT PO_S_ID FROM X_PO WHERE PO_ID = " + PO_ID;
+//            IQuery query = getQuery();
+//            String S_ID = query.doQuery(sql).getValue();
+            data.put("PO_S_ID", T.column("PO_S_ID"));
+        }
+        data.put("PO_ITEM_NUM", PO_ITEM_NUM);
+        data.put("PO_ITEM_NUM_GIVE", PO_ITEM_NUM_GIVE);
+        data.put("PO_ITEM_PRICE", PO_ITEM_PRICE);
+        data.put("PO_AMOUNT", (NumberUtils.toFloat(PO_ITEM_NUM)+NumberUtils.toFloat(PO_ITEM_NUM_GIVE))*NumberUtils.toFloat(PO_ITEM_PRICE));
+        result = T.data(data).where(T.column("PO_ID").eq(PO_ID)).update();
+        if(result < 0){
+            return CloverManager.CODE_FAILED;
+        }
+        return CloverManager.CODE_SUCCESS;
+    }
+    
+    public int back(Form form){
+        if(!isLogin()){
+            return CloverManager.CODE_FAILED;
+        }
+        Map data = form.getValuesMap();
+        String PO_ID = StringUtils.toString(data.get("PO_ID"));
+
+        String sql = "SELECT A.PO_ITEM_ID,A.PO_ITEM_NUM,A.PO_ITEM_NUM_GIVE,B.STOCK_NUM_IN,A.PO_STATUS FROM X_PO A " +
+                "LEFT JOIN X_STOCK B ON B.STOCK_ITEM_ID = A.PO_ITEM_ID WHERE A.PO_ID = " + PO_ID;
+        IQuery query = getQuery();
+        System.out.println(sql);
+
+        String PO_ITEM_ID = StringUtils.toString(query.doQuery(sql).table().get("PO_ITEM_ID"));
+        float PO_ITEM_NUM = NumberUtils.toFloat(query.doQuery(sql).table().get("PO_ITEM_NUM"));
+        float PO_ITEM_NUM_GIVE = NumberUtils.toFloat(query.doQuery(sql).table().get("PO_ITEM_NUM_GIVE"));
+        float STOCK_NUM_IN = NumberUtils.toFloat(query.doQuery(sql).table().get("STOCK_NUM_IN"));
+        float PO_ITEM_SUM = PO_ITEM_NUM + PO_ITEM_NUM_GIVE;
+        int PO_STATUS = NumberUtils.toInt(query.doQuery(sql).table().get("PO_STATUS"));
+
+        int result = 0;
+        if(PO_STATUS == 0 ){
+            return CloverManager.CODE_FAILED;
+        }
+        else{
+            ITable T = getTable("X_PO").clearData();
+            data.put("PO_STATUS", 0);
+            data.put("PO_DT_CHECK", "");
+            data.put("PO_USER_CHECK", "");
+
+            if(PO_STATUS >= 3){
+                data.put("PO_DT_VERIFY", "");
+                data.put("PO_USER_VERIFY", "");
+                data.put("PO_ITEM_NUM", "");
+                data.put("PO_ITEM_PRICE", "");
+                data.put("PO_ITEM_NUM_GIVE", "");
+                data.put("PO_AMOUNT", "");
+                data.put("PO_USER_BILL", 0);
+                data.put("PO_STATUS_BILL", "");
+                data.put("PO_DT_BILL", "");
+            }
+            if(PO_STATUS == 4){
+                if(PO_ITEM_ID.length() == 0){
+                    return CloverManager.CODE_FAILED;
+                }
+                if(STOCK_NUM_IN < PO_ITEM_SUM){
+                    return CloverManager.CODE_FAILED;
+                }
+                ITable TA = getTable("X_STOCK").clearData();
+                data.put("STOCK_NUM_IN", STOCK_NUM_IN - PO_ITEM_SUM);
+                result = TA.data(data).where(TA.column("STOCK_ITEM_ID").eq(PO_ITEM_ID)).update();
+
+                data.put("PO_DT_IN", "");
+                data.put("PO_USER_IN", "");
+            }
+            result = T.data(data).where(T.column("PO_ID").eq(PO_ID)).update();
+        }
+        if(result < 0){
+            return CloverManager.CODE_FAILED;
+        }
+        return CloverManager.CODE_SUCCESS;
+    }
+
+    public int cancel(Form form){
+        if(!isLogin()){
+            return CloverManager.CODE_FAILED;
+        }
+        String ACCOUNT_ID = StringUtils.toString(getClient().getCookies().get("ACCOUNT_ID"));
+        Map data = form.getValuesMap();
+        String PO_ID = StringUtils.toString(data.get("PO_ID"));
+        String PO_REASON_CHECK = StringUtils.toString(data.get("PO_REASON_CHECK"));
+
+        ITable T = getTable("X_PO").clearData();
+        int result = 0;
+        data.put("PO_DT_CHECK", DateUtils.getNow());
+        data.put("PO_USER_CHECK", ACCOUNT_ID);
+        data.put("PO_REASON_CHECK", PO_REASON_CHECK);
+        data.put("PO_STATUS", 2);
+        result = T.data(data).where(T.column("PO_ID").eq(PO_ID)).update();
+        if(result < 0){
+            return CloverManager.CODE_FAILED;
+        }
+        return CloverManager.CODE_SUCCESS;
+    }
+
+    public int bill(Form form){
+        if(!isLogin()){
+            return CloverManager.CODE_FAILED;
+        }
+        String ACCOUNT_ID = StringUtils.toString(getClient().getCookies().get("ACCOUNT_ID"));
+        Map data = form.getValuesMap();
+        String PO_ID = StringUtils.toString(data.get("PO_ID"));
+
+        ITable T = getTable("X_PO").clearData();
+        int result = 0;
+        data.put("PO_DT_BILL", DateUtils.getNow());
+        data.put("PO_USER_BILL", ACCOUNT_ID);
+        data.put("PO_STATUS_BILL", 1);
+        result = T.data(data).where(T.column("PO_ID").eq(PO_ID)).update();
+        if(result < 0){
+            return CloverManager.CODE_FAILED;
+        }
+        return CloverManager.CODE_SUCCESS;
+    }
+}

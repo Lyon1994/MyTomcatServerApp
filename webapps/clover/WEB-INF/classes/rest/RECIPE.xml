@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<clover>
+    <resource class="org.redot.clover.app.recipe.rest.Recipe">/recipe/list</resource>
+    <!--<resource class="org.redot.clover.app.common.rest.CrossDomain">/crossdomain.xml</resource>-->
+    <resource class="org.redot.clover.app.recipe.rest.Recipe">/recipe/add</resource>
+    <resource class="org.redot.clover.app.recipe.rest.RecipeDelete">/recipe/delete</resource>
+
+
+
+
+    <!--<resource class="org.redot.clover.app.recipe.rest.ItemAdd">/recipe/item/add</resource>-->
+    <!--<resource class="org.redot.clover.app.recipe.rest.ItemDelect">/recipe/item/delect</resource>-->
+    <!--<resource class="org.redot.clover.app.recipe.rest.ItemSelect">/recipe/item/select</resource>-->
+
+
+</clover>

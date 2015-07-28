@@ -1,0 +1,274 @@
+package org.redot.clover.print.template;
+
+import org.redot.library.lang.DateUtils;
+import org.redot.library.lang.NumberUtils;
+import org.redot.library.lang.StringUtils;
+
+import java.io.Serializable;
+import java.util.Map;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 11-8-23
+ * Time: 下午2:30
+ * To change this template use File | Settings | File Templates.
+ */
+public class PrintTemplateField implements Serializable{
+    private static final long serialVersionUID = -5230710854265331147L;
+    private String id;
+    private String name;
+    private String showName;
+    private String valueName;
+    private int length;
+    private int row;
+    private int index;
+    private int loop;
+    private int align;
+    private int fontSize;
+    private int fontStyle;
+    private PrintTemplateRow templateRow;
+
+    public PrintTemplateField(PrintTemplateRow templateRow, Map fieldData){
+        this.templateRow = templateRow;
+        init(fieldData);
+    }
+
+    private void init(Map fieldData){
+        id = StringUtils.toString(fieldData.get("FIELD_ID"));
+        name = StringUtils.toString(fieldData.get("FIELD_NAME"));
+        showName = StringUtils.toString(fieldData.get("FIELD_SHOW_NAME"));
+        valueName = StringUtils.toString(fieldData.get("FIELD_VALUE_NAME"));
+        length = NumberUtils.toInt(fieldData.get("FIELD_LENGTH"));
+        row = NumberUtils.toInt(fieldData.get("FIELD_ROW"));
+        index = NumberUtils.toInt(fieldData.get("FIELD_INDEX"));
+        loop = NumberUtils.toInt(fieldData.get("FIELD_LOOP"));
+        align = NumberUtils.toInt(fieldData.get("FIELD_ALIGN"));
+        fontSize = NumberUtils.toInt(fieldData.get("FIELD_FONT_SIZE"));
+        fontStyle = NumberUtils.toInt(fieldData.get("FIELD_FONT_STYLE"));
+        System.out.println("Print Template ["+getTemplate().getName()+"] FieldName ["+getName()+"]");
+    }
+
+    public StringBuffer getContent(){
+        return getTemplate().getContent();
+    }
+    public Map<String, String[]> getData(){
+        return getTemplate().getData();
+    }
+
+    public void process(){
+        if(getShowName().length() > 0 || getLength() > 0 || getValueName().length() > 0){
+            String value = getShowName();
+            if(getLoop() == 0){
+                if(getValueName().length() > 0){
+                    if(getValueName().equals("NOW")){
+                        value += DateUtils.getNowTime();
+                    }
+                    else{
+                        String[] valueNames = getValueName().split(",");
+                        if(valueNames != null && valueNames.length > 0){
+                            for(String valueName : valueNames){
+                                String[] data = getData().get(valueName);
+                                if(data == null || data.length == 0){
+                                    value += valueName;
+                                }
+                                else{
+                                    value += data[0];
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+             processFontSize();
+                processFontStyle();
+            if(getTemplateRow().getFields().size() > 1){
+                getContent().append(PrintTemplateUtils.FILL_SPACE(value, getLength(), getAlign()));
+            }
+            else{
+
+                getContent().append(PrintTemplateUtils.FILL_SPACE(value, getLength()));
+
+            }
+            unProcessFontSize();
+                unProcessFontStyle();
+        }
+        else{
+//            if(getTemplateRow().getFields().size() == 1){
+//                getContent().append(PrintTemplateUtils.BLANK_LINE);
+//            }
+        }
+    }
+    public void processLoop(int dataIndex){
+        String value = "";
+        if(getValueName().length() > 0){
+            String[] valueNames = getValueName().split(",");
+            if(valueNames != null && valueNames.length > 0){
+                for(String valueName : valueNames){
+                    String[] data = getData().get(valueName);
+
+                    if(data == null || dataIndex >= data.length){
+                        value += valueName;
+                    }
+                    else{
+                        value += data[dataIndex];
+                    }
+                }
+            }
+        }
+        processFontSize();
+        processFontStyle();
+        if(getTemplateRow().getFields().size() > 1){
+            getContent().append(PrintTemplateUtils.FILL_SPACE(value, getLength(), getAlign()));
+        }
+        else{
+            getContent().append(PrintTemplateUtils.FILL_SPACE(value, getLength()));
+        }
+        unProcessFontSize();
+        unProcessFontStyle();
+    }
+
+    public void processAlign(){
+        switch (getAlign()){
+            case 0 :
+                getContent().append(PrintTemplateUtils.ALIGN_LEFT);
+                break;
+            case  1:
+                getContent().append(PrintTemplateUtils.ALIGN_CENTER);
+                break;
+            case  2:
+                getContent().append(PrintTemplateUtils.ALIGN_RIGHT);
+                break;
+            default:
+                getContent().append(PrintTemplateUtils.ALIGN_LEFT);
+                break;
+        }
+    }
+
+
+    public void processFontSize(){
+        switch (getFontSize()){
+            case 0 :
+                break;
+            case  1:
+                getContent().append(PrintTemplateUtils.FONT_HEIGHT_YES);
+                break;
+            case  2:
+                getContent().append(PrintTemplateUtils.FONT_WIDTH_YES);
+                break;
+            case  3:
+                getContent().append(PrintTemplateUtils.FONT_LARGE_YES);
+                break;
+            default:
+                break;
+        }
+    }
+
+    public void unProcessFontSize(){
+        switch (getFontSize()){
+            case 0 :
+                break;
+            case  1:
+                getContent().append(PrintTemplateUtils.FONT_HEIGHT_NO);
+                break;
+            case  2:
+                getContent().append(PrintTemplateUtils.FONT_WIDTH_NO);
+                break;
+            case  3:
+                getContent().append(PrintTemplateUtils.FONT_LARGE_NO);
+                break;
+            default:
+                break;
+        }
+    }
+
+    public void processFontStyle(){
+        switch (getFontStyle()){
+            case 0 :
+                break;
+            case  1:
+                getContent().append(PrintTemplateUtils.FONT_BOLD_YES);
+                break;
+            case  2:
+                getContent().append(PrintTemplateUtils.FONT_UNDERLINE_YES);
+                break;
+            case  3:
+                getContent().append(PrintTemplateUtils.FONT_BOLD_YES);
+                getContent().append(PrintTemplateUtils.FONT_UNDERLINE_YES);
+                break;
+            default:
+                break;
+        }
+    }
+
+    public void unProcessFontStyle(){
+        switch (getFontStyle()){
+            case 0 :
+                break;
+            case  1:
+                getContent().append(PrintTemplateUtils.FONT_BOLD_NO);
+                break;
+            case  2:
+                getContent().append(PrintTemplateUtils.FONT_UNDERLINE_NO);
+                break;
+            case  3:
+                getContent().append(PrintTemplateUtils.FONT_BOLD_NO);
+                getContent().append(PrintTemplateUtils.FONT_UNDERLINE_NO);
+                break;
+            default:
+                break;
+        }
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public String getShowName() {
+        return showName;
+    }
+
+    public String getValueName() {
+        return valueName;
+    }
+
+    public int getLength() {
+        return length;
+    }
+
+    public int getRow() {
+        return row;
+    }
+
+    public int getIndex() {
+        return index;
+    }
+
+    public int getLoop() {
+        return loop;
+    }
+
+    public int getAlign() {
+        return align;
+    }
+
+    public int getFontSize() {
+        return fontSize;
+    }
+
+    public int getFontStyle() {
+        return fontStyle;
+    }
+
+    public PrintTemplateRow getTemplateRow() {
+        return templateRow;
+    }
+
+    public PrintTemplate getTemplate(){
+        return getTemplateRow().getTemplate();
+    }
+}

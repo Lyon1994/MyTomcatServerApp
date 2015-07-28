@@ -1,0 +1,139 @@
+package org.redot.clover.app.inventory;
+
+import org.redot.clover.app.message.MessageManager;
+import org.redot.clover.core.CloverManager;
+import org.redot.clover.core.ext.BaseAction;
+import org.redot.clover.core.ext.Params;
+import org.redot.library.db.IQuery;
+import org.redot.library.db.ITable;
+import org.redot.library.lang.DateUtils;
+import org.redot.library.lang.NumberUtils;
+import org.redot.library.lang.StringUtils;
+import org.restlet.data.Form;
+
+import java.util.Hashtable;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 11-4-30
+ * Time: 下午4:44
+ * To change this template use File | Settings | File Templates.
+ */
+public class SupplierAction extends BaseAction{
+    public List<Map> list(){
+
+        String sql=" SELECT A.S_ID,A.S_NAME, A.S_PHONE,A.S_MOBILE_PHONE,A.S_FAX,A.S_ADDRESS,A.S_CONTACT,A.S_MEMO,A.S_STATUS,B.DEPT_STATUS_NAME AS S_STATUS_NAME  " +
+                    " FROM X_S A  " +
+                    " LEFT JOIN X_DEPT_STATUS B ON A.S_STATUS=B.DEPT_STATUS ";
+        System.out.println(sql);
+        IQuery query = getQuery();
+        List<Map> list = query.doQuery(sql).tables();
+        return list;
+    }
+
+    public int set(Form form){
+        int result = 0;
+        Map data = form.getValuesMap();
+        String S_ID = StringUtils.toString(data.get("S_ID"));
+        ITable T = getTable("X_S").clearData();
+        if (S_ID.length() == 0) {
+            S_ID = String.valueOf(T.getMaxID("S_ID"));
+            data.put("S_ID", S_ID);
+            result = T.data(data).create();
+        } else {
+            result = T.data(data).where(T.column("S_ID").eq(S_ID)).update();
+        }
+        if (result < 0) {
+            return CloverManager.CODE_FAILED;
+        }
+        MessageManager.getInstance().setVersion(MessageManager.MSG_VER_CLIENT);
+        return CloverManager.CODE_SUCCESS;
+
+}
+    public  int delete(Form form)
+    {
+        Map data = form.getValuesMap();
+        String S_ID=StringUtils.toString(data.get("S_ID"));
+        if(S_ID.length()==0)
+        {
+            return CloverManager.CODE_FAILED;
+        }
+        IQuery query=getQuery();
+        int result=0;
+        String sql="DELETE FROM X_S  WHERE S_ID="+S_ID;
+        result=query.doExec(sql);
+        System.out.println("!!!!!!!!!!!!!"+sql);
+        if(result < 0){
+            return CloverManager.CODE_FAILED;
+        }
+        MessageManager.getInstance().setVersion(MessageManager.MSG_VER_CLIENT);
+        return CloverManager.CODE_SUCCESS;
+    }
+
+    public  List<Map> detail(Params params)
+    {
+        String  PO_S_ID = StringUtils.toString(params.val("PO_S_ID"));
+        String  DATE_S = StringUtils.toString(params.val("DATE_S"));
+        String  DATE_E = StringUtils.toString(params.val("DATE_E"));
+        String  S_STATUS_BILL=StringUtils.toString(params.val("S_STATUS_BILL")) ;
+
+        if (DATE_S.length() == 0) {
+            DATE_S = DateUtils.getNowDate();
+        }
+        if (DATE_E.length() == 0) {
+            DATE_E = DateUtils.getNowDate();
+        }
+        if(DATE_S.compareTo(DATE_E) > 0){
+            DATE_S = DateUtils.getNowDate();
+            DATE_E = DateUtils.getNowDate();
+        }
+        String COND = " WHERE  A.PO_DT_IN >= '"+ DATE_S+" 00:00:00' AND A.PO_DT_IN <= '" +DATE_E+" 23:59:59'";
+        String  COND2="";
+        if(S_STATUS_BILL.length()>0)
+        {
+            COND2+=  " AND A.PO_STATUS_BILL="+S_STATUS_BILL;
+        }
+        if (PO_S_ID.length()>0)
+        {
+            COND2+="  AND  A.PO_S_ID= "+  PO_S_ID;
+        }
+        String sql=" SELECT A.PO_ITEM_ID,B.ITEM_NAME AS PO_ITEM_NAME,A.PO_ITEM_NUM,A.PO_ITEM_UNIT_ID,C.UNIT_NAME AS PO_UNIT_NAME,A.PO_ITEM_PRICE," +
+                "  A.PO_AMOUNT, A.PO_ITEM_PRICE_REQ,A.PO_ITEM_NUM_REQ ,A.PO_DT_VERIFY,A.PO_STATUS_BILL FROM X_PO A    " +
+                "  LEFT JOIN X_ITEM B ON A.PO_ITEM_ID=B.ITEM_ID " +
+                "  LEFT JOIN X_UNIT C ON A.PO_ITEM_UNIT_ID=C.UNIT_ID  " +
+                "  LEFT JOIN X_S E ON A.PO_S_ID=E.S_ID " +COND+COND2
+               + "  ORDER BY A.PO_DT_VERIFY DESC ";
+        IQuery query = getQuery();
+        List<Map> list = query.doQuery(sql).tables();
+        System.out.println(sql);
+        return list;
+    }
+
+     public   int nochecktobill(Form form)
+     {
+         if(!isLogin()){
+             return CloverManager.CODE_FAILED;
+         }
+         String PO_USER_BILL = StringUtils.toString(getClient().getCookies().get("ACCOUNT_ID"));
+         Map data = form.getValuesMap();
+//         String PO_USER_BILL=StringUtils.toString(data.get("ACCOUNT_ID"));
+         String S_ID=StringUtils.toString(data.get("S_ID"));
+         String[] PO_ITEM_ID_ARR= StringUtils.split(StringUtils.toString(data.get("PO_ITEM_ID")), ",");
+         if(S_ID.length()==0)
+         {
+             return CloverManager.CODE_FAILED;
+         }
+         IQuery query=getQuery();
+         for(int i = 0; i< PO_ITEM_ID_ARR.length;i++){
+          String sql= "UPDATE X_PO   SET  PO_STATUS_BILL= 1 ,PO_DT_BILL=' "+DateUtils.getNow()+" ' ,PO_USER_BILL="+PO_USER_BILL+" WHERE PO_S_ID = "+S_ID+" AND PO_ITEM_ID= "+PO_ITEM_ID_ARR[i];
+          query.doExec(sql);
+         }
+          query.free();
+         MessageManager.getInstance().setVersion(MessageManager.MSG_VER_CLIENT);
+         return CloverManager.CODE_SUCCESS;
+     }
+}
+

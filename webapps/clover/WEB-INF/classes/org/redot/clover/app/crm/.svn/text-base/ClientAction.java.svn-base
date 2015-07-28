@@ -1,0 +1,116 @@
+package org.redot.clover.app.crm;
+
+import org.redot.clover.app.message.MessageManager;
+import org.redot.clover.core.CloverManager;
+import org.redot.clover.core.ext.BaseAction;
+import org.redot.library.db.IQuery;
+import org.redot.library.db.ITable;
+import org.redot.library.lang.StringUtils;
+import org.restlet.data.Form;
+
+import java.util.Hashtable;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 11-4-30
+ * Time: 下午4:44
+ * To change this template use File | Settings | File Templates.
+ */
+public class ClientAction extends BaseAction{
+
+    public List<Map> list(){
+        String sql = "SELECT A.*, B.CLIENT_TYPE_NAME, C.CLIENT_CARD_NO, C.CLIENT_CARD_DATE, C.CLIENT_CARD_PASSWORD FROM X_CLIENT A " +
+                "LEFT JOIN X_CLIENT_TYPE B ON A.CLIENT_TYPE_ID = B.CLIENT_TYPE_ID " +
+                "LEFT JOIN X_CLIENT_CARD C ON A.CLIENT_ID = C.CLIENT_ID " +
+                "WHERE A.CLIENT_STATUS <> 2 ORDER BY A.CLIENT_TYPE_ID, A.CLIENT_ID";
+        IQuery query = getQuery();
+        List<Map> list = query.doQuery(sql).tables();
+        for(Map m : list){
+            if(StringUtils.toString(m.get("CLIENT_HANG_BILL")).equals("1")){
+                m.put("CLIENT_HANG_BILL_NAME", "是");
+            }
+            else {
+                m.put("CLIENT_HANG_BILL_NAME", "否");
+            }
+        }
+        query.free();
+        return list;
+    }
+
+    public List<Map> select(){
+        String sql = "SELECT A.* FROM X_CLIENT_TYPE A " +
+                "WHERE A.CLIENT_TYPE_STATUS = 0 ORDER BY A.CLIENT_TYPE_SORT, A.CLIENT_TYPE_ID";
+        IQuery query = getQuery();
+        List<Map> list = query.doQuery(sql).tables();
+        query.free();
+        return list;
+    }
+
+    public Map get(String CLIENT_ID){
+        if(CLIENT_ID == null || CLIENT_ID.equals("")){
+            return null;
+        }
+        Map data = new Hashtable();
+        String sql = "SELECT A.*, B.CLIENT_TYPE_NAME, C.CLIENT_CARD_NO, C.CLIENT_CARD_DATE, C.CLIENT_CARD_PASSWORD FROM X_CLIENT A " +
+                "LEFT JOIN X_CLIENT_TYPE B ON A.CLIENT_TYPE_ID = B.CLIENT_TYPE_ID " +
+                "LEFT JOIN X_CLIENT_CARD C ON A.CLIENT_ID = C.CLIENT_ID " +
+                "WHERE A.CLIENT_ID = " + CLIENT_ID;
+        IQuery query = getQuery();
+        Map m = query.doQuery(sql).table();
+
+        if(m != null){
+            data.putAll(m);
+        }
+        query.free();
+        return data;
+    }
+
+    public int set(Form form){
+        Map data = form.getValuesMap();
+        String CLIENT_ID = StringUtils.toString(data.get("CLIENT_ID"));
+
+        ITable T = getTable("X_CLIENT").clearData();
+        int result = 0;
+
+        if(CLIENT_ID.length() == 0){
+            CLIENT_ID = String.valueOf(T.getMaxID("CLIENT_ID"));
+            data.put("CLIENT_ID", CLIENT_ID);
+            result = T.data(data).create();
+        }
+        else{
+            result = T.data(data).where(T.column("CLIENT_ID").eq(CLIENT_ID)).update();
+        }
+        ITable TC = getTable("X_CLIENT_CARD").clearData();
+        TC.where(TC.column("CLIENT_ID").eq(CLIENT_ID)).delete();
+        result = TC.data(data).create();
+        if(result < 0){
+            return CloverManager.CODE_FAILED;
+        }
+        MessageManager.getInstance().setVersion(MessageManager.MSG_VER_CLIENT);
+        return CloverManager.CODE_SUCCESS;
+    }
+
+    public int delete(Form form) {
+        Map data = form.getValuesMap();
+        String CLIENT_ID = StringUtils.toString(data.get("CLIENT_ID"));
+        if(CLIENT_ID.length() == 0){
+            return CloverManager.CODE_FAILED;
+        }
+        IQuery query = getQuery();
+
+        String sql = "UPDATE X_CLIENT SET CLIENT_STATUS = 2 WHERE CLIENT_ID = " + CLIENT_ID;
+//        String sql = "DELETE FROM X_CLIENT_TYPE WHERE CLIENT_TYPE_ID = " + CLIENT_TYPE_ID;
+        int result = query.doExec(sql);
+        if(result < 0){
+            query.free();
+            return CloverManager.CODE_FAILED;
+        }
+        query.free();
+        MessageManager.getInstance().setVersion(MessageManager.MSG_VER_CLIENT);
+        return CloverManager.CODE_SUCCESS;
+    }
+
+}

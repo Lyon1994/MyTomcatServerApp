@@ -1,0 +1,148 @@
+package org.redot.clover.app.system;
+
+import org.redot.clover.app.message.MessageManager;
+import org.redot.clover.core.CloverManager;
+import org.redot.clover.core.ext.BaseAction;
+import org.redot.library.db.IQuery;
+import org.redot.library.db.ITable;
+import org.redot.library.lang.StringUtils;
+import org.restlet.data.Form;
+
+import java.lang.reflect.Array;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 10-12-31
+ * Time: 上午2:33
+ * To change this template use File | Settings | File Templates.
+ */
+public class TasteAction extends BaseAction {
+
+    public List<Map> list() {
+        String sql = "SELECT A.*, B.STATUS_NAME AS TASTE_STATUS_NAME FROM X_TASTE A " +
+                "LEFT JOIN X_STATUS B ON A.TASTE_STATUS = B.STATUS " +
+                "WHERE A.TASTE_STATUS <> 2 AND A.TASTE_ID >= 0 ORDER BY  A.TASTE_ID";
+        IQuery query = getQuery();
+        List<Map> list = query.doQuery(sql).tables();
+        for(Map m : list){
+            String TASTE_ID = StringUtils.toString(m.get("TASTE_ID"));
+            sql = "SELECT TASTE_DESC, TASTE_DESC_DEF FROM X_TASTE_DESC WHERE TASTE_ID = ?";
+            List<String[]> DESCS = query.doQuery(sql, TASTE_ID).list();
+            String TASTE_DESC = "";
+            String TASTE_DEF = "";
+            for(String[] DESC : DESCS){
+                if(TASTE_DESC.length() > 0){
+                    TASTE_DESC += ",";
+                }
+                TASTE_DESC += DESC[0];
+                if(DESC[1].equals("1")){
+                    TASTE_DEF = DESC[0];
+                }
+            }
+            m.put("TASTE_DESC", TASTE_DESC);
+            m.put("TASTE_DEF", TASTE_DEF);
+        }
+        query.free();
+        return list;
+    }
+
+    public List<Map> select() {
+        String sql = "SELECT * FROM X_TASTE WHERE TASTE_STATUS  = 1 ORDER BY TASTE_ID";
+        IQuery query = getQuery();
+        List<Map> list = query.doQuery(sql).tables();
+        query.free();
+        return list;
+    }
+
+    public Map get(String TASTE_ID) {
+        String sql = "SELECT * FROM X_TASTE WHERE TASTE_ID  = ?";
+        IQuery query = getQuery();
+        Map data = query.doQuery(sql, TASTE_ID).table();
+        if(data == null){
+            query.free();
+            return data;
+        }
+        sql = "SELECT * FROM X_TASTE_DESC WHERE TASTE_ID = ?";
+        List<Map> TASTE_DESCS = query.doQuery(sql, TASTE_ID).tables();
+        data.put("TASTE_DESCS", TASTE_DESCS);
+        query.free();
+        return data;
+    }
+
+    public int set(Form form) {
+        Map data = form.getValuesMap();
+        String TASTE_ID = StringUtils.toString(data.get("TASTE_ID"));
+        String TASTE_NAME = StringUtils.toString(data.get("TASTE_NAME"));
+        ITable T = getTable("X_TASTE").clearData();
+        int result = 0;
+        if (TASTE_ID.length() == 0) {
+            TASTE_ID = T.getMaxID("TASTE_ID") + "";
+            data.put("TASTE_ID", TASTE_ID);
+            result = T.data(data).create();
+        } else {
+            result = T.data(data).where(T.column("TASTE_ID").eq(TASTE_ID)).update();
+        }
+
+        if (result < 0) {
+            return CloverManager.CODE_FAILED;
+        }
+        ITable D = getTable("X_TASTE_DESC").clearData();
+        D.where(D.column("TASTE_ID").eq(TASTE_ID)).delete();
+        String[] TASTE_DESCS = form.getValuesArray("TASTE_DESC");
+        String TASTE_DESC_DEF = StringUtils.toString(data.get("TASTE_DESC_DEF"));
+        if(TASTE_DESCS != null && TASTE_DESCS.length > 0){
+            int x = 0;
+            for(String TASTE_DESC : TASTE_DESCS){
+                if(TASTE_DESC == null || TASTE_DESC.length() == 0){
+                    continue;
+                }
+                Map m = new HashMap();
+                m.put("TASTE_ID", TASTE_ID);
+                m.put("TASTE_DESC", TASTE_DESC);
+                if(TASTE_DESC_DEF.length() == 0 && x == 0){
+                    m.put("TASTE_DESC_DEF", 1);
+                }
+                if(TASTE_DESC_DEF.equals(TASTE_DESC)){
+                    m.put("TASTE_DESC_DEF", 1);
+                }
+                else{
+                    if(TASTE_DESC_DEF.length() == 0 && x == 0){
+                        m.put("TASTE_DESC_DEF", 1);
+                    }
+                    else {
+                        m.put("TASTE_DESC_DEF", 0);
+                    }
+                }
+                x++;
+                D.data(m).create();
+            }
+        }
+        MessageManager.getInstance().setVersion(MessageManager.MSG_VER_TASTE);
+        return CloverManager.CODE_SUCCESS;
+    }
+
+    public int delete(Form form) {
+        Map data = form.getValuesMap();
+        String TASTE_ID = StringUtils.toString(data.get("TASTE_ID"));
+        if (TASTE_ID.length() == 0) {
+            return CloverManager.CODE_FAILED;
+        }
+        String sql = "DELETE FROM X_TASTE  WHERE TASTE_ID = ?";
+        IQuery query = getQuery();
+        int result = query.doExec(sql, TASTE_ID);
+        sql = "DELETE FROM X_TASTE_DESC  WHERE TASTE_ID = ?";
+        result = query.doExec(sql, TASTE_ID);
+        query.free();
+        if (result < 0) {
+            return CloverManager.CODE_FAILED;
+        }
+        return CloverManager.CODE_SUCCESS;
+    }
+
+
+}

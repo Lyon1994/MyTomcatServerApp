@@ -1,0 +1,233 @@
+package org.redot.clover.app.system;
+
+import org.redot.clover.core.CloverManager;
+import org.redot.clover.core.ext.BaseAction;
+import org.redot.library.db.IQuery;
+import org.redot.library.lang.DateUtils;
+import org.redot.library.lang.StringUtils;
+import org.restlet.data.Form;
+
+import java.util.List;
+import java.util.Map;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 11-4-7
+ * Time: 下午10:37
+ * To change this template use File | Settings | File Templates.
+ */
+public class MarketTypeAction extends BaseAction{
+
+    public int create(Form form){
+
+        return CloverManager.CODE_SUCCESS;
+    }
+
+    public int update(Form form){
+
+        return CloverManager.CODE_SUCCESS;
+    }
+
+    public List<Map> list() {
+        IQuery query = getQuery();
+        String sql = "SELECT * FROM X_MT WHERE MT_STATUS=1  AND MT_ID > 0 ORDER BY MT_ID";
+        List<Map> list = query.doQuery(sql).tables();
+        query.free();
+        return list;
+    }
+
+    public List<String[]> getMTList() {
+        IQuery query = getQuery();
+        String sql = "SELECT MT_ID, MT_NAME FROM X_MT WHERE MT_STATUS=1 AND MT_ID > 0 ORDER BY MT_ID";
+        List<String[]> list = query.doQuery(sql).list();
+        query.free();
+        return list;
+    }
+
+    public String[] getNowMT(){
+        return getMT(DateUtils.getNow());
+    }
+
+    public String[] getMT(String DINE_DT) {
+        String[] mt = new String[0];
+        String DINE_TIME = DINE_DT.substring(DINE_DT.indexOf(" ") + 1);
+        String DINE_DATE = DINE_DT.substring(0, DINE_DT.indexOf(" "));
+        IQuery query = getQuery();
+        String sql = "SELECT * FROM X_MT WHERE MT_STATUS=1 AND MT_ID > 0 AND MT_TIME > ? ORDER BY MT_TIME";
+        List<Map> list = query.doQuery(sql, DINE_TIME).tables();
+
+        if(list.size() > 0){
+            Map m = list.get(0);
+            mt = new String[4];
+            mt[0] = StringUtils.toString(m.get("MT_ID"));
+            mt[1] = StringUtils.toString(m.get("MT_NAME"));
+            mt[3] = DINE_DATE + " " + StringUtils.toString(m.get("MT_TIME"));
+            sql = "SELECT * FROM X_MT WHERE MT_STATUS=1 AND MT_ID > 0 AND MT_TIME <= ? ORDER BY MT_TIME DESC";
+            Map m2 = query.doQuery(sql, DINE_TIME).table();
+            if(m2 != null){
+                mt[2] = DINE_DATE + " " + StringUtils.toString(m2.get("MT_TIME"));
+            }
+            else{
+                if(list.size() > 1){
+                    mt[2] = DateUtils.formatDate(DateUtils.getYesterday(DINE_DATE)) + " " + StringUtils.toString(list.get(list.size() - 1).get("MT_TIME"));
+                }
+                else{
+                    mt[2] = DateUtils.formatDate(DateUtils.getYesterday(DINE_DATE)) + " " + StringUtils.toString(m.get("MT_TIME"));
+                }
+            }
+        }
+        else{
+            sql = "SELECT * FROM X_MT WHERE MT_STATUS=1 AND MT_ID > 0 AND MT_TIME <= ? ORDER BY MT_TIME";
+            list = query.doQuery(sql, DINE_TIME).tables();
+            if(list.size() == 0){
+                query.free();
+                return mt;
+            }
+            Map m = list.get(0);
+            mt = new String[4];
+            mt[0] = StringUtils.toString(m.get("MT_ID"));
+            mt[1] = StringUtils.toString(m.get("MT_NAME"));
+            mt[3] = DateUtils.formatDate(DateUtils.getTomorrow(DINE_DATE)) + " " + StringUtils.toString(m.get("MT_TIME"));
+            if(list.size() > 1){
+                mt[2] = DINE_DATE + " " + StringUtils.toString(list.get(list.size() - 1).get("MT_TIME"));
+            }
+            else{
+                mt[2] = DINE_DATE + " " + StringUtils.toString(m.get("MT_TIME"));
+            }
+        }
+        query.free();
+        return mt;
+    }
+
+    public String[] getMT_bak(String DINE_DT) {
+        String[] mt = new String[0];
+        IQuery query = getQuery();
+        String sql = "SELECT MT_ID, MT_NAME, MT_TIME_S, MT_TIME_E FROM X_MT WHERE MT_STATUS=1 AND MT_ID > 0";
+        List<String[]> list = query.doQuery(sql).list();
+        query.free();
+        String DINE_TIME = DINE_DT.substring(DINE_DT.indexOf(" ") + 1);
+        String DINE_DATE = DINE_DT.substring(0, DINE_DT.indexOf(" "));
+        String MT_DT_S = "";
+        String MT_DT_E = "";
+        for (Object[] objs : list) {
+            String MT_TIME_S = StringUtils.toString(objs[2]);
+            String MT_TIME_E = StringUtils.toString(objs[3]);
+            if (MT_TIME_S.compareTo(MT_TIME_E) < 0) {
+                if (DINE_TIME.compareTo(MT_TIME_S) < 0 || DINE_TIME.compareTo(MT_TIME_E) > 0) {
+                    continue;
+                }
+
+                MT_DT_S = DINE_DATE + " " + MT_TIME_S;
+                MT_DT_E = DINE_DATE + " " + MT_TIME_E;
+                mt = new String[4];
+                mt[0] = StringUtils.toString(objs[0]);
+                mt[1] = StringUtils.toString(objs[1]);
+                mt[2] = MT_DT_S;
+                mt[3] = MT_DT_E;
+                return mt;
+            } else {
+                if (DINE_TIME.compareTo(MT_TIME_S) < 0) {
+                    if (DINE_TIME.compareTo(MT_TIME_E) > 0) {
+                        continue;
+                    }
+                    MT_DT_S = DateUtils.formatDate(DateUtils.getYesterday(DINE_DATE)) + " " + MT_TIME_S;
+                    MT_DT_E = DINE_DATE + " " + MT_TIME_E;
+                    mt = new String[4];
+                    mt[0] = StringUtils.toString(objs[0]);
+                    mt[1] = StringUtils.toString(objs[1]);
+                    mt[2] = MT_DT_S;
+                    mt[3] = MT_DT_E;
+                    return mt;
+                } else {
+                    if (DINE_TIME.compareTo(MT_TIME_E) < 0) {
+                        MT_DT_S = DateUtils.formatDate(DateUtils.getYesterday(DINE_DATE)) + " " + MT_TIME_S;
+                        MT_DT_E = DINE_DATE + " " + MT_TIME_E;
+                        mt = new String[4];
+                        mt[0] = StringUtils.toString(objs[0]);
+                        mt[1] = StringUtils.toString(objs[1]);
+                        mt[2] = MT_DT_S;
+                        mt[3] = MT_DT_E;
+                        return mt;
+                        //continue;
+                    }
+                    MT_DT_S = DINE_DATE + " " + MT_TIME_S;
+                    MT_DT_E = DateUtils.formatDate(DateUtils.getTomorrow(DINE_DATE)) + " " + MT_TIME_E;
+                    mt = new String[4];
+                    mt[0] = StringUtils.toString(objs[0]);
+                    mt[1] = StringUtils.toString(objs[1]);
+                    mt[2] = MT_DT_S;
+                    mt[3] = MT_DT_E;
+                    return mt;
+                }
+            }
+        }
+
+        return mt;
+    }
+
+
+    public String[] getMTX(String DINE_DATE_S, String DINE_DATE_E, String MT_ID) {
+        String[] mt = new String[0];
+        IQuery query = getQuery();
+        String sql = "SELECT * FROM X_MT WHERE MT_STATUS=1 AND MT_ID > 0 ORDER BY MT_ID";
+        List<Map> list = query.doQuery(sql).tables();
+        if(list.size() == 0){
+            mt[0] = "0";
+            mt[1] = "";
+            mt[2] = DINE_DATE_S + " 00:00";
+            mt[3] = DINE_DATE_E + " 23:59";
+            query.free();
+            return mt;
+        }
+
+        if(MT_ID.equals("0")){
+            Map m = list.get(list.size() - 1);
+            mt = new String[4];
+            mt[0] = StringUtils.toString(m.get("MT_ID"));
+            mt[1] = StringUtils.toString(m.get("MT_NAME"));
+            if(StringUtils.toString(m.get("MT_TIME")).compareTo("12:00")> 0){
+                mt[2] = DateUtils.formatDate(DateUtils.getYesterday(DINE_DATE_S)) + " " + StringUtils.toString(m.get("MT_TIME"));
+                mt[3] = DINE_DATE_E + " " + StringUtils.toString(m.get("MT_TIME"));
+            }
+            else{
+                mt[2] = DINE_DATE_S + " " + StringUtils.toString(m.get("MT_TIME"));
+                mt[3] = DateUtils.formatDate(DateUtils.getTomorrow(DINE_DATE_E)) + " " + StringUtils.toString(m.get("MT_TIME"));
+            }
+            //mt[2] = DINE_DATE_S + " " + StringUtils.toString(m.get("MT_TIME"));
+            //mt[2] = DateUtils.formatDate(DateUtils.getYesterday(DINE_DATE_S)) + " " + StringUtils.toString(m.get("MT_TIME"));
+           // mt[3] = DINE_DATE_E + " " + StringUtils.toString(m.get("MT_TIME"));
+            //mt[3] = DateUtils.formatDate(DateUtils.getTomorrow(DINE_DATE_E)) + " " + StringUtils.toString(m.get("MT_TIME"));
+            query.free();
+            return mt;
+        }
+        int x = -1;
+        for(Map m : list){
+            x++;
+            if(!StringUtils.toString(m.get("MT_ID")).equals(MT_ID)){
+                continue;
+            }
+            mt = new String[4];
+            mt[0] = StringUtils.toString(m.get("MT_ID"));
+            mt[1] = StringUtils.toString(m.get("MT_NAME"));
+            String MT_TIME_S = "";
+            String MT_TIME_E = StringUtils.toString(m.get("MT_TIME"));
+            if(x > 0){
+                MT_TIME_S = StringUtils.toString(list.get(x - 1).get("MT_TIME"));
+            }
+            else{
+                MT_TIME_S = StringUtils.toString(list.get(list.size() - 1).get("MT_TIME"));
+            }
+            if(MT_TIME_E.compareTo(MT_TIME_S) > 0){
+                mt[2] = DINE_DATE_S + " " + MT_TIME_S;
+                mt[3] = DINE_DATE_E + " " + MT_TIME_E;
+            }
+            else{
+                mt[2] = DINE_DATE_S + " " + MT_TIME_S;
+                mt[3] = DateUtils.formatDate(DateUtils.getTomorrow(DINE_DATE_E)) + " " + MT_TIME_E;
+            }
+        }
+        query.free();
+        return mt;
+    }
+}

@@ -1,0 +1,28 @@
+package org.redot.clover.app.product.rest;
+
+import org.redot.clover.app.product.ProductAction;
+import org.redot.clover.core.data.DataPackage;
+import org.redot.clover.core.ext.BaseResource;
+import org.restlet.resource.Get;
+
+import java.util.List;
+import java.util.Map;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 10-12-21
+ * Time: 下午5:02
+ * To change this template use File | Settings | File Templates.
+ */
+public class ProductList extends BaseResource {
+
+    @Get("json")
+    public String doGet() {
+        DataPackage dp = new DataPackage();
+        ProductAction a = new ProductAction();
+        List<Map> list = a.list();
+        dp.addTable("table", list, null, null);
+        return dp.toJSON();
+    }
+}

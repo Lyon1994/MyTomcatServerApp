@@ -1,0 +1,44 @@
+package org.redot.clover.app.order.rest;
+
+import org.redot.clover.app.order.OrderAction;
+import org.redot.clover.app.order.OrderDishAction;
+import org.redot.clover.core.data.DataPackage;
+import org.redot.clover.core.ext.BaseResource;
+import org.redot.library.lang.NumberUtils;
+import org.redot.library.lang.StringUtils;
+import org.restlet.resource.Get;
+import org.restlet.resource.Post;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 10-12-30
+ * Time: 下午11:51
+ * To change this template use File | Settings | File Templates.
+ */
+public class OrderUnion extends BaseResource {
+
+    @Post("json")
+    public String doPost() {
+        DataPackage dp = new DataPackage();
+        OrderAction a = new OrderAction();
+        a.setClient(client);
+        String O_IDS = StringUtils.toString(form.getFirstValue("O_ID"));
+        if(O_IDS.length() == 0){
+            return dp.toJSON();
+        }
+        if(a.setUnion(O_IDS)){
+            dp.setStatus(1);
+        }
+        else{
+            dp.setStatus(0);
+        }
+        return dp.toJSON();
+    }
+
+
+}

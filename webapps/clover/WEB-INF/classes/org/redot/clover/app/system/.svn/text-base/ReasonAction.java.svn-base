@@ -1,0 +1,120 @@
+package org.redot.clover.app.system;
+
+import org.redot.clover.app.message.MessageManager;
+import org.redot.clover.core.CloverManager;
+import org.redot.clover.core.ext.BaseAction;
+import org.redot.library.db.IQuery;
+import org.redot.library.db.ITable;
+import org.redot.library.lang.StringUtils;
+import org.restlet.data.Form;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 10-12-31
+ * Time: 上午2:33
+ * To change this template use File | Settings | File Templates.
+ */
+public class ReasonAction extends BaseAction {
+
+    public List<Map> list() {
+        String sql = "SELECT A.* FROM X_REASON A " +
+                "ORDER BY  A.REASON_ID";
+        IQuery query = getQuery();
+        List<Map> list = query.doQuery(sql).tables();
+        for(Map m : list){
+            String REASON_ID = StringUtils.toString(m.get("REASON_ID"));
+            sql = "SELECT REASON_DESC FROM X_REASON_DESC WHERE REASON_ID = ?";
+            List<String[]> DESCS = query.doQuery(sql, REASON_ID).list();
+            String REASON_DESC = "";
+            for(String[] DESC : DESCS){
+                if(REASON_DESC.length() > 0){
+                    REASON_DESC += ",";
+                }
+                REASON_DESC += DESC[0];
+
+            }
+            m.put("REASON_DESC", REASON_DESC);
+        }
+        query.free();
+        return list;
+    }
+
+
+
+    public Map get(String REASON_ID) {
+        String sql = "SELECT * FROM X_REASON WHERE REASON_ID  = ?";
+        IQuery query = getQuery();
+        Map data = query.doQuery(sql, REASON_ID).table();
+        if(data == null){
+            query.free();
+            return data;
+        }
+        sql = "SELECT * FROM X_REASON_DESC WHERE REASON_ID = ?";
+        List<Map> REASON_DESCS = query.doQuery(sql, REASON_ID).tables();
+        data.put("REASON_DESCS", REASON_DESCS);
+        query.free();
+        return data;
+    }
+
+    public int set(Form form) {
+        Map data = form.getValuesMap();
+        String REASON_ID = StringUtils.toString(data.get("REASON_ID"));
+//        String REASON_NAME = StringUtils.toString(data.get("REASON_NAME"));
+        ITable T = getTable("X_REASON").clearData();
+        int result = 0;
+        if (REASON_ID.length() == 0) {
+            REASON_ID = T.getMaxID("REASON_ID") + "";
+            data.put("REASON_ID", REASON_ID);
+            result = T.data(data).create();
+        } else {
+            result = T.data(data).where(T.column("REASON_ID").eq(REASON_ID)).update();
+        }
+
+        if (result < 0) {
+            return CloverManager.CODE_FAILED;
+        }
+        ITable D = getTable("X_REASON_DESC").clearData();
+        D.where(D.column("REASON_ID").eq(REASON_ID)).delete();
+        String[] REASON_DESCS = form.getValuesArray("REASON_DESC");
+        if(REASON_DESCS != null && REASON_DESCS.length > 0){
+            int x = 0;
+            for(String REASON_DESC : REASON_DESCS){
+                if(REASON_DESC == null || REASON_DESC.length() == 0){
+                    continue;
+                }
+                Map m = new HashMap();
+                m.put("REASON_ID", REASON_ID);
+                m.put("REASON_DESC", REASON_DESC);
+                x++;
+                D.data(m).create();
+            }
+        }
+        MessageManager.getInstance().setVersion(MessageManager.MSG_VER_REASON);
+        return CloverManager.CODE_SUCCESS;
+    }
+
+    public int delete(Form form) {
+        Map data = form.getValuesMap();
+        String REASON_ID = StringUtils.toString(data.get("REASON_ID"));
+        if (REASON_ID.length() == 0) {
+            return CloverManager.CODE_FAILED;
+        }
+        String sql = "DELETE FROM X_REASON  WHERE REASON_ID = ?";
+        IQuery query = getQuery();
+        int result = query.doExec(sql, REASON_ID);
+        sql = "DELETE FROM X_REASON_DESC  WHERE REASON_ID = ?";
+        result = query.doExec(sql, REASON_ID);
+        query.free();
+        if (result < 0) {
+            return CloverManager.CODE_FAILED;
+        }
+        return CloverManager.CODE_SUCCESS;
+    }
+
+
+}

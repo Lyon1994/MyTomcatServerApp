@@ -1,0 +1,48 @@
+package org.redot.clover.print.rest;
+
+import org.redot.clover.app.item.ItemAction;
+import org.redot.clover.core.data.DataPackage;
+import org.redot.clover.core.ext.BaseResource;
+import org.redot.clover.print.PrintTypeLargeAction;
+import org.redot.library.lang.NumberUtils;
+import org.restlet.resource.Get;
+import org.restlet.resource.Post;
+import org.restlet.resource.Put;
+
+import java.util.Map;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: yh_admin
+ * Date: 12-11-21
+ * Time: 下午2:52
+ * To change this template use File | Settings | File Templates.
+ */
+public class PrintTypeLarge extends BaseResource {
+
+    @Get("json")
+    public String doGet(){
+        DataPackage dp = new DataPackage();
+        PrintTypeLargeAction a = new PrintTypeLargeAction();
+        System.out.println("111111111");
+        dp.addTable("table",a.listLarge(),null,null);
+        return dp.toJSON();
+    }
+    @Post("json")
+    public String doPost(){
+        DataPackage dp = new DataPackage();
+        PrintTypeLargeAction a = new PrintTypeLargeAction();
+        Map data = a.setLarge(form);
+        dp.setStatus(NumberUtils.toInt(data.get("STATUS")));
+        dp.getData().put("form",data);
+        return dp.toJSON();
+    }
+
+    @Put("json")
+    public String doDelete(){
+        DataPackage dp = new DataPackage();
+        PrintTypeLargeAction a = new PrintTypeLargeAction();
+        dp.setStatus(a.deleteLarge(form));
+        return dp.toJSON();
+    }
+}

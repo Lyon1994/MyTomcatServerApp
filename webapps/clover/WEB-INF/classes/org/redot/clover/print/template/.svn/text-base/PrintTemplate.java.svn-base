@@ -1,0 +1,133 @@
+package org.redot.clover.print.template;
+
+import com.sun.xml.internal.messaging.saaj.util.ByteOutputStream;
+import org.apache.log4j.Logger;
+import org.redot.clover.core.CloverManager;
+import org.redot.library.db.IQuery;
+import org.redot.library.lang.NumberUtils;
+
+import java.io.*;
+import java.util.ArrayList;
+import java.util.Hashtable;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 11-8-23
+ * Time: 下午2:30
+ * To change this template use File | Settings | File Templates.
+ */
+public class PrintTemplate implements Serializable{
+    private static final long serialVersionUID = -3304516677270803422L;
+    private int id;
+    private String name;
+    private Map<String, String[]> data;
+    private List<PrintTemplateRow> rows;
+    private StringBuffer content;
+
+    public PrintTemplate(int id, String name){
+        this.id = id;
+        this.name = name;
+        rows = new ArrayList<PrintTemplateRow>();
+        content = new StringBuffer();
+        init();
+    }
+
+    public void init(){
+        System.out.println("Print Template ["+getName()+"] Initialize......");
+        IQuery query = CloverManager.getInstance().getQuery();
+        String sql = "SELECT * FROM X_PRINT_TEMPLATE_FIELD WHERE TEMPLATE_ID = "+getId()+" ORDER BY FIELD_ROW, FIELD_INDEX, FIELD_ID";
+        List<Map> list = query.doQuery(sql).tables();
+        int count = list.size();
+        for(int i = 0; i < count; i ++){
+            int fieldRow = NumberUtils.toInt(list.get(i).get("FIELD_ROW"));
+            if(i > 0){
+                int _fieldRow = NumberUtils.toInt(list.get(i - 1).get("FIELD_ROW"));
+                if(fieldRow == _fieldRow){
+                    continue;
+                }
+            }
+            getRows().add(new PrintTemplateRow(this, fieldRow, list));
+        }
+        System.out.println("Print Template [" + getName() + "] Initialize Success......");
+        list.clear();
+        list = null;
+        query.free();
+    }
+
+    public void process(Map<String, String[]> data){
+        if(data == null){
+            data = new Hashtable<String, String[]>();
+        }
+        this.data = data;
+        content = new StringBuffer();
+        content.append(PrintTemplateUtils.INIT);
+        content.append(PrintTemplateUtils.GP);
+        for(PrintTemplateRow row : rows){
+            row.process();
+        }
+        content.append(PrintTemplateUtils.CUT);
+        content.append(PrintTemplateUtils.VOICE);
+        content.append("  ");
+        content.append("\n");
+        content.append("  ");
+        content.append("\n");
+        content.append("  ");
+        content.append("\n");
+//        content.append("  ");
+//        content.append("\n");
+
+
+//        content.append(PrintTemplateUtils.VOICE);
+    }
+
+    public Map getData(){
+        return data;
+    }
+
+    public String show(){
+        return content.toString();
+    }
+
+    public int getId(){
+        return id;
+    }
+    public String getName(){
+        return name;
+    }
+
+    public List<PrintTemplateRow> getRows(){
+        return rows;
+    }
+
+    public StringBuffer getContent() {
+        return content;
+    }
+
+
+    public void setData(Map<String, String[]> data) {
+        this.data = data;
+    }
+
+
+    public PrintTemplate copy() {
+        try{
+            ByteArrayOutputStream bos = new ByteArrayOutputStream();
+            ObjectOutputStream oos = new ObjectOutputStream(bos);
+            oos.writeObject(this);
+            ByteArrayInputStream bis = new ByteArrayInputStream(bos.toByteArray());
+            ObjectInputStream ois = new ObjectInputStream(bis);
+            Object obj = ois.readObject();
+            if(obj == null){
+                return null;
+            }
+            return (PrintTemplate)obj;
+        }
+        catch (Exception e){
+            System.out.println(e);
+        }
+        return null;
+    }
+}

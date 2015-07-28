@@ -1,0 +1,39 @@
+package org.redot.clover.print;
+
+import org.redot.clover.core.CloverManager;
+import org.redot.clover.core.ext.BaseAction;
+import org.redot.library.db.IQuery;
+import org.redot.library.lang.StringUtils;
+import org.restlet.data.Form;
+
+import java.util.Map;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: yh_admin
+ * Date: 12-12-4
+ * Time: 下午5:58
+ * To change this template use File | Settings | File Templates.
+ */
+public class PrintCaseDishAction  extends BaseAction {
+    public  int updatedish(Form form)
+    {
+        Map data = form.getValuesMap();
+        String CASE_ID = StringUtils.toString(data.get("CASE_ID"));
+        String CASE_PSX= StringUtils.toString(data.get("CASE_PSX"));
+        int result=0;
+        String COUNT="0";
+        if(CASE_PSX.length()>0)
+        {
+            COUNT=CASE_PSX;
+        }
+        String sql="UPDATE  X_PRINT_CASE A  SET A.CASE_PSX='"+COUNT+"' WHERE A.CASE_ID="+CASE_ID;
+        IQuery query=getQuery();
+        result=query.doExec(sql);
+        if(result < 0){
+            return CloverManager.CODE_FAILED;
+        }
+
+        return CloverManager.CODE_SUCCESS;
+    }
+}

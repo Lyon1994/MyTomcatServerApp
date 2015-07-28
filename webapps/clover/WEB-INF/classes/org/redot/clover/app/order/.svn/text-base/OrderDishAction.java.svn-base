@@ -1,0 +1,3019 @@
+package org.redot.clover.app.order;
+
+import com.sun.org.apache.bcel.internal.generic.NEW;
+import org.redot.clover.app.system.DictAction;
+import org.redot.clover.app.system.LogAction;
+import org.redot.clover.app.system.RequireAction;
+import org.redot.clover.app.system.SystemAction;
+import org.redot.clover.core.CloverManager;
+import org.redot.clover.core.ext.BaseAction;
+import org.redot.clover.core.ext.Params;
+import org.redot.clover.print.PrintJob;
+import org.redot.clover.print.PrintManager;
+import org.redot.library.db.IQuery;
+import org.redot.library.db.ITable;
+import org.redot.library.lang.ArrayUtils;
+import org.redot.library.lang.DateUtils;
+import org.redot.library.lang.NumberUtils;
+import org.redot.library.lang.StringUtils;
+import org.restlet.data.Form;
+
+import java.util.*;
+import java.util.jar.Manifest;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 10-12-31
+ * Time: 上午11:11
+ * To change this template use File | Settings | File Templates.
+ */
+public class OrderDishAction extends BaseAction {
+
+    public List<Map> list(String O_ID) {
+
+        String sql = "SELECT A.*, B.P_TYPE_NAME, B.P_TYPE_PARENT, C.O_P_STATUS_NAME, D.O_P_EXT_STATUS_NAME, E.P_TAG_SEASON, E.P_TAG_WEIGHT, E.P_DEF_TYPE " +
+                "FROM X_O_P A " +
+                "LEFT JOIN X_P_TYPE B ON A.O_P_TYPE_ID=B.P_TYPE_ID " +
+                "LEFT JOIN X_P_TYPE BX ON BX.P_TYPE_ID=B.P_TYPE_PARENT " +
+                "LEFT JOIN X_O_P_STATUS C ON A.O_P_STATUS=C.O_P_STATUS " +
+                "LEFT JOIN X_O_P_EXT_STATUS D ON A.O_P_EXT_STATUS=D.O_P_EXT_STATUS " +
+                "LEFT JOIN X_P E ON A.O_P_ID=E.P_ID " +
+                "WHERE A.O_ID = ? AND A.O_P_STATUS >= 0 ORDER BY A.O_P_STATUS, BX.P_TYPE_SORT, A.O_P_NO ";
+        //System.out.println(sql);
+        IQuery query = getQuery();
+        List<Map> list = query.doQuery(sql, O_ID).tables();
+        for(Map OP : list){
+
+            String O_P_NO = StringUtils.toString(OP.get("O_P_NO"));
+            String O_P_TASTE = StringUtils.toString(OP.get("O_P_TASTE"));
+            String O_P_WAY = StringUtils.toString(OP.get("O_P_WAY"));
+
+            String O_P_PACK = StringUtils.toString(OP.get("O_P_PACK"));
+            String O_P_REQUIRE = StringUtils.toString(OP.get("O_P_REQUIRE"));
+            String O_P_MEMO = StringUtils.toString(OP.get("O_P_MEMO"));
+            float O_P_DISCOUNT = NumberUtils.toFloat(OP.get("O_P_DISCOUNT"));
+            float O_P_WAY_PRICE = NumberUtils.toFloat(OP.get("O_P_WAY_PRICE"));
+            List<String> memos = new ArrayList<String>();
+            if(O_P_PACK.equals("1")){
+                memos.add("打包");
+            }
+            if(O_P_DISCOUNT >= 0){
+                if(O_P_DISCOUNT == 0){
+                    memos.add("赠送");
+                }
+                else{
+                    memos.add(O_P_DISCOUNT + "折");
+                }
+            }
+            if(O_P_WAY.length() > 0){
+                if(O_P_WAY_PRICE > 0){
+                    O_P_WAY += "+"+O_P_WAY_PRICE+"元";
+                }
+                memos.add(O_P_WAY);
+            }
+            if(O_P_TASTE.length() > 0){
+                memos.add(O_P_TASTE);
+            }
+            if(O_P_REQUIRE.length() > 0){
+                memos.add(O_P_REQUIRE);
+            }
+            if(O_P_MEMO.length() > 0){
+                memos.add(O_P_MEMO);
+            }
+
+            OP.put("O_P_MEMOS", ArrayUtils.join(",", memos));
+        }
+        sql = "SELECT A.*, B.P_TYPE_NAME, B.P_TYPE_PARENT, C.O_P_STATUS_NAME, D.O_P_EXT_STATUS_NAME, E.P_TAG_SEASON, E.P_TAG_WEIGHT " +
+                "FROM X_O_P A " +
+                "LEFT JOIN X_P_TYPE B ON A.O_P_TYPE_ID=B.P_TYPE_ID " +
+                "LEFT JOIN X_P_TYPE BX ON BX.P_TYPE_ID=B.P_TYPE_PARENT " +
+                "LEFT JOIN X_O_P_STATUS C ON A.O_P_STATUS=C.O_P_STATUS " +
+                "LEFT JOIN X_O_P_EXT_STATUS D ON A.O_P_EXT_STATUS=D.O_P_EXT_STATUS " +
+                "LEFT JOIN X_P E ON A.O_P_ID=E.P_ID " +
+                "WHERE A.O_ID = ? AND A.O_P_STATUS= -1 ORDER BY A.O_P_STATUS, BX.P_TYPE_SORT, A.O_P_NO ";
+        List<Map> listCancel = query.doQuery(sql, O_ID).tables();
+        list.addAll(listCancel);
+        query.free();
+        return list;
+    }
+
+    public List<Map> query(Form form) {
+        Map data = form.getValuesMap();
+        String O_P_ID = StringUtils.toString(data.get("O_P_ID"));
+        if(O_P_ID.equals("")){
+            return new ArrayList<Map>();
+        }
+        String sql = "SELECT A.*, B.O_P_STATUS_NAME, C.O_P_EXT_STATUS_NAME, " +
+                "(SELECT DESK_NAME FROM X_DESK WHERE DESK_ID = (SELECT O_DESK_ID FROM X_O WHERE O_ID = A.O_ID)) AS O_DESK_NAME " +
+                "FROM X_O_P A " +
+                "LEFT JOIN X_O_P_STATUS B ON A.O_P_STATUS = B.O_P_STATUS " +
+                "LEFT JOIN X_O_P_EXT_STATUS C ON A.O_P_EXT_STATUS=C.O_P_EXT_STATUS " +
+                "WHERE A.O_P_ID = "+O_P_ID+" " +
+                "AND A.O_ID IN (SELECT O_ID FROM X_O WHERE O_STATUS IN (3,4,5)) " +
+                "AND A.O_P_STATUS <> 0 ORDER BY A.O_P_DT_ORDER, A.O_P_NO ";
+        System.out.println(sql);
+        IQuery query = getQuery();
+        List<Map> list = query.doQuery(sql).tables();
+        for(Map OP : list){
+
+            String O_P_NO = StringUtils.toString(OP.get("O_P_NO"));
+            String O_P_TASTE = StringUtils.toString(OP.get("O_P_TASTE"));
+            String O_P_WAY = StringUtils.toString(OP.get("O_P_WAY"));
+
+            String O_P_PACK = StringUtils.toString(OP.get("O_P_PACK"));
+            String O_P_REQUIRE = StringUtils.toString(OP.get("O_P_REQUIRE"));
+            String O_P_MEMO = StringUtils.toString(OP.get("O_P_MEMO"));
+            float O_P_DISCOUNT = NumberUtils.toFloat(OP.get("O_P_DISCOUNT"));
+            float O_P_WAY_PRICE = NumberUtils.toFloat(OP.get("O_P_WAY_PRICE"));
+            List<String> memos = new ArrayList<String>();
+            if(O_P_PACK.equals("1")){
+                memos.add("打包");
+            }
+            if(O_P_DISCOUNT >= 0){
+                if(O_P_DISCOUNT == 0){
+                    memos.add("赠送");
+                }
+                else{
+                    memos.add(O_P_DISCOUNT + "折");
+                }
+            }
+            if(O_P_WAY.length() > 0){
+                if(O_P_WAY_PRICE > 0){
+                    O_P_WAY += "+"+O_P_WAY_PRICE+"元";
+                }
+                memos.add(O_P_WAY);
+            }
+            if(O_P_TASTE.length() > 0){
+                memos.add(O_P_TASTE);
+            }
+            if(O_P_REQUIRE.length() > 0){
+                memos.add(O_P_REQUIRE);
+            }
+            if(O_P_MEMO.length() > 0){
+                memos.add(O_P_MEMO);
+            }
+
+            OP.put("O_P_MEMOS", ArrayUtils.join(",", memos));
+        }
+        query.free();
+        return list;
+    }
+
+    public Map info(Params params) {
+        if (params.val("O_P_NO").length() == 0) {
+            return null;
+        }
+        String sql = "SELECT A.*,C.O_P_STATUS_NAME,B.P_NAME AS O_P_NAME,B.P_PRICE AS O_P_PRICE " +
+                "FROM X_O_P A LEFT JOIN X_P B ON A.O_P_ID=B.P_ID " +
+                "LEFT JOIN X_O_P_STATUS C ON A.O_P_STATUS=C.O_P_STATUS WHERE A.O_P_NO = " + params.val("O_P_NO");
+        IQuery query = getQuery();
+        Map map = query.doQuery(sql).table();
+        query.free();
+        return map;
+    }
+
+    public boolean checkStock(String P_ID, float NUM){
+        IQuery query = getQuery();
+        String sql = "SELECT P_NUM FROM X_P_STOCK WHERE P_STOCK_STATUS = 1 AND P_ID = " + P_ID;
+        String P_STOCK_NUM_STR = query.doQuery(sql).getValue();
+        query.free();
+        if(P_STOCK_NUM_STR.length() == 0){
+            return true;
+        }
+        float P_STOCK_NUM = NumberUtils.toFloat(P_STOCK_NUM_STR);
+        if(P_STOCK_NUM - NUM  < 0){
+            return false;
+        }
+        return true;
+    }
+    public boolean checkComboStock(String P_ID, float NUM){
+        IQuery query = getQuery();
+        String sql = "SELECT B.P_ID FROM X_P_COMBO_P A LEFT JOIN X_P B ON A.P_COMBO_P_ID = B.P_ID WHERE A.P_COMBO_ID = " + P_ID;
+        String[] P_ID_ARR = query.doQuery(sql).get();
+        query.free();
+        if(P_ID_ARR.length == 0){
+            return true;
+        }
+        for(String _P_ID : P_ID_ARR){
+            if(!checkStock(_P_ID, NUM)){
+                return false;
+            }
+        }
+        return true;
+    }
+    public boolean updateComboStock(String P_ID, float NUM){
+        IQuery query = getQuery();
+        String sql = "SELECT B.P_ID FROM X_P_COMBO_P A LEFT JOIN X_P B ON A.P_COMBO_P_ID = B.P_ID WHERE A.P_COMBO_ID = " + P_ID;
+        String[] P_ID_ARR = query.doQuery(sql).get();
+        query.free();
+        if(P_ID_ARR.length == 0){
+            return true;
+        }
+        for(String _P_ID : P_ID_ARR){
+            updateStock(_P_ID, NUM);
+        }
+        return true;
+    }
+    
+    public boolean updateStock(String P_ID, float NUM){
+        IQuery query = getQuery();
+        String sql = "UPDATE X_P_STOCK SET P_NUM = P_NUM-"+ NUM +" WHERE P_STOCK_STATUS = 1 AND P_ID IN ("+P_ID+")";
+        query.doExec(sql);
+        query.free();
+        return true;
+    }
+
+    public int batchByBook(Form form){
+        if(!isLogin()){
+            return CloverManager.CODE_FAILED;
+        }
+        Map data = form.getValuesMap();
+        String O_ID = StringUtils.toString(data.get("O_ID"));
+        String O_P_NO = StringUtils.toString(data.get("O_P_NO"));
+        if (O_ID.length() == 0) {
+            return CloverManager.CODE_FAILED;
+        }
+        IQuery query = getQuery();
+        if(query.rowCount("SELECT * FROM X_O WHERE O_STATUS IN (1) AND O_ID IN( " + O_ID + ")") == 0){
+            query.free();
+            return CloverManager.CODE_FAILED;
+        }
+        String ACCOUNT_ID = StringUtils.toString(getClient().getCookies().get("ACCOUNT_ID"));
+        String[] O_P_ID_ARR = StringUtils.toString(data.get("O_P_ID")).split("\\$");
+        String[] O_P_NUM_ARR = StringUtils.toString(data.get("O_P_NUM")).split("\\$");
+        System.out.println("O_ID                  = " + StringUtils.toString(data.get("O_ID")));
+        System.out.println("O_P_ID_ARR     = " + StringUtils.toString(data.get("O_P_ID")));
+        System.out.println("O_P_NUM_ARR = " + StringUtils.toString(data.get("O_P_NUM")));
+
+        if(O_P_ID_ARR.length == 0 || O_P_NUM_ARR.length == 0 || O_P_ID_ARR.length != O_P_NUM_ARR.length){
+            if(O_P_NO.length() == 0){
+                query.free();
+                return CloverManager.CODE_FAILED;
+            }
+        }
+        String O_P_NOS = "";
+        String NOW = DateUtils.getNow();
+
+        String[] O_P_PRICE_ARR = StringUtils.toString(data.get("O_P_PRICE")).split("\\$");
+        String[] O_P_COMBO_ARR = StringUtils.toString(data.get("O_P_COMBO")).split("\\$");
+        String[] O_P_TASTE_ARR = StringUtils.toString(data.get("O_P_TASTE")).split("\\$");
+        String[] O_P_MEMO_ARR = StringUtils.toString(data.get("O_P_MEMO")).split("\\$");
+        String[] O_P_EXT_STATUS_ARR = StringUtils.toString(data.get("O_P_EXT_STATUS")).split("\\$");
+        String[] O_P_REQUIRE_ARR = StringUtils.toString(data.get("O_P_REQUIRE")).split("\\$");
+        String[] O_P_PACK_ARR = StringUtils.toString(data.get("O_P_PACK")).split("\\$");
+        String[] O_P_KEY = StringUtils.toString(data.get("O_P_KEY")).split("\\$");
+        String[] O_P_TYPE_ID = StringUtils.toString(data.get("O_P_TYPE_ID")).split("\\$");
+        String[] O_P_UNIT_ID = StringUtils.toString(data.get("O_P_UNIT_ID")).split("\\$");
+        String[] O_P_NAME = StringUtils.toString(data.get("O_P_NAME")).split("\\$");
+        String[] O_P_WAY = StringUtils.toString(data.get("O_P_WAY")).split("\\$");
+        String[] O_P_WAY_PRICE = StringUtils.toString(data.get("O_P_WAY_PRICE")).split("\\$");
+
+        String[] O_IDS  = null;
+
+        O_IDS  = StringUtils.split(O_ID, ",");
+
+        for(int i=0;i<O_P_ID_ARR.length; i++){
+            Map m = new Hashtable();
+            String O_P_ID = StringUtils.toString(O_P_ID_ARR[i]);
+            if(O_P_ID.length() == 0){
+                continue;
+            }
+
+            m.put("O_P_ID", O_P_ID);
+            m.put("O_P_NUM", O_P_NUM_ARR[i]);
+            m.put("O_P_MAKER", ACCOUNT_ID);
+            if(i < O_P_PRICE_ARR.length){
+                m.put("O_P_PRICE", O_P_PRICE_ARR[i]);
+            }
+            if(i < O_P_COMBO_ARR.length){
+                m.put("O_P_COMBO", O_P_COMBO_ARR[i]);
+            }
+            if(i < O_P_TASTE_ARR.length){
+                m.put("O_P_TASTE", O_P_TASTE_ARR[i]);
+            }
+            if(i < O_P_MEMO_ARR.length){
+                m.put("O_P_MEMO", O_P_MEMO_ARR[i]);
+            }
+            if(i < O_P_EXT_STATUS_ARR.length){
+                m.put("O_P_EXT_STATUS", O_P_EXT_STATUS_ARR[i]);
+            }
+            if(i < O_P_REQUIRE_ARR.length){
+                m.put("O_P_REQUIRE", O_P_REQUIRE_ARR[i]);
+            }
+            if(i < O_P_PACK_ARR.length){
+                m.put("O_P_PACK", O_P_PACK_ARR[i]);
+            }
+            if(i < O_P_KEY.length){
+                m.put("O_P_KEY", O_P_KEY[i]);
+            }
+            if(i < O_P_WAY.length){
+                m.put("O_P_WAY", O_P_WAY[i]);
+            }
+            if(i < O_P_WAY_PRICE.length){
+                m.put("O_P_WAY_PRICE", O_P_WAY_PRICE[i]);
+            }
+            String _O_P_NO = "";
+            long _O_P_ID = NumberUtils.toLong(O_P_ID);
+            if(_O_P_ID > 10000){
+                if(i < O_P_NAME.length){
+                    m.put("O_P_NAME", O_P_NAME[i]);
+                }
+                if(i < O_P_TYPE_ID.length){
+                    m.put("O_P_TYPE_ID", O_P_TYPE_ID[i]);
+                }
+                if(i < O_P_UNIT_ID.length){
+                    m.put("O_P_UNIT_ID", O_P_UNIT_ID[i]);
+                }
+                _O_P_NO = batchOrderTempByBook(O_IDS, m, NOW);
+            }
+            else{
+                _O_P_NO = batchOrderByBook(O_IDS, m, NOW);
+            }
+            if(O_P_NOS.length() > 0){
+                O_P_NOS += ",";
+            }
+            O_P_NOS += _O_P_NO;
+        }
+
+        if(O_P_NOS.length() == 0){
+            query.free();
+            return CloverManager.CODE_FAILED;
+        }
+        query.free();
+        return CloverManager.CODE_SUCCESS;
+    }
+
+    public int batch(Form form){
+        if(!isLogin()){
+            return CloverManager.CODE_FAILED;
+        }
+        Map data = form.getValuesMap();
+        String O_ID = StringUtils.toString(data.get("O_ID"));
+        String O_P_NO = StringUtils.toString(data.get("O_P_NO"));
+        String KEY = StringUtils.toString(data.get("KEY"));
+        if (O_ID.length() == 0) {
+            return CloverManager.CODE_FAILED;
+        }
+        IQuery query = getQuery();
+        if(query.rowCount("SELECT * FROM X_O WHERE O_STATUS IN (3,4,5,6) AND O_ID IN( " + O_ID + ")") == 0){
+            query.free();
+            return CloverManager.CODE_FAILED;
+        }
+        String ACCOUNT_ID = StringUtils.toString(getClient().getCookies().get("ACCOUNT_ID"));
+        String[] O_P_ID_ARR = StringUtils.toString(data.get("O_P_ID")).split("\\$");
+        String[] O_P_NUM_ARR = StringUtils.toString(data.get("O_P_NUM")).split("\\$");
+        System.out.println("O_ID                  = " + StringUtils.toString(data.get("O_ID")));
+        System.out.println("O_P_ID_ARR     = " + StringUtils.toString(data.get("O_P_ID")));
+        System.out.println("O_P_NUM_ARR = " + StringUtils.toString(data.get("O_P_NUM")));
+        System.out.println("KEY = " + KEY);
+//        System.out.println("O_P_PACK         = " + StringUtils.toString(data.get("O_P_PACK")));
+//        System.out.println("O_P_PRICE         = " + StringUtils.toString(data.get("O_P_PRICE")));
+//        System.out.println("O_P_KEY         = " + StringUtils.toString(data.get("O_P_KEY")));
+//        System.out.println("O_P_WAY         = " + StringUtils.toString(data.get("O_P_WAY")));
+//        System.out.println("O_P_WAY_PRICE         = " + StringUtils.toString(data.get("O_P_WAY_PRICE")));
+        if(O_P_ID_ARR.length == 0 || O_P_NUM_ARR.length == 0 || O_P_ID_ARR.length != O_P_NUM_ARR.length){
+            if(O_P_NO.length() == 0){
+                query.free();
+                return CloverManager.CODE_FAILED;
+            }
+        }
+        String O_P_NOS = "";
+        String NOW = DateUtils.getNow();
+        int result = 0;
+        String[] KEYS = StringUtils.split(KEY, ",");
+        if(KEYS.length > 0){
+            KEY = "";
+            for(String key : KEYS){
+                if(KEY.length() >0){
+                    KEY += ",";
+                }
+                KEY += "'" + key + "'";
+            }
+            String sql = "SELECT A.*, B.P_TAG_WEIGHT FROM X_O_P A LEFT JOIN X_P B ON A.O_P_ID = B.P_ID WHERE A.O_P_STATUS=0 AND A.O_ID IN (" + O_ID + ") AND A.O_P_KEY IN ("+ KEY +")";
+            List<Map> OPS = query.doQuery(sql).tables();
+            if(OPS.size() == 0){
+                query.free();
+                return CloverManager.CODE_FAILED;    
+            }
+
+            for(Map OP : OPS){
+                String _O_P_NO = StringUtils.toString(OP.get("O_P_NO"));
+                String O_P_ID = StringUtils.toString(OP.get("O_P_ID"));
+                float O_P_NUM = NumberUtils.toFloat(OP.get("O_P_NUM"));
+                boolean P_TAG_WEIGHT = StringUtils.toString(OP.get("P_TAG_WEIGHT")).equals("1") ? true : false;
+                if(P_TAG_WEIGHT){
+                    float O_P_WEIGHT = NumberUtils.toFloat(OP.get("O_P_WEIGHT"));
+                    O_P_NUM = O_P_WEIGHT;
+                }
+                String O_P_COMBO = StringUtils.toString(OP.get("O_P_COMBO"));
+                boolean hasStock = true;
+                if(O_P_COMBO.equals("1")){
+                    hasStock = checkComboStock(O_P_ID, O_P_NUM);
+                }
+                else{
+                    hasStock = checkStock(O_P_ID, O_P_NUM);
+                }
+                if(hasStock){
+                    sql = "UPDATE X_O_P SET O_P_MAKER = "+ACCOUNT_ID+", O_P_DT_ORDER='" + NOW + "', O_P_STATUS=1 WHERE O_P_STATUS=0 AND O_P_NO = " + _O_P_NO;
+                    query.doExec(sql);
+                    if(O_P_COMBO.equals("1")){
+                        updateComboStock(O_P_ID, O_P_NUM);
+                    }
+                    else{
+                        updateStock(O_P_ID, O_P_NUM);
+                    }
+                    result = CloverManager.CODE_SUCCESS;
+                    if(O_P_NOS.length() > 0){
+                        O_P_NOS += ",";
+                    }
+                    O_P_NOS += _O_P_NO;
+                }
+            }
+//            sql = "UPDATE X_O_P SET O_P_MAKER = "+ACCOUNT_ID+", O_P_DT_ORDER='" + NOW + "', O_P_STATUS=1 WHERE O_P_STATUS=0 AND O_P_NO IN (" + O_P_NOS + ")";
+//            if(query.doExec(sql) < 0){
+//                query.free();
+//                return CloverManager.CODE_FAILED;
+//            }
+//            result = CloverManager.CODE_SUCCESS;
+        }
+        String[] O_P_PRICE_ARR = StringUtils.toString(data.get("O_P_PRICE")).split("\\$");
+        String[] O_P_COMBO_ARR = StringUtils.toString(data.get("O_P_COMBO")).split("\\$");
+        String[] O_P_TASTE_ARR = StringUtils.toString(data.get("O_P_TASTE")).split("\\$");
+        String[] O_P_MEMO_ARR = StringUtils.toString(data.get("O_P_MEMO")).split("\\$");
+        String[] O_P_EXT_STATUS_ARR = StringUtils.toString(data.get("O_P_EXT_STATUS")).split("\\$");
+        String[] O_P_REQUIRE_ARR = StringUtils.toString(data.get("O_P_REQUIRE")).split("\\$");
+        String[] O_P_PACK_ARR = StringUtils.toString(data.get("O_P_PACK")).split("\\$");
+        String[] O_P_KEY = StringUtils.toString(data.get("O_P_KEY")).split("\\$");
+        String[] O_P_TYPE_ID = StringUtils.toString(data.get("O_P_TYPE_ID")).split("\\$");
+        String[] O_P_UNIT_ID = StringUtils.toString(data.get("O_P_UNIT_ID")).split("\\$");
+        String[] O_P_NAME = StringUtils.toString(data.get("O_P_NAME")).split("\\$");
+        String[] O_P_WAY = StringUtils.toString(data.get("O_P_WAY")).split("\\$");
+        String[] O_P_WAY_PRICE = StringUtils.toString(data.get("O_P_WAY_PRICE")).split("\\$");
+
+        String[] O_IDS  = null;
+//        String UNION = StringUtils.toString(data.get("UNION"));
+//        if(UNION.equals("1")){
+//            OrderAction a = new OrderAction();
+//            String IDS = a.getUnion(O_ID);
+//            if(IDS.length()>0){
+//                O_IDS = IDS.split(",");
+//            }
+//            else{
+//                O_IDS  = new String[]{O_ID};
+//            }
+//        }
+//        else{
+//            O_IDS  = new String[]{O_ID};
+//        }
+        O_IDS  = StringUtils.split(O_ID, ",");
+//        O_IDS  = new String[]{O_ID};
+
+//        List<Map> OPS = new ArrayList<Map>();
+        for(int i=0;i<O_P_ID_ARR.length; i++){
+            Map m = new Hashtable();
+            String O_P_ID = StringUtils.toString(O_P_ID_ARR[i]);
+            if(O_P_ID.length() == 0){
+                continue;
+            }
+
+            m.put("O_P_ID", O_P_ID);
+            m.put("O_P_NUM", O_P_NUM_ARR[i]);
+            m.put("O_P_MAKER", ACCOUNT_ID);
+            if(i < O_P_PRICE_ARR.length){
+                m.put("O_P_PRICE", O_P_PRICE_ARR[i]);
+            }
+            if(i < O_P_COMBO_ARR.length){
+                m.put("O_P_COMBO", O_P_COMBO_ARR[i]);
+            }
+            if(i < O_P_TASTE_ARR.length){
+                m.put("O_P_TASTE", O_P_TASTE_ARR[i]);
+            }
+            if(i < O_P_MEMO_ARR.length){
+                m.put("O_P_MEMO", O_P_MEMO_ARR[i]);
+            }
+            if(i < O_P_EXT_STATUS_ARR.length){
+                m.put("O_P_EXT_STATUS", O_P_EXT_STATUS_ARR[i]);
+            }
+            if(i < O_P_REQUIRE_ARR.length){
+                m.put("O_P_REQUIRE", O_P_REQUIRE_ARR[i]);
+            }
+            if(i < O_P_PACK_ARR.length){
+                m.put("O_P_PACK", O_P_PACK_ARR[i]);
+            }
+            if(i < O_P_KEY.length){
+                m.put("O_P_KEY", O_P_KEY[i]);
+            }
+            if(i < O_P_WAY.length){
+                m.put("O_P_WAY", O_P_WAY[i]);
+            }
+            if(i < O_P_WAY_PRICE.length){
+                m.put("O_P_WAY_PRICE", O_P_WAY_PRICE[i]);
+            }
+            String _O_P_NO = ""; 
+            long _O_P_ID = NumberUtils.toLong(O_P_ID);
+            if(_O_P_ID > 10000){
+                if(i < O_P_NAME.length){
+                    m.put("O_P_NAME", O_P_NAME[i]);
+                }
+                if(i < O_P_TYPE_ID.length){
+                    m.put("O_P_TYPE_ID", O_P_TYPE_ID[i]);
+                }
+                if(i < O_P_UNIT_ID.length){
+                    m.put("O_P_UNIT_ID", O_P_UNIT_ID[i]);
+                }
+                _O_P_NO = batchOrderTemp(O_IDS, m, NOW);
+            }
+            else{
+                _O_P_NO = batchOrder(O_IDS, m, NOW);
+            }
+            if(O_P_NOS.length() > 0){
+                O_P_NOS += ",";
+            }
+            O_P_NOS += _O_P_NO;
+            //OPS.add(m);
+        }
+//        for(Map OP : OPS){
+//            String O_P_ID = StringUtils.toString(OP.get("O_P_ID"));   
+//            float O_P_NUM = NumberUtils.toFloat(OP.get("O_P_NUM"));
+//            String O_P_COMBO = StringUtils.toString(OP.get("O_P_COMBO"));
+//            boolean hasStock = false;
+//            if(O_P_COMBO.equals("1")){
+//                
+//            }
+//            else{
+//                hasStock = checkStock(O_P_ID, O_P_NUM * O_IDS.length);
+//            }
+//        }
+//        for(Map OP : OPS){
+//            long _O_P_ID = NumberUtils.toLong(OP.get("O_P_ID"));
+//            if(_O_P_ID > 10000){
+//                result = batchOrderTemp(O_IDS, OP, NOW);    
+//            }
+//            else{
+//                result = batchOrder(O_IDS, OP, NOW);     
+//            }
+//        }
+        if(O_P_NOS.length() == 0){
+            query.free();
+            return CloverManager.CODE_FAILED;
+        }
+
+            //LogAction.add(getClient(), 20, null, O_P_NOS);
+//            IQuery query = getQuery();
+            //for(String _O_ID : O_IDS){
+//                String sql = "SELECT * FROM X_O WHERE O_STATUS <4 AND O_ID = " + O_ID;
+                Map params = new Hashtable();
+                params.put("O_ID", O_ID);
+                params.put("O_P_DT_ORDER", NOW);
+                params.put("MAKER", ACCOUNT_ID);
+//                if(query.rowCount(sql) > 0){
+//                    PrintManager.getInstance().addJob(PrintJob.COMMAND_DISH_ORDER, params);
+//
+//                }
+//                else{
+
+                    PrintManager.getInstance().addJob(PrintJob.COMMAND_DISH_ORDER, params);
+//                }
+            //}
+            query.doExec("UPDATE X_O SET O_STATUS=4, O_DT_BILL = NULL WHERE O_ID IN (" +O_ID+")");
+            String sql = "UPDATE X_BILL SET BILL_ARREAR_PROCESS_DT = NULL, " +
+                "BILL_DT_FINISH = NULL, " +
+                "BILL_ARREAR_PROCESSOR = NULL, " +
+                "BILL_ARREAR_PROCESSOR_ID = NULL, " +
+                "BILL_ARREAR_PROCESSOR = NULL, " +
+                "BILL_AMOUNT_ARREAR = 0, " +
+                "BILL_ARREAR_PAY_TYPE = NULL, " +
+                "BILL_ARREAR_PAY_AMOUNT = 0, " +
+                "BILL_STATUS=0, BILL_STATUSX=0 WHERE BILL_ID IN (SELECT O_BILL_ID FROM X_O WHERE O_ID IN (" +O_ID+"))";
+            query.doExec(sql);
+
+        query.free();
+        return CloverManager.CODE_SUCCESS;
+    }
+
+    public synchronized String batchOrderTemp(String[] O_IDS, Map data, String NOW){
+        String O_P_EXT_STATUS = StringUtils.toString(data.get("O_P_EXT_STATUS"));
+        if(O_P_EXT_STATUS.length() == 0){
+            O_P_EXT_STATUS = null;
+        }
+        String O_P_REQUIRE = StringUtils.toString(data.get("O_P_REQUIRE"));
+        if(O_P_REQUIRE.length() == 0){
+            O_P_REQUIRE = null;
+        }
+        String O_P_PACK = StringUtils.toString(data.get("O_P_PACK"));
+        if(O_P_PACK.length() == 0){
+            O_P_PACK = "0";
+        }
+        ITable T = getTable("X_O_P").clearData();
+        String O_P_NOS = "";
+        int result;
+//        System.out.println("O_P_PRICE = " + data.get("O_P_PRICE"));
+        float O_P_PRICE = NumberUtils.toFloat(data.get("O_P_PRICE"));
+//        System.out.println("O_P_PRICEX = " + O_P_PRICE);
+        float O_P_NUM = NumberUtils.toFloat(data.get("O_P_NUM"));
+        float AMOUNT = O_P_PRICE * O_P_NUM;
+        for(String _O_ID : O_IDS){
+            Map OP = new Hashtable();
+            long O_P_NO;
+            OP.putAll(data);
+            OP.put("O_ID", _O_ID);
+
+            OP.put("O_P_PRICE", O_P_PRICE);
+            OP.put("O_P_DT", NOW);
+
+            OP.put("O_P_AMOUNT", AMOUNT);
+            OP.put("O_P_AMOUNT_REAL", AMOUNT);
+            OP.put("O_P_STATUS", 1);
+             if(O_P_EXT_STATUS != null){
+                OP.put("O_P_EXT_STATUS", O_P_EXT_STATUS);
+            }
+            if(O_P_REQUIRE != null){
+                OP.put("O_P_REQUIRE", O_P_REQUIRE);
+            }
+            OP.put("O_P_PACK", O_P_PACK);
+            OP.put("O_P_DT_ORDER", NOW);
+            OP.put("O_P_DISCOUNT", -1);
+            O_P_NO = T.getMaxID("O_P_NO");
+            OP.put("O_P_NO", O_P_NO);
+            System.out.println("提交点菜X");
+            result = T.data(OP).create();
+            T.clearData();
+            if(result < 0){
+                return "";
+            }
+            if(O_P_NOS.length() > 0){
+                O_P_NOS += ",";
+            }
+            O_P_NOS += O_P_NO;
+        }
+        return O_P_NOS;
+    }
+
+    public synchronized String batchOrderTempByBook(String[] O_IDS, Map data, String NOW){
+        String O_P_EXT_STATUS = StringUtils.toString(data.get("O_P_EXT_STATUS"));
+        if(O_P_EXT_STATUS.length() == 0){
+            O_P_EXT_STATUS = null;
+        }
+        String O_P_REQUIRE = StringUtils.toString(data.get("O_P_REQUIRE"));
+        if(O_P_REQUIRE.length() == 0){
+            O_P_REQUIRE = null;
+        }
+        String O_P_PACK = StringUtils.toString(data.get("O_P_PACK"));
+        if(O_P_PACK.length() == 0){
+            O_P_PACK = "0";
+        }
+        ITable T = getTable("X_O_P").clearData();
+        String O_P_NOS = "";
+        int result;
+//        System.out.println("O_P_PRICE = " + data.get("O_P_PRICE"));
+        float O_P_PRICE = NumberUtils.toFloat(data.get("O_P_PRICE"));
+//        System.out.println("O_P_PRICEX = " + O_P_PRICE);
+        float O_P_NUM = NumberUtils.toFloat(data.get("O_P_NUM"));
+        float AMOUNT = O_P_PRICE * O_P_NUM;
+        for(String _O_ID : O_IDS){
+            Map OP = new Hashtable();
+            long O_P_NO;
+            OP.putAll(data);
+            OP.put("O_ID", _O_ID);
+
+            OP.put("O_P_PRICE", O_P_PRICE);
+            OP.put("O_P_DT", NOW);
+
+            OP.put("O_P_AMOUNT", AMOUNT);
+            OP.put("O_P_AMOUNT_REAL", AMOUNT);
+            OP.put("O_P_STATUS", 0);
+            if(O_P_EXT_STATUS != null){
+                OP.put("O_P_EXT_STATUS", O_P_EXT_STATUS);
+            }
+            if(O_P_REQUIRE != null){
+                OP.put("O_P_REQUIRE", O_P_REQUIRE);
+            }
+            OP.put("O_P_PACK", O_P_PACK);
+            OP.put("O_P_DISCOUNT", -1);
+            O_P_NO = T.getMaxID("O_P_NO");
+            OP.put("O_P_NO", O_P_NO);
+//            System.out.println("提交点菜X");
+            result = T.data(OP).create();
+            T.clearData();
+            if(result < 0){
+                return "";
+            }
+            if(O_P_NOS.length() > 0){
+                O_P_NOS += ",";
+            }
+            O_P_NOS += O_P_NO;
+        }
+        return O_P_NOS;
+    }
+
+    public synchronized String batchOrderByBook(String[] O_IDS, Map data, String NOW){
+
+        String O_P_ID = StringUtils.toString(data.get("O_P_ID"));
+        String O_P_MAKER = StringUtils.toString(data.get("O_P_MAKER"));
+        IQuery query = getQuery();
+        String O_P_KEY = StringUtils.toString(data.get("O_P_KEY"));
+        String sql = "SELECT * FROM X_O_P WHERE O_P_KEY = '"+O_P_KEY+"'";
+        if(query.rowCount(sql) > 0){
+            query.free();
+            return "";
+        }
+
+        String O_P_EXT_STATUS = StringUtils.toString(data.get("O_P_EXT_STATUS"));
+        if(O_P_EXT_STATUS.length() == 0){
+            O_P_EXT_STATUS = null;
+        }
+        String O_P_REQUIRE = StringUtils.toString(data.get("O_P_REQUIRE"));
+        if(O_P_REQUIRE.length() == 0){
+            O_P_REQUIRE = null;
+        }
+        String O_P_PACK = StringUtils.toString(data.get("O_P_PACK"));
+        if(O_P_PACK.length() == 0){
+            O_P_PACK = "0";
+        }
+        String O_P_COMBO = StringUtils.toString(data.get("O_P_COMBO"));
+        ITable T = getTable("X_O_P").clearData();
+        String O_P_NOS = "";
+        int result;
+        if(O_P_COMBO.equals("1")){
+            sql = "SELECT B.* FROM X_P_COMBO_P A LEFT JOIN X_P B ON A.P_COMBO_P_ID = B.P_ID WHERE A.P_COMBO_ID = ?";
+            List<Map> PS = query.doQuery(sql, O_P_ID).tables();
+            if(PS.size() == 0){
+                query.free();
+                return "";
+            }
+            sql = "SELECT P_COMBO_NAME, P_COMBO_PRICE FROM X_P_COMBO WHERE P_COMBO_ID = ?";
+            String[] P_COMBO = query.doQuery(sql, O_P_ID).get();
+            if(P_COMBO.length == 0){
+                query.free();
+                return "";
+            }
+            float O_P_PRICE = NumberUtils.toFloat(P_COMBO[1]);
+            List<Map> OPS = new ArrayList<Map>();
+            int O_P_NUM = NumberUtils.toInt(data.get("O_P_NUM"));
+
+            for(Map P : PS){
+                String P_ID = StringUtils.toString(P.get("P_ID"));
+                Map OP = new HashMap();
+                OP.put("O_P_ID", P_ID);
+                OP.put("O_P_NAME", P.get("P_NAME"));
+                OP.put("O_P_UNIT_ID", P.get("P_UNIT_ID"));
+                OP.put("O_P_TYPE_ID", P.get("P_TYPE_ID"));
+                OP.put("O_P_PRICE", P.get("P_PRICE"));
+                OP.put("O_P_AMOUNT", P.get("P_PRICE"));
+                OP.put("O_P_AMOUNT_REAL", P.get("P_PRICE"));
+
+                if(O_P_EXT_STATUS != null){
+                    OP.put("O_P_EXT_STATUS", O_P_EXT_STATUS);
+                }
+                if(O_P_REQUIRE != null){
+                    OP.put("O_P_REQUIRE", O_P_REQUIRE);
+                }
+                OP.put("O_P_PACK", O_P_PACK);
+
+                OP.put("O_P_DISCOUNT", -1);
+                OP.put("O_P_NUM", 1);
+                OP.put("O_P_DT", NOW);
+
+                OP.put("O_P_MAKER", O_P_MAKER);
+
+                OPS.add(OP);
+            }
+
+            for(String _O_ID : O_IDS){
+                for(int i=0;i<O_P_NUM;i++){
+                    Map OP = new Hashtable();
+                    OP.put("O_ID", _O_ID);
+                    OP.put("O_P_ID", O_P_ID);
+                    OP.put("O_P_NAME", P_COMBO[0]);
+                    OP.put("O_P_UNIT_ID", 0);
+                    OP.put("O_P_TYPE_ID", 0);
+                    OP.put("O_P_PRICE", O_P_PRICE);
+                    OP.put("O_P_AMOUNT", O_P_PRICE);
+                    OP.put("O_P_AMOUNT_REAL", O_P_PRICE);
+//                    OP.put("O_P_STATUS", 1);
+                    if(O_P_EXT_STATUS != null){
+                        OP.put("O_P_EXT_STATUS", O_P_EXT_STATUS);
+                    }
+                    if(O_P_REQUIRE != null){
+                        OP.put("O_P_REQUIRE", O_P_REQUIRE);
+                    }
+                    OP.put("O_P_PACK", O_P_PACK);
+//                    OP.put("O_P_DT_ORDER", NOW);
+                    OP.put("O_P_DISCOUNT", -1);
+                    OP.put("O_P_NUM", 1);
+                    OP.put("O_P_DT", NOW);
+//                    OP.put("O_P_KEY", O_P_KEY);
+                    OP.put("O_P_COMBO", 1);
+                    OP.put("O_P_MAKER", O_P_MAKER);
+                    long O_P_NO = T.getMaxID("O_P_NO");
+                    OP.put("O_P_NO", O_P_NO);
+                    String _O_P_KEY = O_P_KEY;
+
+                    OP.put("O_P_STATUS", 0);
+
+                    OP.put("O_P_KEY", _O_P_KEY);
+                    result = T.data(OP).create();
+                    T.clearData();
+                    if(result < 0){
+                        query.free();
+                        return "";
+                    }
+                    if(O_P_NOS.length() > 0){
+                        O_P_NOS += ",";
+                    }
+                    O_P_NOS += O_P_NO;
+                    for(Map _OP : OPS){
+//                        T.clearData();
+                        _OP.put("O_P_NO", T.getMaxID("O_P_NO"));
+                        _OP.put("O_ID", _O_ID);
+                        _OP.put("O_P_PARENT", O_P_NO);
+                        _OP.put("O_P_KEY", _O_P_KEY);
+
+                        _OP.put("O_P_STATUS", 0);
+
+                        result = T.data(_OP).create();
+                        T.clearData();
+                        if(result < 0){
+                            query.free();
+                            return "";
+                        }
+                    }
+                }
+
+            }
+
+            query.free();
+            return O_P_NOS;
+        }
+        sql = "SELECT * FROM X_P WHERE P_ID = ?";
+        Map P = query.doQuery(sql, O_P_ID).table();
+        if(P == null){
+            query.free();
+            return "";
+        }
+        float O_P_NUM = NumberUtils.toFloat(data.get("O_P_NUM"));
+
+
+        String O_P_WAY = StringUtils.toString(data.get("O_P_WAY"));
+        float O_P_WAY_PRICE = NumberUtils.toFloat(data.get("O_P_WAY_PRICE"));
+        boolean P_TAG_SEASON = StringUtils.toString(P.get("P_TAG_SEASON")).equals("1") ? true : false;
+        boolean P_TAG_WEIGHT = StringUtils.toString(P.get("P_TAG_WEIGHT")).equals("1") ? true : false;
+        if(P_TAG_WEIGHT){
+            O_P_NUM = 1;
+        }
+        float O_P_PRICE = 0;
+        if(P_TAG_SEASON){
+            if(data.containsKey("O_P_PRICE")){
+                O_P_PRICE = NumberUtils.toFloat(data.get("O_P_PRICE"));
+                if(O_P_PRICE <= 0){
+                    O_P_PRICE = getSeasonPrice(O_P_ID);
+                }
+            }
+            else{
+                O_P_PRICE = getSeasonPrice(O_P_ID);
+            }
+        }
+        String O_P_TASTE = StringUtils.toString(data.get("O_P_TASTE"));
+        String O_P_MEMO = StringUtils.toString(data.get("O_P_MEMO"));
+        for(String _O_ID : O_IDS){
+            Map OP = new Hashtable();
+            long O_P_NO;
+            if(!P_TAG_SEASON){
+                O_P_PRICE = getSpecialPrice(_O_ID, O_P_ID);
+            }
+            OP.put("O_ID", _O_ID);
+            OP.put("O_P_ID", O_P_ID);
+            OP.put("O_P_NAME", P.get("P_NAME"));
+            OP.put("O_P_UNIT_ID", P.get("P_UNIT_ID"));
+            OP.put("O_P_TYPE_ID", P.get("P_TYPE_ID"));
+            OP.put("O_P_TAG_SEASON", P.get("P_TAG_SEASON"));
+            OP.put("O_P_TAG_WEIGHT", P.get("P_TAG_WEIGHT"));
+            OP.put("O_P_PRICE", O_P_PRICE);
+            OP.put("O_P_DT", NOW);
+
+            OP.put("O_P_MAKER", O_P_MAKER);
+
+            float AMOUNT = 0;
+            if(P_TAG_WEIGHT){
+                float O_P_WEIGHT = NumberUtils.toFloat(data.get("O_P_NUM"));
+                OP.put("O_P_WEIGHT", O_P_WEIGHT);
+                AMOUNT = O_P_PRICE * O_P_WEIGHT + O_P_WAY_PRICE;
+            }
+            else{
+                AMOUNT = (O_P_PRICE + O_P_WAY_PRICE) * O_P_NUM;
+            }
+            OP.put("O_P_AMOUNT", AMOUNT);
+            OP.put("O_P_AMOUNT_REAL", AMOUNT);
+//            OP.put("O_P_STATUS", 1);
+            if(O_P_EXT_STATUS != null){
+                OP.put("O_P_EXT_STATUS", O_P_EXT_STATUS);
+            }
+            if(O_P_REQUIRE != null){
+                OP.put("O_P_REQUIRE", O_P_REQUIRE);
+            }
+            OP.put("O_P_PACK", O_P_PACK);
+//            OP.put("O_P_DT_ORDER", NOW);
+            OP.put("O_P_DISCOUNT", -1);
+            OP.put("O_P_NUM", O_P_NUM);
+            OP.put("O_P_TASTE", O_P_TASTE);
+            OP.put("O_P_MEMO", O_P_MEMO);
+            OP.put("O_P_WAY", O_P_WAY);
+            OP.put("O_P_WAY_PRICE", O_P_WAY_PRICE);
+            O_P_NO = T.getMaxID("O_P_NO");
+            OP.put("O_P_NO", O_P_NO);
+            String _O_P_KEY = O_P_KEY;
+
+            OP.put("O_P_STATUS", 0);
+
+            OP.put("O_P_KEY", _O_P_KEY);
+            result = T.data(OP).create();
+            T.clearData();
+            if(result < 0){
+                query.free();
+                return "";
+            }
+            if(O_P_NOS.length() > 0){
+                O_P_NOS += ",";
+            }
+            O_P_NOS += O_P_NO;
+        }
+        query.free();
+        return O_P_NOS;
+    }
+
+    public synchronized String batchOrder(String[] O_IDS, Map data, String NOW){
+
+        String O_P_ID = StringUtils.toString(data.get("O_P_ID"));
+        String O_P_MAKER = StringUtils.toString(data.get("O_P_MAKER"));
+        IQuery query = getQuery();
+        String O_P_KEY = StringUtils.toString(data.get("O_P_KEY"));
+        String sql = "SELECT * FROM X_O_P WHERE O_P_KEY = '"+O_P_KEY+"'";
+        if(query.rowCount(sql) > 0){
+            query.free();
+            return "";
+        }
+
+        String O_P_EXT_STATUS = StringUtils.toString(data.get("O_P_EXT_STATUS"));
+        if(O_P_EXT_STATUS.length() == 0){
+            O_P_EXT_STATUS = null;
+        }
+        String O_P_REQUIRE = StringUtils.toString(data.get("O_P_REQUIRE"));
+        if(O_P_REQUIRE.length() == 0){
+            O_P_REQUIRE = null;
+        }
+        String O_P_PACK = StringUtils.toString(data.get("O_P_PACK"));
+        if(O_P_PACK.length() == 0){
+            O_P_PACK = "0";
+        }
+        String O_P_COMBO = StringUtils.toString(data.get("O_P_COMBO"));
+        ITable T = getTable("X_O_P").clearData();
+        String O_P_NOS = "";
+        int result;
+        if(O_P_COMBO.equals("1")){
+            sql = "SELECT B.* FROM X_P_COMBO_P A LEFT JOIN X_P B ON A.P_COMBO_P_ID = B.P_ID WHERE A.P_COMBO_ID = ?";
+            List<Map> PS = query.doQuery(sql, O_P_ID).tables();
+            if(PS.size() == 0){
+                query.free();
+                return "";
+            }
+            sql = "SELECT P_COMBO_NAME, P_COMBO_PRICE FROM X_P_COMBO WHERE P_COMBO_ID = ?";
+            String[] P_COMBO = query.doQuery(sql, O_P_ID).get();
+            if(P_COMBO.length == 0){
+                query.free();
+                return "";
+            }
+            float O_P_PRICE = NumberUtils.toFloat(P_COMBO[1]);
+            List<Map> OPS = new ArrayList<Map>();
+            int O_P_NUM = NumberUtils.toInt(data.get("O_P_NUM"));
+            boolean hasStock = true;
+            String P_STOCK_IDS = "";
+            for(Map P : PS){
+                String P_ID = StringUtils.toString(P.get("P_ID"));
+                if(!checkStock(P_ID, O_P_NUM * O_IDS.length)){
+                    hasStock = false;
+                }
+            }
+            for(Map P : PS){
+                String P_ID = StringUtils.toString(P.get("P_ID"));
+                if(P_STOCK_IDS.length() > 0){
+                    P_STOCK_IDS += ",";
+                }
+                else{
+                    P_STOCK_IDS += P_ID;
+                }
+
+                Map OP = new HashMap();
+                OP.put("O_P_ID", P_ID);
+                OP.put("O_P_NAME", P.get("P_NAME"));
+                OP.put("O_P_UNIT_ID", P.get("P_UNIT_ID"));
+                OP.put("O_P_TYPE_ID", P.get("P_TYPE_ID"));
+                OP.put("O_P_PRICE", P.get("P_PRICE"));
+                OP.put("O_P_AMOUNT", P.get("P_PRICE"));
+                OP.put("O_P_AMOUNT_REAL", P.get("P_PRICE"));
+                
+                if(O_P_EXT_STATUS != null){
+                    OP.put("O_P_EXT_STATUS", O_P_EXT_STATUS);
+                }
+                if(O_P_REQUIRE != null){
+                    OP.put("O_P_REQUIRE", O_P_REQUIRE);
+                }
+                OP.put("O_P_PACK", O_P_PACK);
+                
+                OP.put("O_P_DISCOUNT", -1);
+                OP.put("O_P_NUM", 1);
+                OP.put("O_P_DT", NOW);
+                
+                OP.put("O_P_MAKER", O_P_MAKER);
+                
+                OPS.add(OP);
+            }
+
+            for(String _O_ID : O_IDS){
+                for(int i=0;i<O_P_NUM;i++){
+                    Map OP = new Hashtable();
+                    OP.put("O_ID", _O_ID);
+                    OP.put("O_P_ID", O_P_ID);
+                    OP.put("O_P_NAME", P_COMBO[0]);
+                    OP.put("O_P_UNIT_ID", 0);
+                    OP.put("O_P_TYPE_ID", 0);
+                    OP.put("O_P_PRICE", O_P_PRICE);
+                    OP.put("O_P_AMOUNT", O_P_PRICE);
+                    OP.put("O_P_AMOUNT_REAL", O_P_PRICE);
+//                    OP.put("O_P_STATUS", 1);
+                     if(O_P_EXT_STATUS != null){
+                    OP.put("O_P_EXT_STATUS", O_P_EXT_STATUS);
+                    }
+                    if(O_P_REQUIRE != null){
+                        OP.put("O_P_REQUIRE", O_P_REQUIRE);
+                    }
+                    OP.put("O_P_PACK", O_P_PACK);
+//                    OP.put("O_P_DT_ORDER", NOW);
+                    OP.put("O_P_DISCOUNT", -1);
+                    OP.put("O_P_NUM", 1);
+                    OP.put("O_P_DT", NOW);
+//                    OP.put("O_P_KEY", O_P_KEY);
+                    OP.put("O_P_COMBO", 1);
+                    OP.put("O_P_MAKER", O_P_MAKER);
+                    long O_P_NO = T.getMaxID("O_P_NO");
+                    OP.put("O_P_NO", O_P_NO);
+                    String _O_P_KEY = O_P_KEY;
+                    if(hasStock){
+                        OP.put("O_P_STATUS", 1);
+                        OP.put("O_P_DT_ORDER", NOW);
+                    }
+                    else{
+                        OP.put("O_P_STATUS", 0);
+                        _O_P_KEY = StringUtils.UUID();
+                    }
+                    OP.put("O_P_KEY", _O_P_KEY);
+                    result = T.data(OP).create();
+                    T.clearData();
+                    if(result < 0){
+                        query.free();
+                        return "";
+                    }
+                    if(O_P_NOS.length() > 0){
+                        O_P_NOS += ",";
+                    }
+                    O_P_NOS += O_P_NO; 
+                    for(Map _OP : OPS){
+//                        T.clearData();
+                        _OP.put("O_P_NO", T.getMaxID("O_P_NO"));
+                        _OP.put("O_ID", _O_ID);
+                        _OP.put("O_P_PARENT", O_P_NO);
+                        _OP.put("O_P_KEY", _O_P_KEY);
+                        if(hasStock){
+                            _OP.put("O_P_STATUS", 1);
+                            _OP.put("O_P_DT_ORDER", NOW);
+                        }
+                        else{
+                            _OP.put("O_P_STATUS", 0);
+                        }
+                        result = T.data(_OP).create();
+                        T.clearData();
+                        if(result < 0){
+                            query.free();
+                            return "";
+                        }
+                    }
+                }
+
+            }
+            if(hasStock && P_STOCK_IDS.length() > 0){
+                updateStock(P_STOCK_IDS, O_P_NUM * O_IDS.length);
+            }
+            query.free();
+            return O_P_NOS;
+        }
+        sql = "SELECT * FROM X_P WHERE P_ID = ?";
+        Map P = query.doQuery(sql, O_P_ID).table();
+        if(P == null){
+            query.free();
+            return "";
+        }
+        float O_P_NUM = NumberUtils.toFloat(data.get("O_P_NUM"));
+        boolean hasStock = checkStock(O_P_ID, O_P_NUM * O_IDS.length);
+        if(hasStock){
+            updateStock(O_P_ID, O_P_NUM * O_IDS.length);
+        }
+
+        String O_P_WAY = StringUtils.toString(data.get("O_P_WAY"));
+        float O_P_WAY_PRICE = NumberUtils.toFloat(data.get("O_P_WAY_PRICE"));
+        boolean P_TAG_SEASON = StringUtils.toString(P.get("P_TAG_SEASON")).equals("1") ? true : false;
+        boolean P_TAG_WEIGHT = StringUtils.toString(P.get("P_TAG_WEIGHT")).equals("1") ? true : false;
+        if(P_TAG_WEIGHT){
+            O_P_NUM = 1;
+        }
+        float O_P_PRICE = 0;
+        if(P_TAG_SEASON){
+            if(data.containsKey("O_P_PRICE")){
+                O_P_PRICE = NumberUtils.toFloat(data.get("O_P_PRICE"));
+                if(O_P_PRICE <= 0){
+                    O_P_PRICE = getSeasonPrice(O_P_ID);
+                }
+            }
+            else{
+                O_P_PRICE = getSeasonPrice(O_P_ID);
+            }
+        }
+        String O_P_TASTE = StringUtils.toString(data.get("O_P_TASTE"));
+        String O_P_MEMO = StringUtils.toString(data.get("O_P_MEMO"));
+        for(String _O_ID : O_IDS){
+            Map OP = new Hashtable();
+            long O_P_NO;
+            if(!P_TAG_SEASON){
+                O_P_PRICE = getSpecialPrice(_O_ID, O_P_ID);
+            }
+            OP.put("O_ID", _O_ID);
+            OP.put("O_P_ID", O_P_ID);
+            OP.put("O_P_NAME", P.get("P_NAME"));
+            OP.put("O_P_UNIT_ID", P.get("P_UNIT_ID"));
+            OP.put("O_P_TYPE_ID", P.get("P_TYPE_ID"));
+            OP.put("O_P_TAG_SEASON", P.get("P_TAG_SEASON"));
+            OP.put("O_P_TAG_WEIGHT", P.get("P_TAG_WEIGHT"));
+            OP.put("O_P_PRICE", O_P_PRICE);
+            OP.put("O_P_DT", NOW);
+
+            OP.put("O_P_MAKER", O_P_MAKER);
+
+            float AMOUNT = 0;
+            if(P_TAG_WEIGHT){
+                float O_P_WEIGHT = NumberUtils.toFloat(data.get("O_P_NUM"));
+                OP.put("O_P_WEIGHT", O_P_WEIGHT);
+                AMOUNT = O_P_PRICE * O_P_WEIGHT + O_P_WAY_PRICE;
+            }
+            else{
+                AMOUNT = (O_P_PRICE + O_P_WAY_PRICE) * O_P_NUM;
+            }
+            OP.put("O_P_AMOUNT", AMOUNT);
+            OP.put("O_P_AMOUNT_REAL", AMOUNT);
+//            OP.put("O_P_STATUS", 1);
+             if(O_P_EXT_STATUS != null){
+                OP.put("O_P_EXT_STATUS", O_P_EXT_STATUS);
+            }
+            if(O_P_REQUIRE != null){
+                OP.put("O_P_REQUIRE", O_P_REQUIRE);
+            }
+            OP.put("O_P_PACK", O_P_PACK);
+//            OP.put("O_P_DT_ORDER", NOW);
+            OP.put("O_P_DISCOUNT", -1);
+            OP.put("O_P_NUM", O_P_NUM);
+            OP.put("O_P_TASTE", O_P_TASTE);
+            OP.put("O_P_MEMO", O_P_MEMO);
+            OP.put("O_P_WAY", O_P_WAY);
+            OP.put("O_P_WAY_PRICE", O_P_WAY_PRICE);
+            O_P_NO = T.getMaxID("O_P_NO");
+            OP.put("O_P_NO", O_P_NO);
+            String _O_P_KEY = O_P_KEY;
+            if(hasStock){
+                OP.put("O_P_STATUS", 1);
+                OP.put("O_P_DT_ORDER", NOW);
+            }
+            else{
+                OP.put("O_P_STATUS", 0);
+                _O_P_KEY = StringUtils.UUID();
+            }
+            OP.put("O_P_KEY", _O_P_KEY);
+            result = T.data(OP).create();
+            T.clearData();
+            if(result < 0){
+                query.free();
+                return "";
+            }
+            if(O_P_NOS.length() > 0){
+                O_P_NOS += ",";
+            }
+            O_P_NOS += O_P_NO;
+        }
+        query.free();
+        return O_P_NOS;
+    }
+
+    public float getSpecialPrice(String O_ID, String P_ID){
+        String sql = "SELECT A.P_PRICE, A.P_PRICE_BOX FROM X_P A WHERE A.P_ID = " + P_ID;
+        IQuery query = getQuery();
+        String[] ARR = query.doQuery(sql).get();
+        if(ARR == null){
+            query.free();
+            return 0;
+        }
+        float P_PRICE = NumberUtils.toFloat(ARR[0]);
+        if(ARR[1].length() == 0){
+            query.free();
+            return P_PRICE;
+        }
+        sql = "SELECT DESK_TYPE FROM X_DESK WHERE DESK_ID IN (SELECT O_DESK_ID FROM X_O WHERE O_ID = "+O_ID+")";
+        String DESK_TYPE = query.doQuery(sql).getValue();
+        if(DESK_TYPE.length() == 0){
+            query.free();
+            return P_PRICE;
+        }
+        query.free();
+        if(DESK_TYPE.equals("2")){
+            return NumberUtils.toFloat(ARR[1]);
+        }
+        return P_PRICE;
+        /*
+        String sql = "SELECT A.P_PRICE,B.P_SP_AREA, B.P_SP_PRICE, B.P_SP_DATE_S, B.P_SP_DATE_E FROM X_P A LEFT JOIN X_P_SP B ON A.P_ID = B.P_ID WHERE A.P_ID = " + P_ID;
+        IQuery query = getQuery();
+        String[] ARR = query.doQuery(sql).get();
+        if(ARR == null){
+            return 0;
+        }
+        float P_PRICE = NumberUtils.toFloat(ARR[0]);
+        if(ARR[1].length() == 0){
+            query.free();
+            return P_PRICE;
+        }
+
+        String nowDate = DateUtils.getNowDate();
+        String P_SP_DATE_S = ARR[3];
+        String P_SP_DATE_E = ARR[4];
+        if(P_SP_DATE_S.length() > 0 && P_SP_DATE_S.compareTo(nowDate) >0){
+            return P_PRICE;
+        }
+        if(P_SP_DATE_E.length() > 0 && P_SP_DATE_E.compareTo(nowDate) < 0){
+            return P_PRICE;
+        }
+        String[] AREAS = ARR[1].split(",");
+        String AREA_STR = "";
+        for(String str : AREAS){
+            if(AREA_STR.length() > 0){
+                AREA_STR += ",";
+            }
+            AREA_STR += "'"+str+"'";
+        }
+        sql = "SELECT * FROM X_DESK WHERE DESK_ID IN (SELECT O_DESK_ID FROM X_O WHERE O_ID = "+O_ID+") AND DESK_AREA IN ("+AREA_STR+")";
+        if(query.doQuery(sql).list().size() == 0){
+            query.free();
+            return P_PRICE;
+        }
+        query.free();
+        float P_PRICE_ = NumberUtils.toFloat(ARR[2]);
+        P_PRICE = P_PRICE_  == 0 ? P_PRICE : P_PRICE_;
+        return P_PRICE;
+        */
+    }
+
+    public float getSeasonPrice(String P_ID){
+        String sql = "SELECT A.P_PRICE FROM X_P_SEASON A WHERE A.P_ID = ?";
+        IQuery query = getQuery();
+        float P_PRICE = NumberUtils.toFloat(query.doQuery(sql, P_ID).getValue());
+
+        if(P_PRICE <= 0){
+            sql = "SELECT A.P_PRICE FROM X_P A WHERE A.P_ID = ?";
+            P_PRICE = NumberUtils.toFloat(query.doQuery(sql, P_ID).getValue());
+        }
+        query.free();
+        return P_PRICE;
+    }
+
+    public int create(Form form){
+        Map data = form.getValuesMap();
+        String O_ID = StringUtils.toString(data.get("O_ID"));
+        if (O_ID.length() == 0) {
+            return CloverManager.CODE_FAILED;
+        }
+        String O_P_ID = StringUtils.toString(data.get("O_P_ID"));
+        if(O_P_ID.length() == 0){
+            return CloverManager.CODE_FAILED;
+        }
+        String[] O_IDS  = null;
+        String UNION = StringUtils.toString(data.get("UNION"));
+
+        if(UNION.equals("1")){
+            OrderAction a = new OrderAction();
+            String IDS = a.getUnion(O_ID);
+            if(IDS.length()>0){
+                O_IDS = IDS.split(",");
+            }
+            else{
+                O_IDS  = new String[]{O_ID};
+            }
+        }
+        else{
+            O_IDS  = new String[]{O_ID};
+        }
+        IQuery query = getQuery();
+        String O_P_COMBO = StringUtils.toString(data.get("O_P_COMBO"));
+//        System.out.println("O_P_COMBO = " + O_P_COMBO);
+        ITable T = getTable("X_O_P").clearData();
+        String now = DateUtils.getNow();
+        String O_P_KEY = StringUtils.UUID();
+        int result;
+        if(O_P_COMBO.equals("1")){
+            String sql = "SELECT B.* FROM X_P_COMBO_P A LEFT JOIN X_P B ON A.P_COMBO_P_ID = B.P_ID WHERE A.P_COMBO_ID = ?";
+            List<Map> PS = query.doQuery(sql, O_P_ID).tables();
+            if(PS.size() == 0){
+                query.free();
+                return CloverManager.CODE_FAILED;
+            }
+            sql = "SELECT P_COMBO_NAME, P_COMBO_PRICE FROM X_P_COMBO WHERE P_COMBO_ID = ?";
+            String[] P_COMBO = query.doQuery(sql, O_P_ID).get();
+            if(P_COMBO.length == 0){
+                query.free();
+                return CloverManager.CODE_FAILED;
+            }
+            float O_P_PRICE = NumberUtils.toFloat(P_COMBO[1]);
+            List<Map> OPS = new ArrayList<Map>();
+            int O_P_NUM = NumberUtils.toInt(data.get("O_P_NUM"));
+            String P_STOCK_IDS = "";
+            for(Map P : PS){
+                String P_ID = StringUtils.toString(P.get("P_ID"));
+//                sql = "SELECT P_NUM FROM X_P_STOCK WHERE P_ID = ?";
+//                String P_STOCK_NUM_STR = query.doQuery(sql, P_ID).getValue();
+//                int P_STOCK_NUM = -1;
+//                if(P_STOCK_NUM_STR.length() > 0){
+//                    P_STOCK_NUM = NumberUtils.toInt(P_STOCK_NUM);
+//                }
+//                if(P_STOCK_NUM != -1){
+//                    if(P_STOCK_NUM - O_P_NUM * O_IDS.length < 0){
+//                        query.free();
+//                        return CloverManager.CODE_FAILED;
+//                    }
+//                    if(P_STOCK_IDS.length() > 0){
+//                        P_STOCK_IDS += ",";
+//                    }
+//                    else{
+//                        P_STOCK_IDS += P_ID;
+//                    }
+//                }
+
+                Map OP = new HashMap();
+                OP.put("O_P_ID", P_ID);
+                OP.put("O_P_NAME", P.get("P_NAME"));
+                OP.put("O_P_UNIT_ID", P.get("P_UNIT_ID"));
+                OP.put("O_P_TYPE_ID", P.get("P_TYPE_ID"));
+                OP.put("O_P_PRICE", P.get("P_PRICE"));
+                OP.put("O_P_AMOUNT", P.get("P_PRICE"));
+                OP.put("O_P_AMOUNT_REAL", P.get("P_PRICE"));
+                OP.put("O_P_STATUS", 0);
+                OP.put("O_P_DISCOUNT", -1);
+                OP.put("O_P_NUM", 1);
+                OP.put("O_P_DT", now);
+                OP.put("O_P_KEY", O_P_KEY);
+                OPS.add(OP);
+            }
+
+            for(String _O_ID : O_IDS){
+                for(int i=0;i<O_P_NUM;i++){
+                    Map OP = new Hashtable();
+                    OP.put("O_ID", _O_ID);
+                    OP.put("O_P_ID", O_P_ID);
+                    OP.put("O_P_NAME", P_COMBO[0]);
+                    OP.put("O_P_UNIT_ID", 0);
+                    OP.put("O_P_TYPE_ID", 0);
+                    OP.put("O_P_PRICE", O_P_PRICE);
+                    OP.put("O_P_AMOUNT", O_P_PRICE);
+                    OP.put("O_P_AMOUNT_REAL", O_P_PRICE);
+                    OP.put("O_P_STATUS", 0);
+                    OP.put("O_P_DISCOUNT", -1);
+                    OP.put("O_P_NUM", 1);
+                    OP.put("O_P_DT", now);
+                    OP.put("O_P_KEY", O_P_KEY);
+                    OP.put("O_P_COMBO", 1);
+                    long O_P_NO = T.getMaxID("O_P_NO");
+                    OP.put("O_P_NO", O_P_NO);
+                    result = T.data(OP).create();
+                    if(result < 0){
+                        query.free();
+                        return CloverManager.CODE_FAILED;
+                    }
+                    for(Map _OP : OPS){
+//                        T.clearData();
+                        _OP.put("O_P_NO", T.getMaxID("O_P_NO"));
+                        _OP.put("O_ID", _O_ID);
+                        _OP.put("O_P_PARENT", O_P_NO);
+                        result = T.data(_OP).create();
+                        if(result < 0){
+                            query.free();
+                            return CloverManager.CODE_FAILED;
+                        }
+                    }
+                }
+
+            }
+//            if(P_STOCK_IDS.length() > 0){
+//                sql = "UPDATE X_P_STOCK SET P_NUM = P_NUM-"+(O_P_NUM * O_IDS.length)+" WHERE P_ID IN ("+P_STOCK_IDS+")";
+//                query.doExec(sql);
+//            }
+            query.free();
+            return CloverManager.CODE_SUCCESS;
+        }
+        String sql = "SELECT * FROM X_P WHERE P_ID = ?";
+        Map P = query.doQuery(sql, O_P_ID).table();
+        if(P == null){
+            query.free();
+            return CloverManager.CODE_FAILED;
+        }
+        float O_P_NUM = NumberUtils.toFloat(data.get("O_P_NUM"));
+        boolean P_TAG_SEASON = StringUtils.toString(P.get("P_TAG_SEASON")).equals("1") ? true : false;
+        boolean P_TAG_WEIGHT = StringUtils.toString(P.get("P_TAG_WEIGHT")).equals("1") ? true : false;
+        if(P_TAG_WEIGHT){
+            O_P_NUM = 1;
+        }
+//        sql = "SELECT P_NUM FROM X_P_STOCK WHERE P_ID = ?";
+//        String P_STOCK_NUM_STR = query.doQuery(sql, O_P_ID).getValue();
+//        int P_STOCK_NUM = -1;
+//        if(P_STOCK_NUM_STR.length() > 0){
+//            P_STOCK_NUM = NumberUtils.toInt(P_STOCK_NUM);
+//        }
+//        if(P_STOCK_NUM != -1){
+//            if(P_STOCK_NUM - O_P_NUM * O_IDS.length < 0){
+//                query.free();
+//                return CloverManager.CODE_FAILED;
+//            }
+//        }
+        float O_P_PRICE = 0;
+        if(P_TAG_SEASON){
+            if(data.containsKey("O_P_PRICE")){
+                O_P_PRICE = NumberUtils.toFloat(data.get("O_P_PRICE"));
+                if(O_P_PRICE <= 0){
+                    O_P_PRICE = getSeasonPrice(O_P_ID);
+                }
+            }
+            else{
+                O_P_PRICE = getSeasonPrice(O_P_ID);
+            }
+        }
+        String O_P_TASTE = StringUtils.toString(data.get("O_P_TASTE"));
+        String O_P_WAY = StringUtils.toString(data.get("O_P_WAY"));
+        float O_P_WAY_PRICE = NumberUtils.toFloat(data.get("O_P_WAY_PRICE"));
+        String O_P_REQUIRE = StringUtils.toString(data.get("O_P_REQUIRE"));
+        String O_P_MEMO = StringUtils.toString(data.get("O_P_MEMO"));
+        String CS = "";
+        if(O_P_TASTE.length() == 0){
+            CS += " AND (O_P_TASTE IS NULL OR O_P_TASTE = '')";
+        }
+        else{
+            CS += " AND O_P_TASTE = '" + O_P_TASTE + "'";
+        }
+        if(O_P_WAY.length() == 0){
+            CS += " AND (O_P_WAY IS NULL OR O_P_WAY = '')";
+        }
+        else{
+            CS += " AND O_P_WAY = '" + O_P_WAY + "'";
+        }
+        if(O_P_REQUIRE.length() == 0){
+            CS += " AND (O_P_REQUIRE IS NULL OR O_P_REQUIRE = '')";
+        }
+        else{
+            CS += " AND O_P_REQUIRE = '" + O_P_REQUIRE + "'";
+        }
+        for(String _O_ID : O_IDS){
+            sql = "SELECT * FROM X_O_P WHERE O_ID= "+_O_ID+" AND O_P_ID= "+O_P_ID+" AND O_P_STATUS = 0 AND O_P_COMBO = 0 AND O_P_PARENT = 0 AND O_P_PACK <> 1 AND O_P_EXT_STATUS = 0" + CS;
+            Map OP = query.doQuery(sql).table();
+            long O_P_NO;
+
+            if(!P_TAG_SEASON){
+                O_P_PRICE = getSpecialPrice(_O_ID, O_P_ID);
+            }
+            boolean NEW = false;
+            if(OP == null || P_TAG_WEIGHT || O_IDS.length > 1){
+                NEW = true;
+            }
+//            else if(OP != null){
+
+//                if(O_P_TASTE.length() > 0){
+//                    String _O_P_TASTE = StringUtils.toString(OP.get("O_P_TASTE"));
+//                    if(_O_P_TASTE.length() > 0 && !O_P_TASTE.equals(_O_P_TASTE)){
+//                        NEW = true;
+//                    }
+//                }
+//                if(O_P_REQUIRE.length() > 0){
+//                    String _O_P_REQUIRE = StringUtils.toString(OP.get("O_P_REQUIRE"));
+//                    if(_O_P_REQUIRE.length() > 0 && !O_P_TASTE.equals(_O_P_REQUIRE)){
+//                        NEW = true;
+//                    }
+//                }
+//                if(StringUtils.toString(OP.get("O_P_PACK")).equals("1") || StringUtils.toString(OP.get("O_P_EXT_STATUS")).equals("1") || StringUtils.toString(OP.get("O_P_EXT_STATUS")).equals("2")){
+//                    NEW = true;
+//                }
+//                else if(!O_P_TASTE.equals(StringUtils.toString(OP.get("O_P_TASTE")))){
+//                    NEW = true;
+//                }
+//                else if(!O_P_REQUIRE.equals(StringUtils.toString(OP.get("O_P_REQUIRE")))){
+//                    NEW = true;
+//                }
+//            }
+            if(NEW){
+                OP = new Hashtable();
+                OP.put("O_ID", _O_ID);
+                OP.put("O_P_ID", O_P_ID);
+                OP.put("O_P_NAME", P.get("P_NAME"));
+                OP.put("O_P_UNIT_ID", P.get("P_UNIT_ID"));
+                OP.put("O_P_TYPE_ID", P.get("P_TYPE_ID"));
+                OP.put("O_P_TAG_SEASON", P.get("P_TAG_SEASON"));
+                OP.put("O_P_TAG_WEIGHT", P.get("P_TAG_WEIGHT"));
+                OP.put("O_P_PRICE", O_P_PRICE);
+                OP.put("O_P_DT", now);
+                OP.put("O_P_KEY", O_P_KEY);
+                float AMOUNT = 0;
+                if(P_TAG_WEIGHT){
+                    float O_P_WEIGHT = NumberUtils.toFloat(data.get("O_P_NUM"));
+                    OP.put("O_P_WEIGHT", O_P_WEIGHT);
+                    AMOUNT = O_P_PRICE * O_P_WEIGHT + O_P_WAY_PRICE;
+                }
+                else{
+                    AMOUNT = (O_P_PRICE + O_P_WAY_PRICE) * O_P_NUM;
+                }
+                OP.put("O_P_AMOUNT", AMOUNT);
+                OP.put("O_P_AMOUNT_REAL", AMOUNT);
+                OP.put("O_P_STATUS", 0);
+                OP.put("O_P_DISCOUNT", -1);
+                OP.put("O_P_NUM", O_P_NUM);
+                OP.put("O_P_TASTE", O_P_TASTE);
+                OP.put("O_P_WAY", O_P_WAY);
+                OP.put("O_P_WAY_PRICE", O_P_WAY_PRICE);
+                OP.put("O_P_MEMO", O_P_MEMO);
+                O_P_NO = T.getMaxID("O_P_NO");
+                OP.put("O_P_NO", O_P_NO);
+                result = T.data(OP).create();
+            }
+            else{
+                O_P_NO = NumberUtils.toInt(OP.get("O_P_NO"));
+                O_P_NUM = O_P_NUM + NumberUtils.toFloat(OP.get("O_P_NUM"));
+                float AMOUNT = (O_P_PRICE + O_P_WAY_PRICE) * O_P_NUM;
+                OP.put("O_P_PRICE", O_P_PRICE);
+                OP.put("O_P_AMOUNT", AMOUNT);
+                OP.put("O_P_AMOUNT_REAL", AMOUNT);
+                OP.put("O_P_NUM", O_P_NUM);
+                result = T.data(OP).where(T.column("O_P_NO").eq(O_P_NO)).update();
+            }
+            if(result < 0){
+                query.free();
+                return CloverManager.CODE_FAILED;
+            }
+        }
+//        sql = "UPDATE X_P_STOCK SET P_NUM = P_NUM-"+(O_P_NUM * O_IDS.length)+" WHERE P_ID IN ("+O_P_ID+")";
+//        query.doExec(sql);
+        query.free();
+        return CloverManager.CODE_SUCCESS;
+    }
+
+    public int update(Form form) {
+        Map data = form.getValuesMap();
+        //String O_ID = StringUtils.toString(data.get("O_ID"));
+        String O_P_NO = StringUtils.toString(data.get("O_P_NO"));
+        if (O_P_NO.length() == 0) {
+            return CloverManager.CODE_FAILED;
+        }
+        IQuery query = getQuery();
+        String sql = "SELECT * FROM X_O_P WHERE  O_P_NO= ?";
+        Map OP = query.doQuery(sql, O_P_NO).table();
+        if(OP == null){
+            query.free();
+            return CloverManager.CODE_FAILED;
+        }
+        String O_P_STATUS = StringUtils.toString(OP.get("O_P_STATUS"));
+//        !O_P_STATUS.equals("0") &&
+        if( (!data.containsKey("O_P_NUM") && !data.containsKey("O_P_TASTE"))){
+            query.free();
+            return CloverManager.CODE_FAILED;
+        }
+        String O_P_ID = StringUtils.toString(OP.get("O_P_ID"));
+        long _O_P_ID = NumberUtils.toLong(O_P_ID);
+
+        boolean O_P_TAG_SEASON = StringUtils.toString(OP.get("O_P_TAG_SEASON")).equals("1") ? true : false;
+        boolean O_P_TAG_WEIGHT = StringUtils.toString(OP.get("O_P_TAG_WEIGHT")).equals("1") ? true : false;
+
+        ITable T = getTable("X_O_P").clearData();
+        float O_P_NUM = 0;
+        float O_P_PRICE = NumberUtils.toFloat(OP.get("O_P_PRICE"));
+        float AMOUNT = 0;
+        if((O_P_TAG_SEASON || _O_P_ID > 10000) && data.containsKey("O_P_PRICE")){
+            O_P_PRICE = NumberUtils.toFloat(data.get("O_P_PRICE"));
+            if(O_P_PRICE <= 0){
+                O_P_PRICE = 0;
+            }
+            OP.put("O_P_PRICE", O_P_PRICE);
+        }
+        float O_P_WAY_PRICE = NumberUtils.toFloat(data.get("O_P_WAY_PRICE"));
+        if(data.containsKey("O_P_NUM")){
+            O_P_NUM = NumberUtils.toFloat(data.get("O_P_NUM"));
+            if(O_P_TAG_WEIGHT){
+                OP.put("O_P_WEIGHT", O_P_NUM);
+                AMOUNT = O_P_PRICE * O_P_NUM + O_P_WAY_PRICE;
+            }
+            else{
+
+                OP.put("O_P_NUM", O_P_NUM);
+                AMOUNT = (O_P_PRICE + O_P_WAY_PRICE) * O_P_NUM;
+            }
+
+            OP.put("O_P_AMOUNT", AMOUNT);
+            OP.put("O_P_AMOUNT_REAL", AMOUNT);
+        }
+        if(data.containsKey("O_P_TASTE")){
+            OP.put("O_P_TASTE", StringUtils.toString(data.get("O_P_TASTE")));
+        }
+        if(data.containsKey("O_P_WAY")){
+            OP.put("O_P_WAY", StringUtils.toString(data.get("O_P_WAY")));
+            OP.put("O_P_WAY_PRICE", NumberUtils.toFloat(data.get("O_P_WAY_PRICE")));
+        }
+        if(data.containsKey("O_P_MEMO")){
+            OP.put("O_P_MEMO", StringUtils.toString(data.get("O_P_MEMO")));
+        }
+        OP.remove("O_P_DT_WEIGHT");
+        int result = T.data(OP).where(T.column("O_P_NO").eq(O_P_NO)).update();
+        query.free();
+        if (result < 0) {
+            return CloverManager.CODE_FAILED;
+        }
+        return CloverManager.CODE_SUCCESS;
+    }
+
+    /*
+    public int createx(Form form) {
+        ITable t = getTable("X_O_P").clearData();
+        Map data = form.getValuesMap();
+        String O_ID = StringUtils.toString(data.get("O_ID"));
+        if (O_ID.length() == 0) {
+            return CloverManager.CODE_FAILED;
+        }
+        String O_P_ID = StringUtils.toString(data.get("O_P_ID"));
+        if(O_P_ID.length() == 0){
+            return CloverManager.CODE_FAILED;
+        }
+        String[] O_IDS  = null;
+        String UNION = StringUtils.toString(data.get("UNION"));
+        if(UNION.equals("1")){
+            OrderAction a = new OrderAction();
+            String IDS = a.getUnion(O_ID);
+            if(IDS.length()>0){
+                O_IDS = IDS.split(",");
+            }
+        }
+        else{
+            O_IDS  = new String[]{O_ID};
+        }
+        IQuery query = getQuery();
+
+        float O_P_NUM = NumberUtils.toFloat(data.get("O_P_NUM"));
+        float O_P_PRICE = NumberUtils.toFloat(data.get("O_P_PRICE"));
+
+        String sql = "SELECT P_TAG_SEASON, P_TAG_WEIGHT, P_NAME, P_UNIT_ID, P_TYPE_ID FROM X_P WHERE P_ID = ?";
+        String[] P = query.doQuery(sql, O_P_ID).get();
+        sql = "SELECT P_NUM FROM X_P_STOCK WHERE P_ID = ?";
+        String NUM_STR = query.doQuery(sql, O_P_ID).getValue();
+        int P_NUM = -1;
+        if(NUM_STR.length() > 0){
+            P_NUM = NumberUtils.toInt(NUM_STR);
+        }
+        int result;
+        for(int i=0; i<O_IDS.length; i++){
+            if(P_NUM != -1){
+                if(P_NUM == 0){
+                    continue;
+                }
+                P_NUM = P_NUM - 1;
+                sql = "UPDATE X_P_STOCK SET P_NUM = ? WHERE P_ID = ?";
+                query.doExec(sql, P_NUM, O_P_ID);
+            }
+            sql = "SELECT O_P_NO, O_P_NUM FROM X_O_P WHERE O_ID=" + O_IDS[i] + " AND O_P_ID=" + O_P_ID + " AND O_P_STATUS=0";
+            String[] O_PS = query.doQuery(sql).get();
+            int O_P_NO = 0;
+            if(P.length > 0 && P[0].equals("0")){
+                O_P_PRICE = getSpecialPrice(O_IDS[i], O_P_ID);
+                data.put("O_P_PRICE", O_P_PRICE);
+            }
+            if (O_PS.length > 0 && P[1].equals("0")) {
+                O_P_NO = NumberUtils.toInt(O_PS[0]);
+                O_P_NUM += NumberUtils.toFloat(O_PS[1]);
+                float amount = O_P_PRICE * O_P_NUM;
+                data.put("O_P_AMOUNT", amount);
+                data.put("O_P_NUM", O_P_NUM);
+//                System.out.println("------------------------------" + data.get("P_NAME"));
+                data.remove("O_P_NAME");
+                data.remove("O_P_NO");
+                data.remove("O_ID");
+                result = t.data(data).where(t.column("O_P_NO").eq(O_P_NO)).update();
+            } else {
+                O_P_NO = t.getMaxID("O_P_NO");
+                data.put("O_P_NO", O_P_NO);
+                data.put("O_ID", O_IDS[i]);
+                if(P.length > 0 && !O_P_ID.equals("-1")){
+//                    data.put("O_P_NAME", query.doQuery("SELECT P_NAME FROM X_P WHERE P_ID=" + O_P_ID).getValue());
+                    data.put("O_P_NAME", P[2]);
+                }
+                if(P.length > 0 && StringUtils.toString(data.get("O_P_UNIT_ID")).length() == 0){
+//                    data.put("O_P_UNIT_ID", query.doQuery("SELECT P_UNIT_ID FROM X_P WHERE P_ID=" + O_P_ID).getValue());
+                    data.put("O_P_UNIT_ID", P[3]);
+                }
+                 if(P.length > 0 && StringUtils.toString(data.get("O_P_TYPE_ID")).length() == 0){
+//                    data.put("O_P_UNIT_ID", query.doQuery("SELECT P_UNIT_ID FROM X_P WHERE P_ID=" + O_P_ID).getValue());
+                    data.put("O_P_TYPE_ID", P[4]);
+                }
+                data.put("O_P_STATUS", 0);
+
+                double amount = O_P_PRICE * O_P_NUM;
+                if(P.length > 0 && P[1].equals("1")){
+                    data.put("O_P_WEIGHT", O_P_NUM);
+                    O_P_NUM = 1;
+                    data.put("O_P_NUM", O_P_NUM);
+                }
+                data.put("O_P_AMOUNT", amount);
+                data.put("O_P_DISCOUNT", -1);
+                result = t.data(data).create();
+                //query.doExec("UPDATE X_O SET O_STATUS_ID=2 WHERE O_ID=" + O_IDS[i]);
+                //query.doExec("UPDATE X_DESK SET DESK_USE_STATUS_ID=2 WHERE DESK_ID IN (SELECT O_DESK_ID FROM X_O WHERE O_TYPE=0 AND O_ID=" + O_IDS[i] + ")");
+            }
+            if (result < 0) {
+                query.free();
+                return CloverManager.CODE_FAILED;
+            }
+        }
+        query.free();
+        return CloverManager.CODE_SUCCESS;
+    }
+    */
+
+    public int plus(Form form) {
+        Map data = form.getValuesMap();
+        String O_P_NO = StringUtils.toString(data.get("O_P_NO"));
+        if (O_P_NO.length() == 0) {
+            return CloverManager.CODE_FAILED;
+        }
+        IQuery query = getQuery();
+        String sql = "SELECT * FROM X_O_P WHERE O_P_NO = " + O_P_NO;
+        Map m = query.doQuery(sql).table();
+        if(m == null){
+            query.free();
+            return CloverManager.CODE_FAILED;
+        }
+        String O_ID = StringUtils.toString(m.get("O_ID"));
+        float O_P_NUM = NumberUtils.toFloat(m.get("O_P_NUM"));
+        int O_P_STATUS = NumberUtils.toInt(m.get("O_P_STATUS"));
+        float O_P_PRICE = NumberUtils.toFloat(m.get("O_P_PRICE"));
+        int result = 0;
+        if(O_P_STATUS == 0){
+            float amount = O_P_PRICE * (O_P_NUM + 1);
+            sql = "UPDATE X_O_P SET O_P_NUM = " + (O_P_NUM + 1) + ",O_P_AMOUNT="+amount+" WHERE O_ID = " + O_ID + " AND O_P_NO = " + O_P_NO;
+            result = query.doExec(sql);
+        }
+        else{
+            ITable t = getTable("X_O_P").clearData();
+            long O_P_NO_ = t.getMaxID("O_P_NO");
+
+            m.put("O_P_NO", O_P_NO_);
+            m.put("O_P_STATUS", 0);
+            m.put("O_P_EXT_STATUS", 0);
+            m.remove("O_P_DT_ORDER");
+            m.remove("O_P_DT_FINISH");
+            m.remove("O_P_DT_CANCEL");
+            m.remove("O_P_DT_ORDER");
+            float amount = O_P_PRICE * 1;
+            m.put("O_P_AMOUNT", amount);
+            m.put("O_P_DISCOUNT", -1);
+            m.put("O_P_NUM", 1);
+            m.put("O_P_KEY", StringUtils.UUID());
+
+            result = t.data(m).create();
+        }
+        query.free();
+        if (result < 0) {
+            return CloverManager.CODE_FAILED;
+        }
+        return CloverManager.CODE_SUCCESS;
+    }
+
+    public int minus(Form form){
+        Map data = form.getValuesMap();
+        String O_P_NO = StringUtils.toString(data.get("O_P_NO"));
+        if (O_P_NO.length() == 0) {
+            return CloverManager.CODE_FAILED;
+        }
+        IQuery query = getQuery();
+        String sql = "SELECT * FROM X_O_P WHERE O_P_STATUS = 0 AND O_P_NO = " + O_P_NO;
+        Map m = query.doQuery(sql).table();
+        if(m == null){
+            query.free();
+            return CloverManager.CODE_FAILED;
+        }
+        String O_ID = StringUtils.toString(m.get("O_ID"));
+        float O_P_NUM = NumberUtils.toFloat(m.get("O_P_NUM"));
+        float O_P_PRICE = NumberUtils.toFloat(m.get("O_P_PRICE"));
+        if(O_P_NUM > 1){
+            float amount = (O_P_NUM-1) * O_P_PRICE;
+            sql = "UPDATE X_O_P SET O_P_NUM = " + (O_P_NUM - 1) + ", O_P_AMOUNT = "+amount+" WHERE O_ID = " + O_ID + " AND O_P_NO = " + O_P_NO;
+        }
+        else{
+            sql = "DELETE FROM X_O_P WHERE O_ID =" + O_ID + " AND O_P_NO = "+ O_P_NO;
+        }
+        int result = query.doExec(sql);
+        query.free();
+        if (result < 0) {
+            return CloverManager.CODE_FAILED;
+        }
+        return CloverManager.CODE_SUCCESS;
+    }
+
+    public int update_bak(Form form) {
+        Map data = form.getValuesMap();
+        String O_ID = StringUtils.toString(data.get("O_ID"));
+        String O_P_NO = StringUtils.toString(data.get("O_P_NO"));
+        String O_P_ID = StringUtils.toString(data.get("O_P_ID"));
+        if (O_ID.length() == 0 || O_P_NO.length() == 0 || O_P_ID.length() == 0) {
+            return CloverManager.CODE_FAILED;
+        }
+
+        String sql = "SELECT P_TAG_SEASON, P_TAG_WEIGHT FROM X_P WHERE P_ID = " + O_P_ID;
+        IQuery query = getQuery();
+        String[] P_TAG = query.doQuery(sql).get();
+        ITable t = getTable("X_O_P").clearData();
+//        data.put("O_P_ID", t.getMaxID("O_P_ID") + 1);
+        float O_P_NUM = NumberUtils.toFloat(data.get("O_P_NUM"));
+        float O_P_PRICE = NumberUtils.toFloat(data.get("O_P_PRICE"));
+        double amount = O_P_PRICE * O_P_NUM;
+        data.put("O_P_AMOUNT", amount);
+        if(P_TAG.length > 0){
+            if(P_TAG[1].equals("1")){
+                data.put("O_P_WEIGHT", O_P_NUM);
+                O_P_NUM = 1;
+                data.put("O_P_NUM", O_P_NUM);
+            }
+        }
+        data.remove("O_P_NAME");
+        int result = t.data(data).where(t.column("O_P_NO").eq(O_P_NO)).update();
+        query.free();
+        if (result < 0) {
+            return CloverManager.CODE_FAILED;
+        }
+        return CloverManager.CODE_SUCCESS;
+    }
+
+    public int temp(Form form){
+        ITable t = getTable("X_O_P").clearData();
+        int O_P_NO = 0;
+        Map data = form.getValuesMap();
+        String O_ID = StringUtils.toString(data.get("O_ID"));
+        if (O_ID.length() == 0) {
+            return CloverManager.CODE_FAILED;
+        }
+        IQuery query = getQuery();
+
+        String[] O_IDS  = new String[]{O_ID};
+        String UNION = StringUtils.toString(data.get("UNION"));
+        if(UNION.equals("1")){
+            OrderAction a = new OrderAction();
+            String IDS = a.getUnion(O_ID);
+            if(IDS.length()>0){
+                O_IDS = IDS.split(",");
+            }
+        }
+        String O_P_ID = System.currentTimeMillis() + "";
+        data.put("O_P_ID", O_P_ID);
+
+        String O_P_NAME = StringUtils.toString(data.get("O_P_NAME"));
+        float O_P_NUM = NumberUtils.toFloat(data.get("O_P_NUM"));
+        float O_P_PRICE = NumberUtils.toFloat(data.get("O_P_PRICE"));
+
+        int result;
+        String NOW = DateUtils.getNow();
+        String O_P_KEY = StringUtils.UUID();
+        data.put("O_P_DT", NOW);
+        for(int i=0; i<O_IDS.length; i++){
+            String sql = "SELECT O_P_NO, O_P_NUM FROM X_O_P WHERE O_P_NAME='"+O_P_NAME+"' AND O_ID=" + O_IDS[i] + " AND O_P_ID=" + O_P_ID + " AND O_P_STATUS=0";
+            String[] O_PS = query.doQuery(sql).get();
+            long O_P_NO_ = 0;
+//            if (O_PS.length > 0) {
+//                O_P_NO_ = NumberUtils.toInt(O_PS[0]);
+//                O_P_NUM += NumberUtils.toDouble(O_PS[1]);
+//                float amount = O_P_PRICE * O_P_NUM;
+//                data.put("O_P_AMOUNT", amount);
+//                data.put("O_P_NUM", O_P_NUM);
+//                data.remove("O_P_NO");
+//                data.remove("O_ID");
+//                result = t.data(data).where(t.column("O_P_NO").eq(O_P_NO_)).update();
+//            } else {
+                O_P_NO_ = t.getMaxID("O_P_NO");
+                data.put("O_P_NO", O_P_NO_);
+
+                data.put("O_ID", O_IDS[i]);
+                data.put("O_P_STATUS", 0);
+                float amount = O_P_PRICE * O_P_NUM;
+                data.put("O_P_AMOUNT", amount);
+                data.put("O_P_AMOUNT_REAL", amount);
+                data.put("O_P_DISCOUNT", -1);
+                data.put("O_P_KEY", O_P_KEY);
+                result = t.data(data).create();
+            if (result < 0) {
+                query.free();
+                return CloverManager.CODE_FAILED;
+            }
+        }
+
+        query.free();
+        return CloverManager.CODE_SUCCESS;
+    }
+
+    public int order(Form form) {
+        if(!isLogin()){
+            return CloverManager.CODE_FAILED;
+        }
+        Map data = form.getValuesMap();
+        String O_P_NO = StringUtils.toString(data.get("O_P_NO"));
+        if (O_P_NO.length() == 0) {
+            return CloverManager.CODE_FAILED;
+        }
+        IQuery query = getQuery();
+        String sql = "SELECT * FROM X_O_P WHERE O_P_STATUS IN (0) AND O_P_NO IN (" + O_P_NO + ") ORDER BY O_P_NO";
+        List<Map> OPS = query.doQuery(sql).tables();
+        if(OPS.size() == 0){
+            query.free();
+            return CloverManager.CODE_FAILED;
+        }
+        String O_ID = StringUtils.toString(OPS.get(0).get("O_ID"));
+        String O_IDS  = O_ID;
+        String O_P_KEY = "";
+        String UNION = StringUtils.toString(data.get("UNION"));
+        if(UNION.equals("1")){
+            OrderAction a = new OrderAction();
+            String IDS = a.getUnion(O_ID);
+            if(IDS.length()>0){
+                O_IDS = IDS;
+            }
+        }
+        String O_P_DT_ORDER = DateUtils.getNow();
+        for(Map OP : OPS){
+            if(O_P_KEY.length() > 0){
+                O_P_KEY += ",";
+            }
+            O_P_KEY += "'" + StringUtils.toString(OP.get("O_P_KEY")) + "'";
+        }
+        String ACCOUNT_ID = StringUtils.toString(getClient().getCookies().get("ACCOUNT_ID"));
+        String O_P_NOS = "";
+        sql = "SELECT A.*, B.P_TAG_WEIGHT FROM X_O_P A LEFT JOIN X_P B ON A.O_P_ID = B.P_ID WHERE A.O_P_STATUS=0 AND A.O_ID IN (" + O_IDS + ") AND A.O_P_KEY IN ("+ O_P_KEY +")";
+        OPS = query.doQuery(sql).tables();
+        if(OPS.size() == 0){
+            query.free();
+            return CloverManager.CODE_FAILED;
+        }
+
+        for(Map OP : OPS){
+            String _O_P_NO = StringUtils.toString(OP.get("O_P_NO"));
+            String O_P_ID = StringUtils.toString(OP.get("O_P_ID"));
+            float O_P_NUM = NumberUtils.toFloat(OP.get("O_P_NUM"));
+            boolean P_TAG_WEIGHT = StringUtils.toString(OP.get("P_TAG_WEIGHT")).equals("1") ? true : false;
+            if(P_TAG_WEIGHT){
+                float O_P_WEIGHT = NumberUtils.toFloat(OP.get("O_P_WEIGHT"));
+                O_P_NUM = O_P_WEIGHT;
+            }
+            String O_P_COMBO = StringUtils.toString(OP.get("O_P_COMBO"));
+            boolean hasStock = true;
+            if(O_P_COMBO.equals("1")){
+                hasStock = checkComboStock(O_P_ID, O_P_NUM);
+            }
+            else{
+                hasStock = checkStock(O_P_ID, O_P_NUM);
+            }
+            if(hasStock){
+                sql = "UPDATE X_O_P SET O_P_MAKER = "+ACCOUNT_ID+", O_P_DT_ORDER='" + O_P_DT_ORDER + "', O_P_STATUS=1 WHERE O_P_STATUS=0 AND O_P_NO = " + _O_P_NO;
+                query.doExec(sql);
+                if(O_P_COMBO.equals("1")){
+                    updateComboStock(O_P_ID, O_P_NUM);
+                }
+                else{
+                    updateStock(O_P_ID, O_P_NUM);
+                }
+                
+                if(O_P_NOS.length() > 0){
+                    O_P_NOS += ",";
+                }
+                O_P_NOS += _O_P_NO;
+            }
+        }
+//        System.out.println(O_P_KEY);
+        
+        //sql = "UPDATE X_O_P SET O_P_DT_ORDER='" + O_P_DT_ORDER + "', O_P_STATUS=1, O_P_MAKER = "+ACCOUNT_ID+" WHERE O_P_STATUS=0 AND O_ID IN (" + O_IDS + ") AND O_P_KEY IN ("+ O_P_KEY +")";
+        //int result = query.doExec(sql);
+        //sql = "SELECT O_P_NO FROM X_O_P WHERE O_ID IN (" + O_IDS + ") AND O_P_KEY IN ("+ O_P_KEY +")";
+        //String PS = query.doQuery(sql).getValueString();
+        if(O_P_NOS.length() == 0){
+            query.free();
+            return CloverManager.CODE_FAILED;
+        }
+        //LogAction.add(getClient(), 20, null, O_P_NOS);
+      //  String[] O_ID_ARR = O_IDS.split(",");
+        //for(String _O_ID : O_ID_ARR){
+          //  sql = "SELECT * FROM X_O WHERE O_STATUS < 4 AND O_ID = " + _O_ID;
+            Map params = new Hashtable();
+            params.put("O_ID", O_IDS);
+            params.put("O_P_DT_ORDER", O_P_DT_ORDER);
+            params.put("MAKER", ACCOUNT_ID);
+        //    if(query.rowCount(sql) > 0){
+         //       PrintManager.getInstance().addJob(PrintJob.COMMAND_DISH_ORDER, params);
+         //   }
+         //   else{
+//                params.put("O_P_DT_ORDER", O_P_DT_ORDER);
+                PrintManager.getInstance().addJob(PrintJob.COMMAND_DISH_ORDER, params);
+        //    }
+       // }
+        query.doExec("UPDATE X_O SET O_STATUS=4, O_DT_BILL = NULL WHERE O_ID IN (" + O_IDS+")");
+        sql = "UPDATE X_BILL SET BILL_ARREAR_PROCESS_DT = NULL, " +
+                "BILL_DT_FINISH = NULL, " +
+                "BILL_ARREAR_PROCESSOR = NULL, " +
+                "BILL_ARREAR_PROCESSOR_ID = NULL, " +
+                "BILL_ARREAR_PROCESSOR = NULL, " +
+                "BILL_AMOUNT_ARREAR = 0, " +
+                "BILL_ARREAR_PAY_TYPE = NULL, " +
+                "BILL_ARREAR_PAY_AMOUNT = 0, " +
+                "BILL_STATUS=0, BILL_STATUSX=0 WHERE BILL_ID IN (SELECT O_BILL_ID FROM X_O WHERE O_ID IN (" + O_IDS+"))";
+        query.doExec(sql);
+        query.free();
+        //if (result < 0) {
+        //    return CloverManager.CODE_FAILED;
+        //}
+        return CloverManager.CODE_SUCCESS;
+    }
+
+    public int hang(Form form) {
+        if(!isLogin()){
+            return CloverManager.CODE_FAILED;
+        }
+        Map data = form.getValuesMap();
+        String O_P_NO = StringUtils.toString(data.get("O_P_NO"));
+        if (O_P_NO.length() == 0) {
+            return CloverManager.CODE_FAILED;
+        }
+        IQuery query = getQuery();
+        String sql = "SELECT * FROM X_O_P WHERE O_P_STATUS NOT IN (-1, 10) AND O_P_NO IN (" + O_P_NO + ") ORDER BY O_P_NO";
+        List<Map> OPS = query.doQuery(sql).tables();
+        if(OPS.size() == 0){
+            query.free();
+            return CloverManager.CODE_FAILED;
+        }
+        String ACCOUNT_ID = StringUtils.toString(getClient().getCookies().get("ACCOUNT_ID"));
+        String O_ID = StringUtils.toString(OPS.get(0).get("O_ID"));
+        String O_IDS  = O_ID;
+        String O_P_KEY = "";
+        String UNION = StringUtils.toString(data.get("UNION"));
+        if(UNION.equals("1")){
+            OrderAction a = new OrderAction();
+            String IDS = a.getUnion(O_ID);
+            if(IDS.length()>0){
+                O_IDS = IDS;
+            }
+        }
+        for(Map OP : OPS){
+            if(O_P_KEY.length() > 0){
+                O_P_KEY += ",";
+            }
+            O_P_KEY += "'" + StringUtils.toString(OP.get("O_P_KEY")) + "'";
+        }
+
+        sql = "UPDATE X_O_P SET O_P_EXT_STATUS = 1 WHERE O_P_STATUS NOT IN (-1, 10) AND O_ID IN (" + O_IDS + ") AND O_P_KEY IN ("+ O_P_KEY +")";
+        int result = query.doExec(sql);
+
+        if (result < 0) {
+            query.free();
+            return CloverManager.CODE_FAILED;
+        }
+        sql = "SELECT O_P_NO FROM X_O_P WHERE O_P_STATUS > 0 AND O_P_KEY IN ("+O_P_KEY+")";
+        String O_P_NOS = query.doQuery(sql).getValueString();
+        if(O_P_NOS.length() > 0){
+            Map params = new Hashtable();
+            params.put("O_ID", O_ID);
+            params.put("O_P_NO", O_P_NOS);
+            params.put("MAKER", ACCOUNT_ID);
+            PrintManager.getInstance().addJob(PrintJob.COMMAND_DISH_HANG, params);
+        }
+        query.free();
+        return CloverManager.CODE_SUCCESS;
+    }
+
+    public int call(Form form) {
+        if(!isLogin()){
+            return CloverManager.CODE_FAILED;
+        }
+        Map data = form.getValuesMap();
+        String O_P_NO = StringUtils.toString(data.get("O_P_NO"));
+        if (O_P_NO.length() == 0) {
+            return CloverManager.CODE_FAILED;
+        }
+        IQuery query = getQuery();
+        String sql = "SELECT * FROM X_O_P WHERE O_P_STATUS NOT IN (-1, 10) AND O_P_NO IN (" + O_P_NO + ") ORDER BY O_P_NO";
+        List<Map> OPS = query.doQuery(sql).tables();
+        if(OPS.size() == 0){
+            query.free();
+            return CloverManager.CODE_FAILED;
+        }
+        String ACCOUNT_ID = StringUtils.toString(getClient().getCookies().get("ACCOUNT_ID"));
+        String O_ID = StringUtils.toString(OPS.get(0).get("O_ID"));
+        String O_IDS  = O_ID;
+        String O_P_KEY = "";
+        String UNION = StringUtils.toString(data.get("UNION"));
+        if(UNION.equals("1")){
+            OrderAction a = new OrderAction();
+            String IDS = a.getUnion(O_ID);
+            if(IDS.length()>0){
+                O_IDS = IDS;
+            }
+        }
+        for(Map OP : OPS){
+            if(O_P_KEY.length() > 0){
+                O_P_KEY += ",";
+            }
+            O_P_KEY += "'" + StringUtils.toString(OP.get("O_P_KEY")) + "'";
+        }
+        sql = "UPDATE X_O_P SET O_P_EXT_STATUS=0 WHERE O_P_STATUS IN ( 1) AND O_P_EXT_STATUS=1 AND O_ID IN (" + O_IDS + ") AND O_P_KEY IN ("+ O_P_KEY +")";
+        int result = query.doExec(sql);
+        if (result < 0) {
+            query.free();
+            return CloverManager.CODE_FAILED;
+        }
+        sql = "SELECT O_ID FROM X_O_P WHERE O_P_STATUS = 0 AND O_ID IN (" + O_IDS + ") AND O_P_KEY IN ("+ O_P_KEY +") GROUP BY O_ID";
+        String _O_IDS = query.doQuery(sql).getValueString();
+        if(_O_IDS.length() > 0){
+            String O_P_DT_ORDER = DateUtils.getNow();
+
+            String O_P_NOS = "";
+            Set<String> O_IDX = new HashSet<String>();
+            sql = "SELECT A.*, B.P_TAG_WEIGHT FROM X_O_P A LEFT JOIN X_P B ON A.O_P_ID = B.P_ID WHERE A.O_P_STATUS=0 AND A.O_ID IN (" + _O_IDS + ") AND A.O_P_KEY IN ("+ O_P_KEY +")";
+            OPS = query.doQuery(sql).tables();
+            if(OPS.size() == 0){
+                query.free();
+                return CloverManager.CODE_FAILED;
+            }
+
+            for(Map OP : OPS){
+                String _O_P_NO = StringUtils.toString(OP.get("O_P_NO"));
+                String O_P_ID = StringUtils.toString(OP.get("O_P_ID"));
+                String _O_IDX = StringUtils.toString(OP.get("O_ID"));
+                float O_P_NUM = NumberUtils.toFloat(OP.get("O_P_NUM"));
+                boolean P_TAG_WEIGHT = StringUtils.toString(OP.get("P_TAG_WEIGHT")).equals("1") ? true : false;
+                if(P_TAG_WEIGHT){
+                    float O_P_WEIGHT = NumberUtils.toFloat(OP.get("O_P_WEIGHT"));
+                    O_P_NUM = O_P_WEIGHT;
+                }
+                String O_P_COMBO = StringUtils.toString(OP.get("O_P_COMBO"));
+                boolean hasStock = true;
+                if(O_P_COMBO.equals("1")){
+                    hasStock = checkComboStock(O_P_ID, O_P_NUM);
+                }
+                else{
+                    hasStock = checkStock(O_P_ID, O_P_NUM);
+                }
+                if(hasStock){
+                    sql = "UPDATE X_O_P SET O_P_MAKER = "+ACCOUNT_ID+", O_P_DT_ORDER='" + O_P_DT_ORDER + "', O_P_STATUS=1 WHERE O_P_STATUS=0 AND O_P_NO = " + _O_P_NO;
+                    query.doExec(sql);
+                    if(O_P_COMBO.equals("1")){
+                        updateComboStock(O_P_ID, O_P_NUM);
+                    }
+                    else{
+                        updateStock(O_P_ID, O_P_NUM);
+                    }
+                    O_IDX.add(_O_IDX);
+                    if(O_P_NOS.length() > 0){
+                        O_P_NOS += ",";
+                    }
+                    O_P_NOS += _O_P_NO;
+                }
+            }
+
+            //LogAction.add(getClient(), 20, null, O_P_NOS);
+            //sql = "UPDATE X_O_P SET O_P_DT_ORDER='" + O_P_DT_ORDER + "', O_P_STATUS=1,O_P_EXT_STATUS=0 WHERE O_P_STATUS=0 AND O_ID IN (" + _O_IDS + ") AND O_P_KEY IN ("+ O_P_KEY +")";
+            //result = query.doExec(sql);
+            String[] O_ID_ARR = _O_IDS.split(",");
+            for(String _O_ID : O_ID_ARR){
+                if(!O_IDX.contains(_O_ID)){
+                    continue;
+                }
+                sql = "SELECT * FROM X_O WHERE O_STATUS < 4 AND O_ID = " + _O_ID;
+                Map params = new Hashtable();
+                params.put("O_ID", _O_ID);
+                params.put("O_P_DT_ORDER", O_P_DT_ORDER);
+                params.put("MAKER", ACCOUNT_ID);
+                if(query.rowCount(sql) > 0){
+                    query.doExec("UPDATE X_O SET O_STATUS=4 WHERE O_ID IN (" + _O_ID+")");
+                    PrintManager.getInstance().addJob(PrintJob.COMMAND_DISH_ORDER, params);
+                }
+                else{
+                    //params.put("O_P_DT_ORDER", O_P_DT_ORDER);
+                    PrintManager.getInstance().addJob(PrintJob.COMMAND_DISH_ORDER, params);
+                }
+            }
+        }
+        else{
+            sql = "SELECT O_P_NO FROM X_O_P WHERE O_P_STATUS > 0 AND O_P_KEY IN ("+O_P_KEY+")";
+            String O_P_NOS = query.doQuery(sql).getValueString();
+            if(O_P_NOS.length() > 0){
+                Map params = new Hashtable();
+                params.put("O_ID", O_ID);
+                params.put("O_P_NO", O_P_NOS);
+                params.put("MAKER", ACCOUNT_ID);
+                PrintManager.getInstance().addJob(PrintJob.COMMAND_DISH_CALL, params);
+            }
+        }
+        query.doExec("UPDATE X_O SET O_STATUS=4, O_DT_BILL = NULL WHERE O_ID IN (" + O_IDS+")");
+        sql = "UPDATE X_BILL SET BILL_ARREAR_PROCESS_DT = NULL, " +
+                "BILL_DT_FINISH = NULL, " +
+                "BILL_ARREAR_PROCESSOR = NULL, " +
+                "BILL_ARREAR_PROCESSOR_ID = NULL, " +
+                "BILL_ARREAR_PROCESSOR = NULL, " +
+                "BILL_AMOUNT_ARREAR = 0, " +
+                "BILL_ARREAR_PAY_TYPE = NULL, " +
+                "BILL_ARREAR_PAY_AMOUNT = 0, " +
+                "BILL_STATUS=0, BILL_STATUSX=0 WHERE BILL_ID IN (SELECT O_BILL_ID FROM X_O WHERE O_ID IN (" + O_IDS+"))";
+        query.doExec(sql);
+        query.free();
+        return CloverManager.CODE_SUCCESS;
+    }
+
+    public int give(Form form) {
+        if(!isLogin()){
+            return CloverManager.CODE_FAILED;
+        }
+        Map data = form.getValuesMap();
+        String O_P_NO = StringUtils.toString(data.get("O_P_NO"));
+        if (O_P_NO.length() == 0) {
+            return CloverManager.CODE_FAILED;
+        }
+        IQuery query = getQuery();
+        String sql = "SELECT * FROM X_O_P WHERE O_P_STATUS NOT IN (-1) AND O_P_NO IN (" + O_P_NO + ") ORDER BY O_P_NO";
+        List<Map> list = query.doQuery(sql).tables();
+        if(list.size() == 0){
+            query.free();
+            return CloverManager.CODE_FAILED;
+        }
+        String O_P_REASON = StringUtils.toString(data.get("O_P_REASON"));
+        float O_P_NUM_GIVE = NumberUtils.toFloat(data.get("O_P_NUM"));
+        if(O_P_NUM_GIVE == 0){
+            O_P_NUM_GIVE = 1;
+        }
+        String ACCOUNT_ID = StringUtils.toString(getClient().getCookies().get("ACCOUNT_ID"));
+        String O_P_NOS = "";
+        String O_P_NUMS = "";
+        String O_ID = "";
+        int result = 0;
+        String O_P_DT_CANCEL = DateUtils.getNow();
+         ITable t = getTable("X_O_P").clearData();
+        for(Map map : list){
+            O_ID = StringUtils.toString(map.get("O_ID"));
+            String _O_P_NO = StringUtils.toString(map.get("O_P_NO"));
+            float O_P_NUM = NumberUtils.toFloat(map.get("O_P_NUM"));
+            float NUM = O_P_NUM - O_P_NUM_GIVE;
+            if(NUM < 0){
+                O_P_NUM_GIVE = O_P_NUM;
+                NUM = 0;
+            }
+            if(NUM == 0){
+                sql = "UPDATE X_O_P SET O_P_DISCOUNT=0, O_P_AMOUNT_REAL=0,O_P_REASON='"+O_P_REASON+"' WHERE O_P_STATUS NOT IN(-1) AND O_ID IN (" + O_ID + ") AND O_P_NO IN ("+ _O_P_NO +")";
+            }
+            else{
+                float O_P_PRICE = NumberUtils.toFloat(map.get("O_P_PRICE"));
+                sql = "UPDATE X_O_P SET O_P_NUM="+NUM+", O_P_AMOUNT="+ NUM*O_P_PRICE +",O_P_AMOUNT_REAL="+NUM*O_P_PRICE+" WHERE O_P_STATUS NOT IN(-1) AND O_ID IN (" + O_ID + ") AND O_P_NO IN ("+ _O_P_NO +")";
+                _O_P_NO = t.getMaxID("O_P_NO") + "";
+                map.put("O_P_NO", _O_P_NO);
+                map.put("O_P_NUM", O_P_NUM_GIVE);
+                map.put("O_P_AMOUNT", O_P_NUM_GIVE * O_P_PRICE);
+                map.put("O_P_AMOUNT_REAL",0);
+                map.put("O_P_REASON", O_P_REASON);
+                map.put("O_P_DT_CANCEL", O_P_DT_CANCEL);
+                map.put("O_P_DISCOUNT", 0);
+                map.put("O_P_KEY", StringUtils.UUID());
+                t.data(map).create();
+                O_P_NUM = O_P_NUM_GIVE;
+            }
+            result = query.doExec(sql);
+            if (result < 0) {
+                query.free();
+                return CloverManager.CODE_FAILED;
+            }
+            if(O_P_NOS.length() > 0){
+                O_P_NOS += ",";
+                O_P_NUMS += ",";
+            }
+            O_P_NOS += _O_P_NO;
+            O_P_NUMS += O_P_NUM;
+        }
+        LogAction.add(getClient(), 22, null, O_P_NOS, null, O_P_NUMS);
+        String[] UNDERTAKE_ACCOUNT = StringUtils.toString(data.get("UNDERTAKE_ACCOUNT")).split(",");
+        String[] UNDERTAKE_ACCOUNT_NAME = StringUtils.toString(data.get("UNDERTAKE_ACCOUNT_NAME")).split(",");
+        String[] UNDERTAKE_RATE = StringUtils.toString(data.get("UNDERTAKE_RATE")).split(",");
+        if(UNDERTAKE_ACCOUNT.length > 0){
+            ITable T = getTable("X_O_P_UNDERTAKE").clearData();
+            String[] O_P_NO_ARR = O_P_NO.split(",");
+            for(String _O_P_NO : O_P_NO_ARR){
+                 for(int i=0;i<UNDERTAKE_ACCOUNT.length;i++){
+                    Map m = new HashMap();
+                    m.put("O_P_NO", _O_P_NO);
+                    m.put("UNDERTAKE_TYPE", 2);
+                    m.put("UNDERTAKE_ACCOUNT", UNDERTAKE_ACCOUNT[i]);
+                    if(i< UNDERTAKE_ACCOUNT_NAME.length){
+                        m.put("UNDERTAKE_ACCOUNT_NAME", UNDERTAKE_ACCOUNT_NAME[i]);
+                    }
+                    if(i< UNDERTAKE_RATE.length){
+                        m.put("UNDERTAKE_RATE", NumberUtils.toFloat(UNDERTAKE_RATE[i]));
+                    }
+                    T.data(m).create();
+                }
+            }
+
+        }
+        query.doExec("UPDATE X_O SET O_STATUS=4, O_DT_BILL = NULL WHERE O_ID IN (" + O_ID+")");
+        sql = "UPDATE X_BILL SET BILL_ARREAR_PROCESS_DT = NULL, " +
+                "BILL_DT_FINISH = NULL, " +
+                "BILL_ARREAR_PROCESSOR = NULL, " +
+                "BILL_ARREAR_PROCESSOR_ID = NULL, " +
+                "BILL_ARREAR_PROCESSOR = NULL, " +
+                "BILL_AMOUNT_ARREAR = 0, " +
+                "BILL_ARREAR_PAY_TYPE = NULL, " +
+                "BILL_ARREAR_PAY_AMOUNT = 0, " +
+                "BILL_STATUS=0, BILL_STATUSX=0 WHERE BILL_ID IN (SELECT O_BILL_ID FROM X_O WHERE O_ID IN (" + O_ID+"))";
+        query.doExec(sql);
+        query.free();
+        return CloverManager.CODE_SUCCESS;
+    }
+
+    public int discount(Form form) {
+        if(!isLogin()){
+            return CloverManager.CODE_FAILED;
+        }
+        Map data = form.getValuesMap();
+        String O_P_NO = StringUtils.toString(data.get("O_P_NO"));
+        String O_P_DISCOUNT = StringUtils.toString(data.get("O_P_DISCOUNT"));
+        if (O_P_NO.length() == 0 || O_P_DISCOUNT.length() == 0) {
+            return CloverManager.CODE_FAILED;
+        }
+        IQuery query = getQuery();
+        String sql = "SELECT * FROM X_O_P WHERE O_P_STATUS NOT IN (-1) AND O_P_NO IN (" + O_P_NO + ") ORDER BY O_P_NO";
+        List<Map> OPS = query.doQuery(sql).tables();
+        if(OPS.size() == 0){
+            query.free();
+            return CloverManager.CODE_FAILED;
+        }
+        String ACCOUNT_ID = StringUtils.toString(getClient().getCookies().get("ACCOUNT_ID"));
+        String O_ID = StringUtils.toString(OPS.get(0).get("O_ID"));
+        String O_IDS  = O_ID;
+        String O_P_KEY = "";
+        String UNION = StringUtils.toString(data.get("UNION"));
+        if(UNION.equals("1")){
+            OrderAction a = new OrderAction();
+            String IDS = a.getUnion(O_ID);
+            if(IDS.length()>0){
+                O_IDS = IDS;
+            }
+        }
+        for(Map OP : OPS){
+            if(O_P_KEY.length() > 0){
+                O_P_KEY += ",";
+            }
+            O_P_KEY += "'" + StringUtils.toString(OP.get("O_P_KEY")) + "'";
+        }
+
+        String O_P_REASON = StringUtils.toString(data.get("O_P_REASON"));
+        float _O_P_DISCOUNT = NumberUtils.toFloat(O_P_DISCOUNT);
+        //P_AMOUNT * (1-CASE_DISCOUNT/10);
+        //float O_P_AMOUNT_REAL = 0f;
+        sql = "SELECT O_P_NO, O_P_AMOUNT FROM X_O_P WHERE O_P_KEY IN ("+ O_P_KEY +")";
+        List<Map> list = query.doQuery(sql).tables();
+        int result = 0;
+        String O_P_NOS = "";
+        for(Map m : list){
+            String _O_P_NO = StringUtils.toString(m.get("O_P_NO"));
+            float O_P_AMOUNT = NumberUtils.toFloat(m.get("O_P_AMOUNT"));
+            float DISCOUNT_AMOUNT = NumberUtils.clearZero(O_P_AMOUNT * (1- _O_P_DISCOUNT/10));
+            float O_P_AMOUNT_REAL = O_P_AMOUNT -  DISCOUNT_AMOUNT;
+            sql = "UPDATE X_O_P SET O_P_DISCOUNT="+_O_P_DISCOUNT+", O_P_AMOUNT_REAL = "+O_P_AMOUNT_REAL+", O_P_REASON = '"+O_P_REASON+"' " +
+                    "WHERE O_P_STATUS NOT IN (-1) AND O_ID IN (" + O_IDS + ") AND  O_P_NO ="+ _O_P_NO;
+            result = query.doExec(sql);
+            if(O_P_NOS.length() > 0){
+                O_P_NOS += ",";
+            }
+            O_P_NOS += _O_P_NO;
+        }
+        if (result < 0) {
+            query.free();
+            return CloverManager.CODE_FAILED;
+        }
+        LogAction.add(getClient(), 23, null, O_P_NOS, null, O_P_DISCOUNT);
+        query.doExec("UPDATE X_O SET O_STATUS=4, O_DT_BILL = NULL WHERE O_ID IN (" + O_ID+")");
+        sql = "UPDATE X_BILL SET BILL_ARREAR_PROCESS_DT = NULL, " +
+                "BILL_DT_FINISH = NULL, " +
+                "BILL_ARREAR_PROCESSOR = NULL, " +
+                "BILL_ARREAR_PROCESSOR_ID = NULL, " +
+                "BILL_ARREAR_PROCESSOR = NULL, " +
+                "BILL_AMOUNT_ARREAR = 0, " +
+                "BILL_ARREAR_PAY_TYPE = NULL, " +
+                "BILL_ARREAR_PAY_AMOUNT = 0, " +
+                "BILL_STATUS=0, BILL_STATUSX=0 WHERE BILL_ID IN (SELECT O_BILL_ID FROM X_O WHERE O_ID IN (" + O_ID+"))";
+        query.doExec(sql);
+        query.free();
+        return CloverManager.CODE_SUCCESS;
+    }
+
+    public int urgent(Form form) {
+        if(!isLogin()){
+            return CloverManager.CODE_FAILED;
+        }
+        Map data = form.getValuesMap();
+        String O_P_NO = StringUtils.toString(data.get("O_P_NO"));
+        if (O_P_NO.length() == 0) {
+            return CloverManager.CODE_FAILED;
+        }
+        IQuery query = getQuery();
+        String sql = "SELECT * FROM X_O_P WHERE O_P_STATUS IN (0) AND O_P_NO IN (" + O_P_NO + ") ORDER BY O_P_NO";
+        List<Map> OPS = query.doQuery(sql).tables();
+        if(OPS.size() == 0){
+            query.free();
+            return CloverManager.CODE_FAILED;
+        }
+        String O_ID = StringUtils.toString(OPS.get(0).get("O_ID"));
+        String O_IDS  = O_ID;
+        String O_P_KEY = "";
+        String UNION = StringUtils.toString(data.get("UNION"));
+        if(UNION.equals("1")){
+            OrderAction a = new OrderAction();
+            String IDS = a.getUnion(O_ID);
+            if(IDS.length()>0){
+                O_IDS = IDS;
+            }
+        }
+        for(Map OP : OPS){
+            if(O_P_KEY.length() > 0){
+                O_P_KEY += ",";
+            }
+            O_P_KEY += "'" + StringUtils.toString(OP.get("O_P_KEY")) + "'";
+        }
+        sql = "UPDATE X_O_P SET O_P_EXT_STATUS=2 WHERE  O_P_STATUS IN (0) AND O_ID IN (" + O_IDS + ") AND O_P_KEY IN ("+ O_P_KEY +")";
+        int result = query.doExec(sql);
+        query.free();
+        if (result < 0) {
+            return CloverManager.CODE_FAILED;
+        }
+        return CloverManager.CODE_SUCCESS;
+    }
+
+    public int pack(Form form) {
+        if(!isLogin()){
+            return CloverManager.CODE_FAILED;
+        }
+        Map data = form.getValuesMap();
+        String O_P_NO = StringUtils.toString(data.get("O_P_NO"));
+        if (O_P_NO.length() == 0) {
+            return CloverManager.CODE_FAILED;
+        }
+        IQuery query = getQuery();
+        String sql = "SELECT * FROM X_O_P WHERE O_P_STATUS NOT IN (-1, 10) AND O_P_NO IN (" + O_P_NO + ") ORDER BY O_P_NO";
+        List<Map> OPS = query.doQuery(sql).tables();
+        if(OPS.size() == 0){
+            query.free();
+            return CloverManager.CODE_FAILED;
+        }
+        String O_ID = StringUtils.toString(OPS.get(0).get("O_ID"));
+        String O_IDS  = O_ID;
+        String O_P_KEY = "";
+        String UNION = StringUtils.toString(data.get("UNION"));
+        if(UNION.equals("1")){
+            OrderAction a = new OrderAction();
+            String IDS = a.getUnion(O_ID);
+            if(IDS.length()>0){
+                O_IDS = IDS;
+            }
+        }
+        for(Map OP : OPS){
+            if(O_P_KEY.length() > 0){
+                O_P_KEY += ",";
+            }
+            O_P_KEY += "'" + StringUtils.toString(OP.get("O_P_KEY")) + "'";
+        }
+        sql = "UPDATE X_O_P SET O_P_PACK=1 WHERE O_P_STATUS NOT IN (-1, 10) AND O_ID IN (" + O_IDS + ") AND O_P_KEY IN ("+ O_P_KEY +")";
+//        sql = "UPDATE X_O_P SET O_P_EXT_STATUS=4 WHERE O_P_STATUS NOT IN (-1, 10) AND O_ID IN (" + O_IDS + ") AND O_P_DT IN ("+ O_P_DT +")";
+        int result = query.doExec(sql);
+        query.free();
+        if (result < 0) {
+            return CloverManager.CODE_FAILED;
+        }
+        return CloverManager.CODE_SUCCESS;
+    }
+
+    public int prior(Form form) {
+        if(!isLogin()){
+            return CloverManager.CODE_FAILED;
+        }
+        Map data = form.getValuesMap();
+        String O_P_NO = StringUtils.toString(data.get("O_P_NO"));
+        if (O_P_NO.length() == 0) {
+            return CloverManager.CODE_FAILED;
+        }
+        IQuery query = getQuery();
+        String sql = "SELECT * FROM X_O_P WHERE O_P_STATUS IN (0) AND O_P_NO IN (" + O_P_NO + ") ORDER BY O_P_NO";
+        List<Map> OPS = query.doQuery(sql).tables();
+        if(OPS.size() == 0){
+            query.free();
+            return CloverManager.CODE_FAILED;
+        }
+        String ACCOUNT_ID = StringUtils.toString(getClient().getCookies().get("ACCOUNT_ID"));
+        String O_ID = StringUtils.toString(OPS.get(0).get("O_ID"));
+        String O_IDS  = O_ID;
+        String O_P_KEY = "";
+        String UNION = StringUtils.toString(data.get("UNION"));
+        if(UNION.equals("1")){
+            OrderAction a = new OrderAction();
+            String IDS = a.getUnion(O_ID);
+            if(IDS.length()>0){
+                O_IDS = IDS;
+            }
+        }
+        for(Map OP : OPS){
+            if(O_P_KEY.length() > 0){
+                O_P_KEY += ",";
+            }
+            O_P_KEY += "'" + StringUtils.toString(OP.get("O_P_KEY")) + "'";
+        }
+        sql = "UPDATE X_O_P SET O_P_PRIOR=1 WHERE  O_P_STATUS IN (0) AND O_ID IN (" + O_IDS + ") AND O_P_KEY IN ("+ O_P_KEY +")";
+        int result = query.doExec(sql);
+        query.free();
+        if (result < 0) {
+            return CloverManager.CODE_FAILED;
+        }
+        return CloverManager.CODE_SUCCESS;
+    }
+
+    public int hurry(Form form) {
+        if(!isLogin()){
+            return CloverManager.CODE_FAILED;
+        }
+        Map data = form.getValuesMap();
+        String O_P_NO = StringUtils.toString(data.get("O_P_NO"));
+        if (O_P_NO.length() == 0) {
+            return CloverManager.CODE_FAILED;
+        }
+        IQuery query = getQuery();
+        String sql = "SELECT * FROM X_O_P WHERE O_P_STATUS NOT IN (-1, 10) AND O_P_NO IN (" + O_P_NO + ") ORDER BY O_P_NO";
+        List<Map> OPS = query.doQuery(sql).tables();
+        if(OPS.size() == 0){
+            query.free();
+            return CloverManager.CODE_FAILED;
+        }
+        String ACCOUNT_ID = StringUtils.toString(getClient().getCookies().get("ACCOUNT_ID"));
+        String O_ID = StringUtils.toString(OPS.get(0).get("O_ID"));
+        String O_IDS  = O_ID;
+        String O_P_KEY = "";
+        String UNION = StringUtils.toString(data.get("UNION"));
+        if(UNION.equals("1")){
+            OrderAction a = new OrderAction();
+            String IDS = a.getUnion(O_ID);
+            if(IDS.length()>0){
+                O_IDS = IDS;
+            }
+        }
+        for(Map OP : OPS){
+            if(O_P_KEY.length() > 0){
+                O_P_KEY += ",";
+            }
+            O_P_KEY += "'" + StringUtils.toString(OP.get("O_P_KEY")) + "'";
+        }
+        sql = "UPDATE X_O_P SET O_P_HURRY_CLIENT=O_P_HURRY_CLIENT+1,O_P_EXT_STATUS=0 WHERE O_P_STATUS NOT IN (-1, 0 ,10) AND O_ID IN (" + O_IDS + ") AND O_P_KEY IN ("+ O_P_KEY +")";
+        int result = query.doExec(sql);
+
+        if (result < 0) {
+            query.free();
+            return CloverManager.CODE_FAILED;
+        }
+        sql = "SELECT O_ID FROM X_O_P WHERE O_P_STATUS = 0 AND O_P_EXT_STATUS = 1 AND O_ID IN (" + O_IDS + ") AND O_P_KEY IN ("+ O_P_KEY +")";
+        String _O_IDS = query.doQuery(sql).getValueString();
+        if(_O_IDS.length() > 0){
+            String O_P_DT_ORDER = DateUtils.getNow();
+
+            String O_P_NOS = "";
+            Set<String> O_IDX = new HashSet<String>();
+            sql = "SELECT A.*, B.P_TAG_WEIGHT FROM X_O_P A LEFT JOIN X_P B ON A.O_P_ID = B.P_ID WHERE A.O_P_STATUS=0 AND A.O_ID IN (" + _O_IDS + ") AND A.O_P_KEY IN ("+ O_P_KEY +")";
+            OPS = query.doQuery(sql).tables();
+            if(OPS.size() == 0){
+                query.free();
+                return CloverManager.CODE_FAILED;
+            }
+
+            for(Map OP : OPS){
+                String _O_P_NO = StringUtils.toString(OP.get("O_P_NO"));
+                String O_P_ID = StringUtils.toString(OP.get("O_P_ID"));
+                String _O_IDX = StringUtils.toString(OP.get("O_ID"));
+                float O_P_NUM = NumberUtils.toFloat(OP.get("O_P_NUM"));
+                boolean P_TAG_WEIGHT = StringUtils.toString(OP.get("P_TAG_WEIGHT")).equals("1") ? true : false;
+                if(P_TAG_WEIGHT){
+                    float O_P_WEIGHT = NumberUtils.toFloat(OP.get("O_P_WEIGHT"));
+                    O_P_NUM = O_P_WEIGHT;
+                }
+                String O_P_COMBO = StringUtils.toString(OP.get("O_P_COMBO"));
+                boolean hasStock = true;
+                if(O_P_COMBO.equals("1")){
+                    hasStock = checkComboStock(O_P_ID, O_P_NUM);
+                }
+                else{
+                    hasStock = checkStock(O_P_ID, O_P_NUM);
+                }
+                if(hasStock){
+                    sql = "UPDATE X_O_P SET O_P_HURRY_CLIENT=O_P_HURRY_CLIENT+1, O_P_MAKER = "+ACCOUNT_ID+", O_P_DT_ORDER='" + O_P_DT_ORDER + "', O_P_STATUS=1 WHERE O_P_STATUS=0 AND O_P_NO = " + _O_P_NO;
+                    query.doExec(sql);
+                    if(O_P_COMBO.equals("1")){
+                        updateComboStock(O_P_ID, O_P_NUM);
+                    }
+                    else{
+                        updateStock(O_P_ID, O_P_NUM);
+                    }
+                    O_IDX.add(_O_IDX);
+                    if(O_P_NOS.length() > 0){
+                        O_P_NOS += ",";
+                    }
+                    O_P_NOS += _O_P_NO;
+                }
+            }
+
+            //LogAction.add(getClient(), 20, null, O_P_NOS);
+
+            //sql = "UPDATE X_O_P SET O_P_HURRY_CLIENT=O_P_HURRY_CLIENT+1, O_P_DT_ORDER='" + O_P_DT_ORDER + "', O_P_STATUS=1,O_P_EXT_STATUS=0 WHERE O_P_STATUS=0 AND O_ID IN (" + _O_IDS + ") AND O_P_KEY IN ("+ O_P_KEY +")";
+            //result = query.doExec(sql);
+            String[] O_ID_ARR = _O_IDS.split(",");
+            for(String _O_ID : O_ID_ARR){
+                if(!O_IDX.contains(_O_ID)){
+                    continue;
+                }
+                sql = "SELECT * FROM X_O WHERE O_STATUS < 4 AND O_ID = " + _O_ID;
+                Map params = new Hashtable();
+                params.put("O_ID", _O_ID);
+                params.put("O_P_DT_ORDER", O_P_DT_ORDER);
+                params.put("MAKER", ACCOUNT_ID);
+                if(query.rowCount(sql) > 0){
+                    query.doExec("UPDATE X_O SET O_STATUS=4 WHERE O_ID IN (" + _O_ID+")");
+                    PrintManager.getInstance().addJob(PrintJob.COMMAND_DISH_ORDER, params);
+                }
+                else{
+
+                    PrintManager.getInstance().addJob(PrintJob.COMMAND_DISH_ORDER, params);
+                }
+            }
+        }
+        else{
+            sql = "SELECT O_P_NO FROM X_O_P WHERE O_P_STATUS > 0 AND O_P_KEY IN ("+O_P_KEY+")";
+            String O_P_NOS = query.doQuery(sql).getValueString();
+            if(O_P_NOS.length() > 0){
+                Map params = new Hashtable();
+                params.put("O_ID", O_ID);
+                params.put("O_P_NO", O_P_NOS);
+                params.put("MAKER", ACCOUNT_ID);
+                PrintManager.getInstance().addJob(PrintJob.COMMAND_DISH_HURRY, params);
+            }
+        }
+        query.free();
+        return CloverManager.CODE_SUCCESS;
+    }
+
+
+
+    public int cancel(Form form) {
+        if(!isLogin()){
+            return CloverManager.CODE_FAILED;
+        }
+        Map data = form.getValuesMap();
+        String O_P_NO = StringUtils.toString(data.get("O_P_NO"));
+        if (O_P_NO.length() == 0) {
+            return CloverManager.CODE_FAILED;
+        }
+        IQuery query = getQuery();
+        String sql = "SELECT * FROM X_O_P WHERE O_P_STATUS NOT IN (-1, 0) AND O_P_NO IN (" + O_P_NO + ")";
+        List<Map> list = query.doQuery(sql).tables();
+        if(list.size() == 0){
+            query.free();
+            return CloverManager.CODE_FAILED;
+        }
+        String ACCOUNT_ID = StringUtils.toString(getClient().getCookies().get("ACCOUNT_ID"));
+        String O_P_REASON = StringUtils.toString(data.get("O_P_REASON"));
+        float O_P_NUM_CANCEL = NumberUtils.toFloat(data.get("O_P_NUM"));
+        if(O_P_NUM_CANCEL <= 0){
+            O_P_NUM_CANCEL = 1;
+        }
+        String O_IDS = "";
+        String O_P_NOS = "";
+        String O_P_NUMS = "";
+        int result = 0;
+        String O_P_DT_CANCEL = DateUtils.getNow();
+         ITable t = getTable("X_O_P").clearData();
+        for(Map map : list){
+            if(O_IDS.length() > 0){
+                O_IDS  += ",";
+            }
+            String O_ID = StringUtils.toString(map.get("O_ID"));
+            O_IDS += O_ID;
+            String _O_P_NO = StringUtils.toString(map.get("O_P_NO"));
+            String O_P_ID = StringUtils.toString(map.get("O_P_ID"));
+            boolean O_P_TAG_WEIGHT = StringUtils.toString(map.get("O_P_TAG_WEIGHT")).equals("1");
+            boolean O_P_COMBO = StringUtils.toString(map.get("O_P_COMBO")).equals("1");
+            float O_P_NUM = NumberUtils.toFloat(map.get("O_P_NUM"));
+            float O_P_WEIGHT = NumberUtils.toFloat(map.get("O_P_WEIGHT"));
+            if(O_P_TAG_WEIGHT){
+                O_P_NUM = O_P_WEIGHT;
+                sql = "UPDATE X_O_P SET O_P_STATUS=-1, O_P_REASON='"+O_P_REASON+"', O_P_DT_CANCEL='"+O_P_DT_CANCEL+"', O_P_EXT_STATUS = 0, O_P_AMOUNT_REAL = 0 WHERE O_P_STATUS NOT IN(-1, 0) AND O_ID IN (" + O_ID + ") AND O_P_NO IN ("+ _O_P_NO +")";
+            }
+            else{
+
+                float NUM = O_P_NUM - O_P_NUM_CANCEL;
+                float _O_P_NUM_CANCEL = O_P_NUM_CANCEL;
+                if(NUM < 0){
+                    _O_P_NUM_CANCEL = O_P_NUM;
+                    NUM = 0;
+                }
+                if(NUM == 0){
+                    sql = "UPDATE X_O_P SET O_P_STATUS=-1, O_P_REASON='"+O_P_REASON+"', O_P_DT_CANCEL='"+O_P_DT_CANCEL+"', O_P_EXT_STATUS = 0, O_P_AMOUNT_REAL = 0 WHERE O_P_STATUS NOT IN(-1, 0) AND O_ID IN (" + O_ID + ") AND O_P_NO IN ("+ _O_P_NO +")";
+                }
+                else{
+
+                    float O_P_PRICE = NumberUtils.toFloat(map.get("O_P_PRICE"));
+                    sql = "UPDATE X_O_P SET O_P_NUM="+NUM+", O_P_AMOUNT="+ NUM*O_P_PRICE +",O_P_AMOUNT_REAL = "+NUM*O_P_PRICE+"  WHERE O_P_STATUS NOT IN(-1, 0) AND O_ID IN (" + O_ID + ") AND O_P_NO IN ("+ _O_P_NO +")";
+                    _O_P_NO = t.getMaxID("O_P_NO") + "";
+                    map.put("O_P_NO", _O_P_NO);
+                    map.put("O_P_NUM", _O_P_NUM_CANCEL);
+                    map.put("O_P_AMOUNT", _O_P_NUM_CANCEL * O_P_PRICE);
+                    map.put("O_P_REASON", O_P_REASON);
+                    map.put("O_P_DT_CANCEL", O_P_DT_CANCEL);
+                    map.put("O_P_STATUS", -1);
+                    map.put("O_P_KEY", StringUtils.UUID());
+                    map.put("O_P_AMOUNT_REAL", 0);
+                    t.data(map).create();
+                }
+                O_P_NUM = _O_P_NUM_CANCEL;
+            }
+
+            result = query.doExec(sql);
+            if (result < 0) {
+                query.free();
+                return CloverManager.CODE_FAILED;
+            }
+            if(O_P_NOS.length() > 0){
+                O_P_NOS += ",";
+                O_P_NUMS += ",";
+            }
+            O_P_NOS += _O_P_NO;
+            O_P_NUMS += O_P_NUM;
+            if(O_P_COMBO){
+                updateComboStock(O_P_ID, O_P_NUM);
+            }
+            else{
+                updateStock(O_P_ID, O_P_NUM);
+            }
+        }
+        LogAction.add(getClient(), 21, O_IDS, O_P_NOS, null, O_P_NUMS);
+        String[] UNDERTAKE_ACCOUNT = StringUtils.toString(data.get("UNDERTAKE_ACCOUNT")).split(",");
+        String[] UNDERTAKE_ACCOUNT_NAME = StringUtils.toString(data.get("UNDERTAKE_ACCOUNT_NAME")).split(",");
+        String[] UNDERTAKE_RATE = StringUtils.toString(data.get("UNDERTAKE_RATE")).split(",");
+        if(UNDERTAKE_ACCOUNT.length > 0){
+            ITable T = getTable("X_O_P_UNDERTAKE").clearData();
+            String[] O_P_NO_ARR = O_P_NO.split(",");
+            for(String _O_P_NO : O_P_NO_ARR){
+                 for(int i=0;i<UNDERTAKE_ACCOUNT.length;i++){
+                    Map m = new HashMap();
+                    m.put("O_P_NO", _O_P_NO);
+                    m.put("UNDERTAKE_TYPE", 1);
+                    m.put("UNDERTAKE_ACCOUNT", UNDERTAKE_ACCOUNT[i]);
+                    if(i< UNDERTAKE_ACCOUNT_NAME.length){
+                        m.put("UNDERTAKE_ACCOUNT_NAME", UNDERTAKE_ACCOUNT_NAME[i]);
+                    }
+                    if(i< UNDERTAKE_RATE.length){
+                        m.put("UNDERTAKE_RATE", NumberUtils.toFloat(UNDERTAKE_RATE[i]));
+                    }
+                    T.data(m).create();
+                }
+            }
+
+        }
+        String[] O_ID_ARR = O_IDS.split(",");
+        O_IDS = ArrayUtils.join(",", ArrayUtils.unique(O_ID_ARR));
+        Map params = new Hashtable();
+        params.put("O_ID", O_IDS);
+        params.put("O_P_DT_CANCEL", O_P_DT_CANCEL);
+        params.put("MAKER", ACCOUNT_ID);
+        PrintManager.getInstance().addJob(PrintJob.COMMAND_DISH_CANCEL, params);
+        query.doExec("UPDATE X_O SET O_STATUS=4, O_DT_BILL = NULL WHERE O_ID IN (" + O_IDS+")");
+        sql = "UPDATE X_BILL SET BILL_ARREAR_PROCESS_DT = NULL, " +
+                "BILL_DT_FINISH = NULL, " +
+                "BILL_ARREAR_PROCESSOR = NULL, " +
+                "BILL_ARREAR_PROCESSOR_ID = NULL, " +
+                "BILL_ARREAR_PROCESSOR = NULL, " +
+                "BILL_AMOUNT_ARREAR = 0, " +
+                "BILL_ARREAR_PAY_TYPE = NULL, " +
+                "BILL_ARREAR_PAY_AMOUNT = 0, " +
+                "BILL_STATUS=0, BILL_STATUSX=0 WHERE BILL_ID IN (SELECT O_BILL_ID FROM X_O WHERE O_ID IN (" + O_IDS+"))";
+        query.doExec(sql);
+        query.free();
+        return CloverManager.CODE_SUCCESS;
+    }
+
+
+
+    public int delete(Form form) {
+        Map data = form.getValuesMap();
+        String O_P_NO = StringUtils.toString(data.get("O_P_NO"));
+        if (O_P_NO.length() == 0) {
+            return CloverManager.CODE_FAILED;
+        }
+        IQuery query = getQuery();
+        String sql = "SELECT * FROM X_O_P WHERE O_P_STATUS IN (0) AND O_P_NO IN (" + O_P_NO + ") ORDER BY O_P_NO";
+        List<Map> OPS = query.doQuery(sql).tables();
+        if(OPS.size() == 0){
+            query.free();
+            return CloverManager.CODE_FAILED;
+        }
+        String O_ID = StringUtils.toString(OPS.get(0).get("O_ID"));
+        String O_IDS  = O_ID;
+        String O_P_KEY = "";
+        String UNION = StringUtils.toString(data.get("UNION"));
+        if(UNION.equals("1")){
+            OrderAction a = new OrderAction();
+            String IDS = a.getUnion(O_ID);
+            if(IDS.length()>0){
+                O_IDS = IDS;
+            }
+        }
+        for(Map OP : OPS){
+            if(O_P_KEY.length() > 0){
+                O_P_KEY += ",";
+            }
+            O_P_KEY += "'" + StringUtils.toString(OP.get("O_P_KEY")) + "'";
+        }
+        sql = "DELETE FROM X_O_P WHERE O_P_STATUS IN (0) AND O_ID IN (" + O_IDS + ") AND O_P_KEY IN ("+ O_P_KEY +")";
+        int result = query.doExec(sql);
+        query.free();
+        if (result < 0) {
+            return CloverManager.CODE_FAILED;
+        }
+        return CloverManager.CODE_SUCCESS;
+    }
+
+
+    public int transfer(Form form) {
+        Map data = form.getValuesMap();
+        String O_P_NO = StringUtils.toString(data.get("O_P_NO"));   String O_ID_NEW = StringUtils.toString(data.get("O_ID"));
+        if (O_P_NO.length() == 0 || O_ID_NEW.length() == 0) {
+            return CloverManager.CODE_FAILED;
+        }
+        String UNION = StringUtils.toString(data.get("UNION"));
+        IQuery query = getQuery();
+        String sql = "SELECT O_ID FROM X_O_P WHERE O_P_NO IN (" + O_P_NO + ")";
+        String O_ID = query.doQuery(sql).getValue();
+
+        if(O_ID.length() == 0 || O_ID_NEW.length() == 0){
+            query.free();
+            return CloverManager.CODE_FAILED;
+        }
+        if(UNION.equals("1")){
+            OrderAction a = new OrderAction();
+            if(!a.setUnion(O_ID + "," + O_ID_NEW)){
+                query.free();
+                return CloverManager.CODE_FAILED;
+            }
+        }
+        sql = "SELECT * FROM X_O_P WHERE O_P_NO IN (" + O_P_NO + ") AND O_P_STATUS > 0";
+        if(query.rowCount(sql) > 0){
+            sql = "UPDATE X_O SET O_STATUS = 4 WHERE O_ID = " + O_ID_NEW;
+            query.doExec(sql);
+        }
+        sql = "UPDATE X_O_P SET O_ID="+O_ID_NEW+" WHERE O_P_NO IN ("+ O_P_NO +")";
+        int result = query.doExec(sql);
+        query.free();
+        if (result < 0) {
+            return CloverManager.CODE_FAILED;
+        }
+        if(O_P_NO.length() > 0){
+            Map params = new Hashtable();
+            params.put("O_ID", O_ID);
+            params.put("O_ID_TARGET", O_ID_NEW);
+            params.put("O_P_NO", O_P_NO);
+            PrintManager.getInstance().addJob(PrintJob.COMMAND_DISH_TRANSFER, params);
+        }
+        return CloverManager.CODE_SUCCESS;
+    }
+
+    public int copy(Form form) {
+        Map data = form.getValuesMap();
+        String O_P_NO = StringUtils.toString(data.get("O_P_NO"));
+        if (O_P_NO.length() == 0) {
+            return CloverManager.CODE_FAILED;
+        }
+        String O_ID_NEW = StringUtils.toString(data.get("O_ID"));
+        String UNION = StringUtils.toString(data.get("UNION"));
+        String DESCRIBE = StringUtils.toString(data.get("DESCRIBE"));
+        IQuery query = getQuery();
+        String sql = "SELECT A.* FROM X_O_P A WHERE A.O_P_ID NOT IN (SELECT P_ID FROM X_P WHERE P_DEF_TYPE IN (1, 2)) AND A.O_P_NO IN (" + O_P_NO + ")";
+        List<Map> list = query.doQuery(sql).tables();
+        if(list.size() == 0){
+            query.free();
+            return CloverManager.CODE_FAILED;
+        }
+        String O_ID = StringUtils.toString(list.get(0).get("O_ID"));
+
+        if(O_ID.length() == 0 || O_ID_NEW.length() == 0){
+            query.free();
+            return CloverManager.CODE_FAILED;
+        }
+        if(UNION.equals("1")){
+            OrderAction a = new OrderAction();
+            if(!a.setUnion(O_ID + "," + O_ID_NEW)){
+                query.free();
+                return CloverManager.CODE_FAILED;
+            }
+        }
+        ITable t = getTable("X_O_P");
+        int result = 0;
+        String NOW = DateUtils.getNow();
+
+        for(int i=0; i<list.size();i++){
+            Map m = list.get(i);
+            Map d = new Hashtable();
+            d.put("O_ID", O_ID_NEW);
+            d.put("O_P_NO", t.getMaxID("O_P_NO"));
+            d.put("O_P_ID", m.get("O_P_ID"));
+            d.put("O_P_NAME", m.get("O_P_NAME"));
+            d.put("O_P_TYPE_ID", m.get("O_P_TYPE_ID"));
+            d.put("O_P_UNIT_ID", m.get("O_P_UNIT_ID"));
+            d.put("O_P_PRICE", m.get("O_P_PRICE"));
+            d.put("O_P_NUM", m.get("O_P_NUM"));
+            d.put("O_P_WEIGHT", m.get("O_P_WEIGHT"));
+            d.put("O_P_AMOUNT", m.get("O_P_AMOUNT"));
+            d.put("O_P_AMOUNT_REAL", m.get("O_P_AMOUNT"));
+            if(DESCRIBE.equals("1")){
+                d.put("O_P_REQUIRE", m.get("O_P_REQUIRE"));
+                d.put("O_P_TASTE", m.get("O_P_TASTE"));
+                d.put("O_P_WAY", m.get("O_P_WAY"));
+                d.put("O_P_WAY_PRICE", m.get("O_P_WAY_PRICE"));
+                d.put("O_P_MEMO", m.get("O_P_MEMO"));
+            }
+            d.put("O_P_STATUS", 0);
+            d.put("O_P_DT", NOW);
+            d.put("O_P_KEY", StringUtils.UUID());
+            d.put("O_P_COMBO", m.get("O_P_COMBO"));
+            d.put("O_P_PARENT", m.get("O_P_PARENT"));
+            d.put("O_P_TAG_SEASON", m.get("O_P_TAG_SEASON"));
+            d.put("O_P_TAG_WEIGHT", m.get("O_P_TAG_WEIGHT"));
+            result = t.data(d).create();
+        }
+        query.free();
+        if (result < 0) {
+            return CloverManager.CODE_FAILED;
+        }
+        return CloverManager.CODE_SUCCESS;
+    }
+
+    public int require(Form form) {
+        Map data = form.getValuesMap();
+        String O_ID = StringUtils.toString(data.get("O_ID"));
+
+        if (O_ID.length() == 0) {
+            return CloverManager.CODE_FAILED;
+        }
+        String O_P_REQUIRE = StringUtils.toString(data.get("O_P_REQUIRE"));
+        String O_P_REQUIRE_EXT = StringUtils.toString(data.get("O_P_REQUIRE_EXT"));
+        String APPLY_TYPE = StringUtils.toString(data.get("APPLY_TYPE"));
+        IQuery query = getQuery();
+        String sql = "";
+        String O_P_NO = StringUtils.toString(data.get("O_P_NO"));
+        if(O_P_REQUIRE_EXT.length() > 0){
+            new RequireAction().add(O_P_REQUIRE_EXT);
+            O_P_REQUIRE  += (O_P_REQUIRE.length() > 0 ? "," : "") + O_P_REQUIRE_EXT;
+        }
+        if(APPLY_TYPE.equals("2")){
+            sql = "UPDATE X_O_P SET O_P_REQUIRE='"+O_P_REQUIRE+"' WHERE O_P_STATUS = 0 AND O_ID=" + O_ID;
+        }
+        else if(APPLY_TYPE.equals("3")){
+            sql = "UPDATE X_O_P SET O_P_REQUIRE='"+O_P_REQUIRE+"' WHERE  O_P_STATUS = 0 AND (O_P_REQUIRE IS NULL OR O_P_REQUIRE='') AND O_ID=" + O_ID;
+        }
+        else{
+            if(O_P_NO.length() == 0){
+                query.free();
+                return CloverManager.CODE_FAILED;
+            }
+            sql = "UPDATE X_O_P SET O_P_REQUIRE='"+O_P_REQUIRE+"' WHERE  O_P_STATUS = 0 AND O_P_NO IN (" + O_P_NO + ")";
+        }
+
+        int result = query.doExec(sql);
+        query.free();
+        if (result < 0) {
+            return CloverManager.CODE_FAILED;
+        }
+        return CloverManager.CODE_SUCCESS;
+    }
+
+
+
+}

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<clover>
+
+    <resource class="org.redot.clover.app.item.rest.ItemList">/item/list</resource>
+    <resource class="org.redot.clover.app.item.rest.ItemList">/item/list/{ITEM_TYPE_ID}</resource>
+    <resource class="org.redot.clover.app.item.rest.ItemTypeList">/item/type/list</resource>
+
+    <resource class="org.redot.clover.app.item.rest.ItemTypeLarge">/item/type/large</resource>
+    <resource class="org.redot.clover.app.item.rest.ItemTypeSmall">/item/type/small</resource>
+    <resource class="org.redot.clover.app.item.rest.ItemTypeSmall">/item/type/small/{PARENT}</resource>
+
+</clover>

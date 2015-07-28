@@ -1,0 +1,41 @@
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/favorable/rest
+END
+FavorableCaseQuery.java
+K 25
+svn:wc:ra_dav:version-url
+V 110
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/favorable/rest/FavorableCaseQuery.java
+END
+FavorableCaseTypeSelect.java
+K 25
+svn:wc:ra_dav:version-url
+V 115
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/favorable/rest/FavorableCaseTypeSelect.java
+END
+FavorableCase.java
+K 25
+svn:wc:ra_dav:version-url
+V 105
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/favorable/rest/FavorableCase.java
+END
+FavorableCaseList.java
+K 25
+svn:wc:ra_dav:version-url
+V 109
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/favorable/rest/FavorableCaseList.java
+END
+FavorableCaseDelete.java
+K 25
+svn:wc:ra_dav:version-url
+V 111
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/favorable/rest/FavorableCaseDelete.java
+END
+FavorableCaseAvailable.java
+K 25
+svn:wc:ra_dav:version-url
+V 114
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/favorable/rest/FavorableCaseAvailable.java
+END

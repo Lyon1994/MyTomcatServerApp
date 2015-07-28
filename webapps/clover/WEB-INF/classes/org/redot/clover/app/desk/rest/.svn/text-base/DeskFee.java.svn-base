@@ -1,0 +1,36 @@
+package org.redot.clover.app.desk.rest;
+
+import org.redot.clover.app.desk.DeskAction;
+import org.redot.clover.core.data.DataPackage;
+import org.redot.clover.core.ext.BaseResource;
+import org.redot.library.lang.StringUtils;
+import org.restlet.resource.Get;
+import org.restlet.resource.Post;
+
+import java.util.Map;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 10-12-24
+ * Time: 下午3:45
+ * To change this template use File | Settings | File Templates.
+ */
+public class DeskFee extends BaseResource {
+
+    @Get("json")
+    public String doGet(){
+        DataPackage dp = new DataPackage();
+        DeskAction a = new DeskAction();
+        dp.getData().put("form", a.getFee(StringUtils.toString(getRequestAttributes().get("ID"))));
+        return dp.toJSON();
+    }
+
+    @Post("json")
+    public String doPost(){
+        DataPackage dp = new DataPackage();
+        DeskAction a = new DeskAction() ;
+        dp.setStatus(a.setFee(StringUtils.toString(getRequestAttributes().get("ID")), form));
+        return dp.toJSON() ;
+    }
+}

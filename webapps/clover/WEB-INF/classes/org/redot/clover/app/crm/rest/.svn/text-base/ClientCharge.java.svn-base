@@ -1,0 +1,38 @@
+package org.redot.clover.app.crm.rest;
+
+import org.redot.clover.app.crm.ClientChargeAction;
+import org.redot.clover.core.data.DataPackage;
+import org.redot.clover.core.ext.BaseResource;
+import org.redot.library.lang.StringUtils;
+import org.restlet.resource.Get;
+import org.restlet.resource.Post;
+
+import java.util.Hashtable;
+import java.util.Map;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 12-8-15
+ * Time: 上午11:36
+ * To change this template use File | Settings | File Templates.
+ */
+public class ClientCharge extends BaseResource{
+
+    @Get("json")
+    public String doGet() {
+        DataPackage dp = new DataPackage();
+        ClientChargeAction a = new ClientChargeAction();
+        dp.addTable("table", a.get(params));
+        return dp.toJSON();
+    }
+
+    @Post("json")
+    public String doPost(){
+        DataPackage dp = new DataPackage();
+        ClientChargeAction a = new ClientChargeAction();
+        a.setClient(client);
+        dp.setStatus(a.set(form));
+        return dp.toJSON();
+    }   
+}

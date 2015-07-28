@@ -1,0 +1,60 @@
+package org.redot.clover.print.template;
+
+import org.apache.log4j.Logger;
+import org.redot.clover.core.CloverManager;
+import org.redot.library.db.IQuery;
+import org.redot.library.lang.NumberUtils;
+import org.redot.library.lang.StringUtils;
+
+import java.util.Hashtable;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 11-8-23
+ * Time: 下午3:11
+ * To change this template use File | Settings | File Templates.
+ */
+public class PrintTemplateManager {
+    Logger logger = Logger.getLogger(this.getClass());
+
+    private static PrintTemplateManager instance = null;
+    private Map<Integer, PrintTemplate> templateMap = null;
+
+    public PrintTemplateManager(){
+        logger.debug("Print Template Initialize......");
+        templateMap = new Hashtable<Integer, PrintTemplate>();
+        init();
+    }
+    private void init(){
+        IQuery query = CloverManager.getInstance().getQuery();
+        String sql = "SELECT * FROM X_PRINT_TEMPLATE ORDER BY TEMPLATE_ID";
+        List<Map> list = query.doQuery(sql).tables();
+        for(Map m : list){
+            int id = NumberUtils.toInt(m.get("TEMPLATE_ID"));
+            String name = StringUtils.toString(m.get("TEMPLATE_NAME"));
+            PrintTemplate template = new PrintTemplate(id, name);
+            templateMap.put(id, template);
+        }
+        query.free();
+        list.clear();
+        list = null;
+        logger.debug("Print Template Initialize Success......");
+    }
+
+    public PrintTemplate getTemplate(int id){
+        if(templateMap.containsKey(id)){
+            return templateMap.get(id);
+        }
+        return null;
+    }
+
+    public static PrintTemplateManager getInstance(){
+        if(instance == null){
+            instance = new PrintTemplateManager();
+        }
+        return instance;
+    }
+}

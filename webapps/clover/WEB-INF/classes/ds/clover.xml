@@ -1,0 +1,8 @@
+<DataSourceConfig>
+    <name>clover</name>
+    <type>3</type>
+    <url>jdbc:mysql://127.0.0.1:3306/clover?useUnicode=true&amp;characterEncoding=utf8</url>
+    <user>root</user>
+    <pass></pass>
+
+</DataSourceConfig>

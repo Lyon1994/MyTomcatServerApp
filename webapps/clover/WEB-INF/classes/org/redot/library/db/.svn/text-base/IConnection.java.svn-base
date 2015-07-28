@@ -1,0 +1,13 @@
+package org.redot.library.db;
+
+import java.sql.Connection;
+
+/**
+ * Copyright By Redot.
+ * User: CASH
+ * Date: 2009-10-14
+ * Time: 14:48:26
+ */
+public abstract class IConnection implements Connection{
+    
+}

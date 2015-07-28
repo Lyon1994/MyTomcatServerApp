@@ -1,0 +1,72 @@
+package org.redot.clover.demon;
+
+import org.apache.log4j.Logger;
+
+import java.util.TimerTask;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 11-4-7
+ * Time: 上午10:45
+ * To change this template use File | Settings | File Templates.
+ */
+public abstract class Demon extends TimerTask{
+
+    Logger logger = Logger.getLogger(this.getClass());
+
+    private String name;
+
+    private long delay = 1000;
+
+    private long period = 1000 * 60;
+
+    private boolean repeat = true;
+
+    public boolean isRepeat() {
+        return repeat;
+    }
+
+    public void setRepeat(boolean repeat) {
+        this.repeat = repeat;
+    }
+
+    public Demon(String name){
+        setName(name);
+    }
+
+    public abstract void exec();
+
+    @Override
+    public void run() {
+        exec();
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public long getDelay() {
+        return delay;
+    }
+
+    public void setDelay(long delay) {
+        this.delay = delay;
+    }
+
+    public long getPeriod() {
+        return period;
+    }
+
+    public void setPeriod(long period) {
+        this.period = period;
+    }
+
+    public void destroy(){
+
+    }
+}

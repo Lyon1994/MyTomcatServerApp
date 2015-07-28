@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<clover>
+    <resource class="org.redot.clover.app.report.rest.ReportPurchase">/report/purchase/list</resource>
+    <resource class="org.redot.clover.app.report.rest.ReportPurchaseCancel">/report/purchase/cancel</resource>
+
+     <resource class="org.redot.clover.app.report.rest.ItemLossReportForms">/item/loss/report/forms</resource>
+    <resource class="org.redot.clover.app.report.rest.ItemUseReportForms">/item/use/report/forms</resource>
+
+
+
+</clover>

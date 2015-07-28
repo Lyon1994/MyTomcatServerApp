@@ -1,0 +1,60 @@
+package org.redot.clover.print.template;
+
+import java.util.Hashtable;
+import java.util.Map;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 11-10-15
+ * Time: 上午10:48
+ * To change this template use File | Settings | File Templates.
+ */
+public class PrintTemplateProcess {
+
+    private PrintTemplate template = null;
+
+    private Map<String, String[]> data;
+
+    private StringBuffer content;
+
+    public PrintTemplateProcess(PrintTemplate template){
+        this.template = template;
+    }
+
+    public void process(Map<String, String[]> data){
+        if(data == null){
+            data = new Hashtable<String, String[]>();
+        }
+        this.data = data;
+        content = new StringBuffer();
+        content.append(PrintTemplateUtils.INIT);
+        content.append(PrintTemplateUtils.GP);
+        for(PrintTemplateRow row : getTemplate().getRows()){
+            row.process();
+        }
+        content.append(PrintTemplateUtils.CUT);
+        content.append(PrintTemplateUtils.VOICE);
+        content.append("  ");
+        content.append("\n");
+        content.append("  ");
+        content.append("\n");
+
+    }
+
+    public Map getData(){
+        return data;
+    }
+
+    public String show(){
+        return content.toString();
+    }
+
+    public StringBuffer getContent() {
+        return content;
+    }
+
+    public PrintTemplate getTemplate() {
+        return template;
+    }
+}

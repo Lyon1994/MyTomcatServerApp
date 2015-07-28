@@ -1,0 +1,27 @@
+package org.redot.clover.print.rest;
+
+import org.redot.clover.core.data.DataPackage;
+import org.redot.clover.core.ext.BaseResource;
+import org.redot.clover.print.PrintCaseAction;
+import org.restlet.resource.Post;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 10-12-30
+ * Time: 下午11:51
+ * To change this template use File | Settings | File Templates.
+ */
+public class PrintCaseDelete extends BaseResource {
+
+
+
+    @Post("json")
+    public String doPost() {
+        DataPackage dp = new DataPackage();
+        PrintCaseAction a = new PrintCaseAction();
+        dp.setStatus(a.delete(form));
+        return dp.toJSON();
+    }
+
+}

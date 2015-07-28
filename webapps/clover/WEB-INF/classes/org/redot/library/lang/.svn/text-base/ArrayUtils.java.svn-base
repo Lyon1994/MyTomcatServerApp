@@ -1,0 +1,107 @@
+package org.redot.library.lang;
+
+import java.util.Hashtable;
+import java.util.List;
+import java.util.ArrayList;
+import java.lang.reflect.Array;
+import java.util.Map;
+
+/**
+ * Copyright By Redot.
+ * User: CASH
+ * Date: 2009-10-16
+ * Time: 16:35:39
+ */
+public class ArrayUtils {
+
+    public static <T> String join(String sign, T...t){
+        StringBuffer sb = new StringBuffer();
+        for (int i = 0; i < t.length; i++) {
+            if (i > 0) {
+                sb.append(sign);
+            }
+            sb.append(String.valueOf(t[i]));
+        }
+        return sb.toString();
+    }
+
+    public static<T> String join(String sign, List<T> t){
+        Object[] os = t.toArray();
+        return join(sign, os);
+    }
+
+    public static <T> String join(String sign, String flag,  T...t){
+        StringBuffer sb = new StringBuffer();
+        for (int i = 0; i < t.length; i++) {
+            if (i > 0) {
+                sb.append(sign);
+            }
+            sb.append(flag + String.valueOf(t[i]) + flag);
+        }
+        return sb.toString();
+    }
+    
+    public static <T> T[] array(T... values) {
+        return values;
+    }
+
+    public static <T> T[] array(Class<T> cls, int len) {
+        return (T[])Array.newInstance(cls, len);
+    }
+
+    public static <T> T[] convert(Class<T> cls, Object...values) {
+        return (T[])values;
+    }
+
+    public static <T> List<T> asList(T... values) {
+        List<T> list = new ArrayList<T>();
+        for(T t : values){
+            list.add(t);
+        }
+        return list;
+    }
+
+    public static <T> boolean contains(T t, T...values){
+        for(T tt : values){
+            if(tt == t || tt.equals(t)){
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public static Map cloneTable(Map m){
+        Map t = new Hashtable();
+        Object[] keys = m.keySet().toArray();
+        for(Object key : keys){
+            String k = StringUtils.toString(key);
+            Object v = m.get(k);
+            if(v == null){
+                continue;
+            }
+            t.put(k, v);
+        }
+        return t;
+    }
+
+    public static String[] unique(String...s){
+        List<String> list = new ArrayList<String>();
+        for(int i=0;i<s.length; i++){
+            if(!list.contains(s[i])){
+                list.add(s[i]);
+            }
+        }
+        return list.toArray(new String[list.size()]);
+    }
+
+    public static Integer[] unique(int...s){
+        List<Integer> list = new ArrayList<Integer>();
+        for(int i=0;i<s.length; i++){
+            if(!list.contains(s[i])){
+                list.add(s[i]);
+            }
+        }
+        return list.toArray(new Integer[list.size()]);
+    }
+    
+}

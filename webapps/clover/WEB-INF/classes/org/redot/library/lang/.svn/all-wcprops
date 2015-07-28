@@ -1,0 +1,35 @@
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/svn/yee/!svn/ver/103/server/Redot/LiveLibrary/src/org/redot/library/lang
+END
+StringUtils.java
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/svn/yee/!svn/ver/42/server/Redot/LiveLibrary/src/org/redot/library/lang/StringUtils.java
+END
+ArrayUtils.java
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svn/yee/!svn/ver/12/server/Redot/LiveLibrary/src/org/redot/library/lang/ArrayUtils.java
+END
+PinyinUtils.java
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/svn/yee/!svn/ver/12/server/Redot/LiveLibrary/src/org/redot/library/lang/PinyinUtils.java
+END
+NumberUtils.java
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/svn/yee/!svn/ver/103/server/Redot/LiveLibrary/src/org/redot/library/lang/NumberUtils.java
+END
+DateUtils.java
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/svn/yee/!svn/ver/12/server/Redot/LiveLibrary/src/org/redot/library/lang/DateUtils.java
+END

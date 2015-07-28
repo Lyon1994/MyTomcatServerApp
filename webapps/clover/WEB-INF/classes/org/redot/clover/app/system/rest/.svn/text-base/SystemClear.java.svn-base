@@ -1,0 +1,23 @@
+package org.redot.clover.app.system.rest;
+
+import org.redot.clover.app.system.SystemAction;
+import org.redot.clover.core.data.DataPackage;
+import org.redot.clover.core.ext.BaseResource;
+import org.restlet.resource.Post;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 11-3-27
+ * Time: 下午5:35
+ * To change this template use File | Settings | File Templates.
+ */
+public class SystemClear extends BaseResource {
+    @Post("json")
+    public String doPost() {
+        DataPackage dp = new DataPackage();
+        SystemAction a = new SystemAction();
+        dp.setStatus(a.clear(form));
+        return dp.toJSON();
+    }
+}

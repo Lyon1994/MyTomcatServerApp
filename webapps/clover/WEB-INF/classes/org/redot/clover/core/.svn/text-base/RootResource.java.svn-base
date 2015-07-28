@@ -1,0 +1,19 @@
+package org.redot.clover.core;
+
+import org.restlet.resource.Get;
+import org.restlet.resource.ServerResource;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: CASH
+ * Date: 10-12-17
+ * Time: 下午1:48
+ * To change this template use File | Settings | File Templates.
+ */
+public class RootResource extends ServerResource{
+
+    @Get
+    public String res(){
+        return "Welcome to " + getApplication().getName() + "!";
+    }
+}

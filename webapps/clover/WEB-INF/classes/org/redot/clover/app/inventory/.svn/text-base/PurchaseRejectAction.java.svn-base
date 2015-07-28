@@ -1,0 +1,92 @@
+package org.redot.clover.app.inventory;
+
+import org.redot.clover.app.message.MessageManager;
+import org.redot.clover.core.CloverManager;
+import org.redot.clover.core.ext.BaseAction;
+import org.redot.library.db.IQuery;
+import org.redot.library.db.ITable;
+import org.redot.library.lang.DateUtils;
+import org.redot.library.lang.NumberUtils;
+import org.redot.library.lang.StringUtils;
+import org.restlet.data.Form;
+
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: yh_admin
+ * Date: 12-10-31
+ * Time: 上午10:06
+ * To change this template use File | Settings | File Templates.
+ */
+public class PurchaseRejectAction extends BaseAction {
+    
+    public  int  set(Form form)
+    {
+        if(!isLogin())
+        {
+            return CloverManager.CODE_FAILED;
+        }
+        String PO_CANCAL_MAKER = StringUtils.toString(getClient().getCookies().get("ACCOUNT_ID"));
+        Map data = form.getValuesMap();
+//        String PO_CANCAL_MAKER=StringUtils.toString(data.get("ACCOUNT_ID"));
+        String PO_CANCAL_ITEM_ID=StringUtils.toString(data.get("PO_CANCAL_ITEM_ID"));
+        String PO_CANCAL_S_ID=StringUtils.toString(data.get("PO_CANCAL_S_ID"));
+        Float  PO_CANCAL_ITEM_NUM= NumberUtils.toFloat(data.get("PO_CANCAL_ITEM_NUM"));
+        float   THEORY_SUM_STOCK=0;
+        IQuery query=getQuery();
+        String sql="SELECT A.STOCK_ITEM_ID,C.ITEM_NAME AS STOCK_ITEM_NAME ,B.UNIT_ID AS STOCK_UNIT_ID,B.UNIT_NAME AS STOCK_UNIT_NAME,SUM_PURCHASE_R(A.STOCK_ITEM_ID) AS STOCK_SUM_PURCHASE,SUM_SALE_R(A.STOCK_ITEM_ID) AS STOCK_SUM_SALE,SUM_LOSS_R(A.STOCK_ITEM_ID) AS STOCK_SUM_LOSS,SUM_USE_R(A.STOCK_ITEM_ID) AS STOCK_SUM_USE,SUM_CANCAL_R(A.STOCK_ITEM_ID) AS STOCK_SUM_CANCAL FROM X_STOCK A  " +
+                " LEFT JOIN X_ITEM C ON A.STOCK_ITEM_ID=C.ITEM_ID  " +
+                " LEFT JOIN X_UNIT B ON C.ITEM_UNIT_ID=B.UNIT_ID WHERE A.STOCK_ITEM_ID= " + PO_CANCAL_ITEM_ID;
+        List<Map> list2=query.doQuery(sql).tables();
+        for(Map data2 : list2){
+            System.out.println(sql);
+            String STOCK_ITEM_ID=StringUtils.toString(data2.get("STOCK_ITEM_ID") );
+            String STOCK_ITEM_NAME=StringUtils.toString(data2.get("STOCK_ITEM_NAME"));
+            String STOCK_UNIT_NAME=StringUtils.toString(data2.get("STOCK_UNIT_NAME"));
+            float STOCK_SUM_PURCHASE=NumberUtils.toFloat(data2.get("STOCK_SUM_PURCHASE"));
+            float STOCK_SUM_SALE=NumberUtils.toFloat(data2.get("STOCK_SUM_SALE"));
+            float STOCK_SUM_LOSS=NumberUtils.toFloat(data2.get("STOCK_SUM_LOSS"));
+            float STOCK_SUM_USE=NumberUtils.toFloat(data2.get("STOCK_SUM_USE")) ;
+            float STOCK_SUM_CANCAL=NumberUtils.toFloat(data2.get("STOCK_SUM_CANCAL"));
+            System.out.println("id"+STOCK_ITEM_ID);
+            System.out.println("名字"+STOCK_ITEM_NAME);
+            System.out.println("单位名称"+STOCK_UNIT_NAME);
+            System.out.println("累积采购"+STOCK_SUM_PURCHASE);
+            System.out.println("累积销售"+STOCK_SUM_SALE);
+            System.out.println("累积损耗"+STOCK_SUM_LOSS);
+            System.out.println("累积领料"+STOCK_SUM_USE);
+            System.out.println("累积退货"+STOCK_SUM_CANCAL);
+            THEORY_SUM_STOCK = STOCK_SUM_PURCHASE -STOCK_SUM_SALE - STOCK_SUM_LOSS - STOCK_SUM_USE-STOCK_SUM_CANCAL;
+            System.out.println("理论库存"+THEORY_SUM_STOCK);
+            data.put("THEORY_SUM_STOCK", NumberUtils.toDecimal(THEORY_SUM_STOCK, 2));
+        }
+        System.out.println(list2);
+        if(PO_CANCAL_ITEM_NUM>THEORY_SUM_STOCK)
+        {
+            return CloverManager.CODE_FAILED;
+        }
+        sql="SELECT A.PO_S_ID FROM X_PO A WHERE A.PO_ITEM_ID="+PO_CANCAL_ITEM_ID ;
+         String PO_S_ID=query.doQuery(sql).getValue() ;
+        System.out.println(PO_CANCAL_S_ID.equals( PO_S_ID));
+        if(PO_CANCAL_S_ID.equals( PO_S_ID))
+        {
+            ITable T = getTable("X_PO_CANCAL").clearData();
+            int result = 0;
+            String  PO_CANCAL_ID = String.valueOf(T.getMaxID("PO_CANCAL_ID"));
+            data.put("PO_CANCAL_ID", PO_CANCAL_ID);
+            data.put("PO_CANCAL_DT", DateUtils.getNow());
+            data.put("PO_CANCAL_MAKER",PO_CANCAL_MAKER) ;
+            result = 0;
+            result=T.data(data).create();
+            if(result < 0){
+                return CloverManager.CODE_FAILED;
+            }
+            MessageManager.getInstance().setVersion(MessageManager.MSG_VER_CLIENT);
+            return CloverManager.CODE_SUCCESS;
+        }
+        return CloverManager.CODE_FAILED;
+    }
+}

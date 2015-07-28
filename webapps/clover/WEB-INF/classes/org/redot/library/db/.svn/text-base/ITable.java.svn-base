@@ -1,0 +1,576 @@
+package org.redot.library.db;
+
+import com.sun.org.apache.bcel.internal.generic.NEW;
+import org.apache.log4j.Logger;
+import org.redot.library.lang.ArrayUtils;
+import org.redot.library.lang.NumberUtils;
+import org.redot.library.lang.StringUtils;
+
+import java.awt.image.ImageFilter;
+import java.sql.SQLException;
+import java.util.*;
+
+/**
+ * Copyright By Redot.
+ * User: CASH
+ * Date: 2009-10-14
+ * Time: 14:43:01
+ */
+public class ITable {
+
+    Logger logger = Logger.getLogger(this.getClass());
+
+    private IDataBase db = null;
+
+    private String name = null;
+
+    private String aliasName = null;
+
+    public static final String aliasNames = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+    private Hashtable<String, IColumn> columns = new Hashtable<String, IColumn>();
+
+    private List<IColumn> selectColumns = new ArrayList<IColumn>();
+    private Map data = new Hashtable();
+
+
+    private List<IClause> clauses = new ArrayList<IClause>();
+    private List<ITableClause> tableClauses = new ArrayList<ITableClause>();
+
+    private String orderType = "";
+
+    private List<IColumn> orderColumns = new ArrayList<IColumn>();
+    private List<IColumn> groupColumns = new ArrayList<IColumn>();
+
+    private boolean autoFree = true;
+
+    //private IQuery query;
+
+
+
+    public ITable(IDataBase db, String name) {
+        this.db = db;
+        this.name = name.toUpperCase();
+        //this.aliasName = this.name;
+        initColumns();
+    }
+
+    public ITable() {
+        //this.aliasName = this.name;
+    }
+
+
+    public IQuery getQuery(){
+//        if(this.query == null){
+//            this.query = this.db.createQuery();
+//        }
+//        if(this.query.isClosed()){
+//           this.query = this.db.createQuery();
+//        }
+//        return this.query;
+        return this.db.createQuery();
+    }
+
+     public void initColumns(){
+         IQuery query = getQuery();
+        query.doQuery("SELECT * FROM " + this.name + " WHERE 1=2");
+
+        if(query.rsmd() == null){
+            //System.out.println("1111111111111111");
+            return;
+        }
+        try {
+             for(int i=0;i<query.rsmd().getColumnCount();i++){
+                String columnName = query.rsmd().getColumnName(i+1).toUpperCase();
+                IColumn column = new IColumn(columnName, this);
+
+                column.setType(query.rsmd().getColumnTypeName(i + 1).toUpperCase());
+                 //System.out.println(column.getType());
+                getColumns().put(columnName, column);
+            }
+            query.free();
+        } catch (SQLException e) {
+            query.free();
+            e.printStackTrace();
+        }
+     }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public void setColumns(Hashtable<String, IColumn> columns) {
+        this.columns = columns;
+    }
+
+    public void setDb(IDataBase db) {
+        this.db = db;
+    }
+
+    public IDataBase getDb() {
+        return db;
+    }
+
+    public static String getAliasNames() {
+        return aliasNames;
+    }
+
+
+
+    public ITable clone(){
+        ITable table = new ITable();
+        table.setName(getName());
+        table.setDb(getDb());
+        Set<String> columns = getColumns().keySet();
+        for(String column : columns){
+            IColumn IC = new IColumn(column, table);
+            IC.setType(getColumns().get(column).getType());
+            table.getColumns().put(column, IC);
+        }
+        //table.setColumns(getColumns());
+        return table;
+    }
+
+    public ITable clear(){
+        getSelectColumns().clear();
+        getClauses().clear();
+        getTableClauses().clear();
+        getOrderColumns().clear();
+        getGroupColumns().clear();
+        getData().clear();
+        setAliasName("");
+        //getColumns().clear();
+        return this;
+    }
+
+    public ITable clearData(){
+        getData().clear();
+        return this;
+    }
+
+    public String getAliasName() {
+        return aliasName;
+    }
+
+    public void setAliasName(String aliasName) {
+        this.aliasName = aliasName;
+    }
+
+    public String alias(){
+        return this.getName() + " " + this.getAliasName();
+    }
+
+    public IRow getRow(){
+
+        return null;
+    }
+
+    public IRow[] getRows(){
+
+        return null;
+    }
+
+    public String toString(){
+        return this.name;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    //public String columnNames(){
+     //   return ArrayUtils.join(",", getColumns().keySet().toArray());
+    //}
+
+    public String[] columnNames(){
+        return getColumns().keySet().toArray(new String[0]);
+    }
+
+    public Hashtable<String, IColumn> getColumns() {
+        return columns;
+    }
+
+    public ITable select(IColumn...columns){
+        setSelectColumns(ArrayUtils.asList(columns));
+        return this;
+    }
+
+    public synchronized  ITable data(Map data){
+        setData(data);
+        return this;
+    }
+
+    public ITable where(IClause...clauses){
+        setClauses(ArrayUtils.asList(clauses));
+        return this;
+    }
+
+    public void setAlias(int index){
+        if(index > aliasNames.length()){
+            return;
+        }
+        setAliasName(aliasNames.substring(index-1, index));
+    }
+
+    public ITable query(){
+        IQuery query = getQuery();
+        query.doQuery(sqlSelect());
+        return this;
+    }
+
+    public synchronized int create(){
+        IQuery query = getQuery();
+        int result = query.doExec(sqlInsert());
+//        if(isAutoFree()){
+            query.free();
+//        }
+        return result;
+    }
+
+    public synchronized int update(){
+        IQuery query = getQuery();
+        int result =query.doExec(sqlUpdate());
+//        if(isAutoFree()){
+            query.free();
+//        }
+        return result;
+    }
+
+    public synchronized int delete(){
+        IQuery query = getQuery();
+        int result =query.doExec(sqlDelete());
+//        if(isAutoFree()){
+            query.free();
+//        }
+        return result;
+    }
+
+    public int rowCount(){
+        IQuery query = getQuery();
+        int count = query.rowCount(sqlSelect());
+        if(isAutoFree()){
+           query.free();
+        }
+        return count;
+    }
+
+
+    public synchronized long getMaxID(String columnName){
+        IQuery query = getQuery();
+
+        synchronized (getDb().getMaxID()){
+            if(getDb().getMaxID().get(columnName) == null){
+            getDb().getMaxID().put(columnName, query.getMaxID(this.name, columnName));
+            if(isAutoFree()){
+                query.free();
+            }
+            }
+            long id = getDb().getMaxID().get(columnName) + 1;
+            getDb().getMaxID().remove(columnName);
+            getDb().getMaxID().put(columnName, id);
+            return id;
+        }
+
+
+
+
+
+//        int maxid = getQuery().getMaxID(this.name, columnName);
+//        if(isAutoFree()){
+//            getQuery().free();
+//        }
+//        return maxid;
+    }
+
+//    public List<String[]> list(int...limit){
+//        List<String[]> list = getQuery().list(limit);
+//        if(isAutoFree()){
+//            getQuery().free();
+//        }
+//        return list;
+//    }
+
+//    public List<Map> tables(int...limit){
+//        List<Map> list = getQuery().tables(limit);
+//        if(isAutoFree()){
+//            getQuery().free();
+//        }
+//        return list;
+//    }
+
+//    public List<IRow> rows(int...limit){
+//        List<IRow> rows = getQuery().rows(limit);
+//        if(isAutoFree()){
+//            getQuery().free();
+//        }
+//        return rows;
+//    }
+
+//    public String[] get() {
+//        String[] arr = getQuery().get();
+//        if(isAutoFree()){
+//            getQuery().free();
+//        }
+//        return arr;
+//    }
+//    public Map table() {
+//        Map map = getQuery().table();
+//        if(isAutoFree()){
+//            getQuery().free();
+//        }
+//        return map;
+//    }
+
+    public String sqlSelect(){
+        setAlias(1);
+        String sql = "SELECT ";
+        if(getSelectColumns().size() > 0){
+            for(int i=0;i<getSelectColumns().size();i++){
+                if(i>0){
+                    sql += ", ";
+                }
+                sql += getSelectColumns().get(i).alias();
+            }
+        }
+        else{
+            sql += "*";
+        }
+        sql += " FROM " + alias();
+        if(getTableClauses().size() > 0){
+            for(int i=0;i<getTableClauses().size();i++){
+                ITableClause tc = getTableClauses().get(i);
+                sql += " LEFT JOIN " + tc.getT().alias();
+                sql += " ON " + tc.getC1().alias() + " = " + tc.getC2().alias();
+            }
+        }
+        sql += sqlWhere();
+        sql += sqlGroup();
+        sql += sqlOrder();
+        System.out.println(sql);
+        return sql;
+    }
+
+    public void processData(){
+//        Map temp = new Hashtable();
+//        Set<String> set = getData().keySet();
+//        System.out.println("111111111111111");
+//        System.out.println(set);
+//        for(String key : set){
+//            temp.put(key.toUpperCase(), getData().get(key));
+//        }
+//        setData(temp);
+    }
+
+    public String sqlUpdate(){
+        setAliasName("");
+        processData();
+        String sql = "UPDATE " + this.name;
+
+        sql += " SET ";
+        String[] columns = columnNames();
+        int x = 0;
+        for(int i=0;i<columns.length; i++){
+            if(getData().containsKey(columns[i])){
+                if(x > 0){
+                    sql += ", ";
+                }
+                String d = StringUtils.toString(getData().get(columns[i]));
+                //System.out.println(getColumns().get(columns[i]).getType());
+                if(IClause.COLUMN_TYPE_NUMBER.indexOf(getColumns().get(columns[i]).getType()) > -1){
+                    sql += columns[i] + " = " + (d.length() == 0 ? "NULL":d);
+                }
+                else{
+                    sql += columns[i] + " = '" + d + "'";
+                }
+                x++;
+            }
+        }
+        sql += sqlWhere();
+        System.out.println(sql);
+        return sql;
+    }
+    public String sqlDelete(){
+        setAliasName("");
+        processData();
+        String sql = "DELETE FROM " + this.name;
+        sql += sqlWhere();
+        System.out.println(sql);
+        return sql;
+    }
+
+    public String sqlInsert(){
+        setAliasName("");
+        processData();
+        String sql = "INSERT INTO " + this.name;
+        String[] columns = columnNames();
+        String sql1 = "";
+        String sql2 = "";
+        int x = 0;
+        for(int i=0;i<columns.length; i++){
+            if(getData().containsKey(columns[i])){
+                if(x > 0){
+                    sql1 += ", ";
+                    sql2 += ", ";
+                }
+                sql1 +=  columns[i];
+                String d = StringUtils.toString(getData().get(columns[i]));
+                if(IClause.COLUMN_TYPE_NUMBER.indexOf(getColumns().get(columns[i]).getType()) > -1){
+                    sql2 += (d.length() == 0 ? "NULL":d);
+                }
+                else{
+                    sql2 += "'" + d + "'";
+                }
+                x++;
+            }
+        }
+        sql += " ( " + sql1 + " ) VALUES ( " + sql2 + " )";
+        System.out.println(sql);
+        return sql;
+    }
+
+    public String sqlWhere(){
+        String sql = "";
+        if(getClauses().size() > 0){
+            sql += " WHERE ";
+            for(int i=0;i<getClauses().size();i++){
+                if(i>0){
+                    sql += " AND ";
+                }
+                if(getClauses().get(i).getTails().size() > 0 && getClauses().size() > 1){
+                    sql += "( ";
+                    sql += getClauses().get(i).sql();
+                    sql += " )";
+                }
+                else{
+                    sql += getClauses().get(i).sql();
+                }
+            }
+        }
+        return sql;
+    }
+
+    public String sqlGroup(){
+        String sql = "";
+        if(getGroupColumns().size() > 0){
+            sql += " GROUP BY ";
+            for(int i=0;i<getGroupColumns().size();i++){
+                if(i>0){
+                    sql += ", ";
+                }
+                sql += getGroupColumns().get(i).alias();
+            }
+        }
+        return sql;
+    }
+
+    public String sqlOrder(){
+        String sql = "";
+         if(getOrderColumns().size() > 0){
+            sql += " ORDER BY ";
+            for(int i=0;i<getOrderColumns().size();i++){
+                if(i>0){
+                    sql += ", ";
+                }
+                sql += getOrderColumns().get(i).alias();
+            }
+            sql += " " + getOrderType();
+        }
+        return sql;
+    }
+
+    public ITable order(String type, IColumn...columns){
+        setOrderColumns(ArrayUtils.asList(columns));
+        setOrderType(type);
+        return this;
+    }
+
+    public ITable group( IColumn...columns){
+        setGroupColumns(ArrayUtils.asList(columns));
+        return this;
+    }
+
+    public ITable join(ITable t, IColumn c1, IColumn c2){
+        ITableClause tableClause = new ITableClause(t, c1, c2);
+        for(int i=0;i<getTableClauses().size();i++){
+            if(getTableClauses().get(i).getName().equals(tableClause.getName())){
+                return this;
+            }
+        }
+        getTableClauses().add(tableClause);
+        t.setAlias(getTableClauses().size() + 1);
+        return this;
+    }
+
+    public List<ITableClause> getTableClauses() {
+        return tableClauses;
+    }
+
+    public void setTableClauses(List<ITableClause> tableClauses) {
+        this.tableClauses = tableClauses;
+    }
+
+    public List<IColumn> getGroupColumns() {
+        return groupColumns;
+    }
+
+    public void setGroupColumns(List<IColumn> groupColumns) {
+        this.groupColumns = groupColumns;
+    }
+
+    public List<IColumn> getOrderColumns() {
+        return orderColumns;
+    }
+
+    public void setOrderColumns(List<IColumn> orderColumns) {
+        this.orderColumns = orderColumns;
+    }
+
+    public String getOrderType() {
+        return orderType;
+    }
+
+    public void setOrderType(String orderType) {
+        this.orderType = orderType;
+    }
+
+    public IColumn column(String name){
+        name = name.toUpperCase();
+        IColumn column = getColumns().get(name);
+        if(column == null){
+            column = new IColumn(name, this);
+            getColumns().put(name, column);
+        }
+        return column;
+    }
+
+    public List<IColumn> getSelectColumns() {
+        return selectColumns;
+    }
+
+    public void setSelectColumns(List<IColumn> selectColumns) {
+        this.selectColumns = selectColumns;
+    }
+
+    public List<IClause> getClauses() {
+        return clauses;
+    }
+    public void setClauses(List<IClause> clauses) {
+        this.clauses = clauses;
+    }
+
+    public Map getData() {
+        return data;
+    }
+
+    public void setData(Map data) {
+        this.data = data;
+    }
+
+    public boolean isAutoFree() {
+        return autoFree;
+    }
+
+    public void setAutoFree(boolean autoFree) {
+        this.autoFree = autoFree;
+    }
+}

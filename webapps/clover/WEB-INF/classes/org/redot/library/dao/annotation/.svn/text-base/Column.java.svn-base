@@ -1,0 +1,22 @@
+package org.redot.library.dao.annotation;
+
+import org.redot.library.dao.ColumnType;
+
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+import java.lang.annotation.ElementType;
+
+/**
+ * Copyright By Redot.
+ * User: CASH
+ * Date: 2009-10-14
+ * Time: 13:49:14
+ */
+@Retention(RetentionPolicy.RUNTIME)
+@Target(ElementType.FIELD)
+public @interface Column {
+    String name() default "";
+    ColumnType type() default ColumnType.VARCHAR;
+    int length() default -1;
+}

@@ -1,0 +1,247 @@
+package org.redot.clover.app.favorable;
+
+import org.redot.clover.app.message.MessageManager;
+import org.redot.clover.core.CloverManager;
+import org.redot.clover.core.ext.BaseAction;
+import org.redot.library.db.IQuery;
+import org.redot.library.db.ITable;
+import org.redot.library.lang.DateUtils;
+import org.redot.library.lang.StringUtils;
+import org.restlet.data.Form;
+
+import java.util.Hashtable;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 11-3-28
+ * Time: 下午8:46
+ * To change this template use File | Settings | File Templates.
+ */
+public class FavorableAction extends BaseAction {
+
+    public List<Map> list() {
+        String sql = "SELECT A.*, B.STATUS_NAME AS CASE_STATUS_NAME, C.CASE_TYPE_NAME FROM X_FAVORABLE_CASE A " +
+                "LEFT JOIN X_STATUS B ON A.CASE_STATUS = B.STATUS " +
+                "LEFT JOIN X_FAVORABLE_CASE_TYPE C ON A.CASE_TYPE = C.CASE_TYPE " +
+                "ORDER BY CASE_ID";
+        IQuery query = getQuery();
+        List<Map> list = query.doQuery(sql).tables();
+        for(Map m : list){
+            String CASE_WEEK = StringUtils.toString(m.get("CASE_WEEK"));
+            String CASE_WEEK_NAME = "";
+            String CASE_MT = StringUtils.toString(m.get("CASE_MT"));
+            String CASE_MT_NAME = "";
+            if(CASE_WEEK.length() > 0){
+                sql = "SELECT WEEK_NAME FROM X_WEEK WHERE WEEK IN ("+CASE_WEEK+")";
+                CASE_WEEK_NAME = query.doQuery(sql).getValueString();
+            }
+            if(CASE_MT.length() > 0){
+                sql = "SELECT MT_NAME FROM X_MT WHERE MT_ID IN ("+CASE_MT+")";
+                CASE_MT_NAME = query.doQuery(sql).getValueString();
+            }
+            m.put("CASE_WEEK_NAME", CASE_WEEK_NAME);
+            m.put("CASE_MT_NAME", CASE_MT_NAME);
+            String CASE_ID = StringUtils.toString(m.get("CASE_ID"));
+            String CASE_TYPE = StringUtils.toString(m.get("CASE_TYPE"));
+            if(CASE_TYPE.equals("1")){
+                sql = "SELECT CASE_DISCOUNT_PS, CASE_DISCOUNT FROM X_FAVORABLE_CASE_DISCOUNT WHERE CASE_ID = " + CASE_ID;
+                Map mx = query.doQuery(sql).table();
+                if(mx != null){
+                    m.putAll(mx);
+                }
+            }
+            else if(CASE_TYPE.equals("2")){
+                sql = "SELECT CASE_SO_P_ID, CASE_SO_P_PRICE FROM X_FAVORABLE_CASE_SO WHERE CASE_ID = " + CASE_ID;
+                List<Map> listSO = query.doQuery(sql).tables();
+                m.put("CASE_SO", listSO);
+            }
+        }
+        query.free();
+        return list;
+    }
+
+    public List<Map> available(){
+        String NOW = DateUtils.getNowDate();
+        String sql = "SELECT A.*, B.STATUS_NAME AS CASE_STATUS_NAME, C.CASE_TYPE_NAME FROM X_FAVORABLE_CASE A " +
+                "LEFT JOIN X_STATUS B ON A.CASE_STATUS = B.STATUS " +
+                "LEFT JOIN X_FAVORABLE_CASE_TYPE C ON A.CASE_TYPE = C.CASE_TYPE " +
+                "WHERE A.CASE_DATE_S <= '"+NOW+"' AND A.CASE_DATE_E >= '"+NOW+"' AND A.CASE_STATUS = 1 " +
+                "ORDER BY A.CASE_ID";
+//        System.out.println(sql);
+        IQuery query = getQuery();
+        List<Map> list = query.doQuery(sql).tables();
+        for(Map m : list){
+            String CASE_ID = StringUtils.toString(m.get("CASE_ID"));
+            String CASE_TYPE = StringUtils.toString(m.get("CASE_TYPE"));
+            if(CASE_TYPE.equals("1")){
+                sql = "SELECT CASE_DISCOUNT_PS, CASE_DISCOUNT FROM X_FAVORABLE_CASE_DISCOUNT WHERE CASE_ID = " + CASE_ID;
+                Map mx = query.doQuery(sql).table();
+                if(mx != null){
+                    m.putAll(mx);
+                }
+            }
+            else if(CASE_TYPE.equals("2")){
+                sql = "SELECT CASE_SO_P_ID, CASE_SO_P_PRICE FROM X_FAVORABLE_CASE_SO WHERE CASE_ID = " + CASE_ID;
+                List<Map> listSO = query.doQuery(sql).tables();
+                m.put("CASE_SO", listSO);
+            }
+        }
+        query.free();
+        return list;
+    }
+
+    public List<Map> query() {
+        String sql = "SELECT A.CASE_ID, A.CASE_NAME, A.CASE_DATE_S, A.CASE_DATE_E, B.CASE_DISCOUNT, B.CASE_DISCOUNT_PS " +
+                "FROM X_FAVORABLE_CASE A " +
+                "LEFT JOIN X_FAVORABLE_CASE_DISCOUNT B ON A.CASE_ID = B.CASE_ID " +
+                "ORDER BY A.CASE_ID";
+        IQuery query = getQuery();
+        List<Map> map = query.doQuery(sql).tables();
+        query.free();
+        return map;
+    }
+
+    public List<Map> selectCaseType(){
+        String sql = "SELECT * FROM X_FAVORABLE_CASE_TYPE ORDER BY CASE_TYPE";
+        IQuery query = getQuery();
+        List<Map> list = query.doQuery(sql).tables();
+        query.free();
+        return list;
+    }
+
+    public Map get(String CASE_ID){
+        if(CASE_ID == null || CASE_ID.equals("")){
+            return null;
+        }
+        Map data = new Hashtable();
+        IQuery query = getQuery();
+        String sql = "SELECT * FROM X_CLIENT_TYPE ORDER BY CLIENT_TYPE_SORT";
+        List<Map> clientList = query.doQuery(sql).tables();
+        data.put("CASE_CLIENT_TYPES", clientList);
+        sql = "SELECT * FROM X_DESK_AREA WHERE DESK_AREA_PARENT = 0 ORDER BY DESK_AREA_SORT";
+        List<Map> areaList = query.doQuery(sql).tables();
+        data.put("CASE_DESK_AREAS", areaList);
+
+        sql = "SELECT A.*, B.CASE_TYPE_NAME " +
+                "FROM X_FAVORABLE_CASE A " +
+                "LEFT JOIN X_FAVORABLE_CASE_TYPE B ON A.CASE_TYPE = B.CASE_TYPE " +
+                "WHERE A.CASE_ID = "+CASE_ID;
+
+        Map m = query.doQuery(sql).table();
+        if(m == null){
+            query.free();
+            return data;
+        }
+        data.putAll(m);
+        String CASE_TYPE = StringUtils.toString(m.get("CASE_TYPE"));
+        if(CASE_TYPE.equals("1")){
+            sql = "SELECT A.CASE_DISCOUNT_PS, A.CASE_DISCOUNT FROM X_FAVORABLE_CASE_DISCOUNT A WHERE A.CASE_ID = " + CASE_ID;
+            String[] CASE_DISCOUNT_ARR = query.doQuery(sql).get();
+            String CASE_DISCOUNT_PS_NAME = "";
+            if(CASE_DISCOUNT_ARR != null && CASE_DISCOUNT_ARR.length > 0){
+                if(CASE_DISCOUNT_ARR[0].length() > 0){
+                    sql = "SELECT P_NAME FROM X_P WHERE P_ID IN ("+CASE_DISCOUNT_ARR[0]+")";
+                    CASE_DISCOUNT_PS_NAME = query.doQuery(sql).getValueString();
+                }
+                data.put("CASE_DISCOUNT_PS", CASE_DISCOUNT_ARR[0]);
+                data.put("CASE_DISCOUNT", CASE_DISCOUNT_ARR[1]);
+                data.put("CASE_DISCOUNT_PS_NAME", CASE_DISCOUNT_PS_NAME);
+            }
+
+        }
+        else if(CASE_TYPE.equals("2")){
+            sql = "SELECT A.*,B.P_NAME,B.P_ID,B.P_PRICE FROM X_FAVORABLE_CASE_SO A LEFT JOIN X_P B ON A.CASE_SO_P_ID = B.P_ID WHERE A.CASE_ID = " + CASE_ID;
+            List<Map> productList = query.doQuery(sql).tables();
+            data.put("CASE_SO_P", productList);
+        }
+        query.free();
+        return data;
+    }
+
+    public int set(Form form){
+        Map data = form.getValuesMap();
+        System.out.println(form.getNames());
+        System.out.println(data.keySet());
+        String CASE_ID = StringUtils.toString(data.get("CASE_ID"));
+        String CASE_TYPE = StringUtils.toString(data.get("CASE_TYPE"));
+
+        ITable T = getTable("X_FAVORABLE_CASE").clearData();
+        int result = 0;
+        boolean isNew = true;
+
+        data.put("CASE_MT", form.getValues("CASE_MT"));
+        data.put("CASE_WEEK", form.getValues("CASE_WEEK"));
+        data.put("CASE_CLIENT_TYPE", form.getValues("CASE_CLIENT_TYPE"));
+        data.put("CASE_DINE_TYPE", form.getValues("CASE_DINE_TYPE"));
+        data.put("CASE_DESK_TYPE", form.getValues("CASE_DESK_TYPE"));
+        data.put("CASE_DESK_AREA", form.getValues("CASE_DESK_AREA"));
+        if(CASE_ID.length() == 0){
+            CASE_ID = String.valueOf(T.getMaxID("CASE_ID"));
+            data.put("CASE_ID", CASE_ID);
+            result = T.data(data).create();
+        }
+        else{
+            isNew = false;
+            result = T.data(data).where(T.column("CASE_ID").eq(CASE_ID)).update();
+        }
+        if(result < 0){
+            return CloverManager.CODE_FAILED;
+        }
+        if(CASE_TYPE.equals("1")){
+            ITable D = getTable("X_FAVORABLE_CASE_DISCOUNT").clearData();
+            D.where(D.column("CASE_ID").eq(CASE_ID)).delete();
+            D.data(data).create();
+        }
+        else if(CASE_TYPE.equals("2")){
+            ITable SO = getTable("X_FAVORABLE_CASE_SO").clearData();
+            SO.where(SO.column("CASE_ID").eq(CASE_ID)).delete();
+            String[] CASE_SO_PS = StringUtils.split(StringUtils.toString(data.get("CASE_SO_PS")), ",");
+            for(String CASE_SO_P_ID : CASE_SO_PS){
+                if(CASE_SO_P_ID.length() == 0){
+                    continue;
+                }
+                String CASE_SO_P_PRICE = StringUtils.toString(data.get("CASE_SO_P_PRICE_" + CASE_SO_P_ID));
+                if(CASE_SO_P_PRICE.length() == 0){
+                    continue;
+                }
+                Map m = new Hashtable();
+                m.put("CASE_ID", CASE_ID);
+                m.put("CASE_SO_P_ID", CASE_SO_P_ID);
+                m.put("CASE_SO_P_PRICE", CASE_SO_P_PRICE);
+                SO.data(m).create();
+                SO.clearData();
+            }
+        }
+        MessageManager.getInstance().setVersion(MessageManager.MSG_VER_FAVORABLE_CASE);
+        return CloverManager.CODE_SUCCESS;
+    }
+
+    public int delete(Form form) {
+        Map data = form.getValuesMap();
+        String CASE_ID = StringUtils.toString(data.get("CASE_ID"));
+        if(CASE_ID.length() == 0){
+            return CloverManager.CODE_FAILED;
+        }
+        IQuery query = getQuery();
+
+        String sql = "DELETE FROM X_FAVORABLE_CASE WHERE CASE_ID = " + CASE_ID;
+        int result = query.doExec(sql);
+        if(result < 0){
+            query.free();
+            return CloverManager.CODE_FAILED;
+        }
+        sql = "DELETE FROM X_FAVORABLE_CASE_DISCOUNT WHERE CASE_ID = " + CASE_ID;
+        result = query.doExec(sql);
+        sql = "DELETE FROM X_FAVORABLE_CASE_SO WHERE CASE_ID = " + CASE_ID;
+        result = query.doExec(sql);
+        query.free();
+        if(result < 0){
+            return CloverManager.CODE_FAILED;
+        }
+        MessageManager.getInstance().setVersion(MessageManager.MSG_VER_FAVORABLE_CASE);
+        return CloverManager.CODE_SUCCESS;
+    }
+}

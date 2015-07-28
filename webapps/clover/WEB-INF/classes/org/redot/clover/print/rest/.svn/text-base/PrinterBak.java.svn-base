@@ -1,0 +1,25 @@
+package org.redot.clover.print.rest;
+
+import org.redot.clover.core.data.DataPackage;
+import org.redot.clover.core.ext.BaseResource;
+import org.redot.clover.print.PrintCaseAction;
+import org.redot.clover.print.PrinterBakAction;
+import org.restlet.resource.Post;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: yh_admin
+ * Date: 12-12-5
+ * Time: 下午1:52
+ * To change this template use File | Settings | File Templates.
+ */
+public class PrinterBak extends BaseResource {
+    @Post("json")
+    public String doPost() {
+        DataPackage dp = new DataPackage();
+        PrinterBakAction a = new PrinterBakAction();
+        dp.setStatus(a.updatebak(form));
+        return dp.toJSON();
+    }
+
+}

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="src" path="src"/>
+	<classpathentry kind="src" path="test"/>
+	<classpathentry kind="src" path="lib"/>
+	<classpathentry kind="src" path="conf"/>
+	<classpathentry kind="src" path="temp"/>
+	<classpathentry kind="src" path="work"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.8"/>
+	<classpathentry kind="src" path="webapps"/>
+	<classpathentry kind="lib" path="lib/ant/ant.jar"/>
+	<classpathentry kind="lib" path="lib/wsdl/javax.wsdl_1.6.2.v201012040545.jar"/>
+	<classpathentry kind="lib" path="lib/jdt/org.eclipse.jdt.core_3.10.2.v20150120-1634.jar"/>
+	<classpathentry kind="lib" path="lib/rpc/jaxrpc.jar"/>
+	<classpathentry kind="output" path="bin"/>
+</classpath>

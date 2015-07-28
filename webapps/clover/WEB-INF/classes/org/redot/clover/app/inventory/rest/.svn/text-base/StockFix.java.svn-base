@@ -1,0 +1,26 @@
+package org.redot.clover.app.inventory.rest;
+
+import org.redot.clover.app.inventory.StockAction;
+import org.redot.clover.core.data.DataPackage;
+import org.redot.clover.core.ext.BaseResource;
+import org.restlet.resource.Post;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 11-3-27
+ * Time: 下午5:35
+ * To change this template use File | Settings | File Templates.
+ */
+public class StockFix extends BaseResource {
+
+
+    @Post("json")
+    public String doPost() {
+        DataPackage dp = new DataPackage();
+        StockAction a = new StockAction();
+        a.setClient(client);
+        dp.setStatus(a.fix(form));
+        return dp.toJSON();
+    }
+}

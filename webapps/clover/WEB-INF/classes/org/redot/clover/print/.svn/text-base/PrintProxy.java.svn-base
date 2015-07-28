@@ -1,0 +1,92 @@
+package org.redot.clover.print;
+
+import java.util.HashMap;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 11-8-27
+ * Time: 下午10:16
+ * To change this template use File | Settings | File Templates.
+ */
+public class PrintProxy extends Thread{
+    private  Printer printer;
+    private  HashMap<String, String[]> data = null;
+    private String template;
+    private int num;
+    private boolean moneyBox;
+    private int status = 0;
+    private long startMSEL = 0;
+
+    public long getStartMSEL() {
+        return startMSEL;
+    }
+
+    public void setStartMSEL(long startMSEL) {
+        this.startMSEL = startMSEL;
+    }
+
+    public int getStatus() {
+        return status;
+    }
+
+    public long getRunningInterval(){
+        return System.currentTimeMillis() - getStartMSEL();
+    }
+
+    public void setStatus(int status) {
+        this.status = status;
+    }
+
+    public PrintProxy(Printer printer, HashMap<String, String[]> data, String template, int num, boolean moneyBox) {
+        this.printer = printer;
+        this.data = data;
+        this.template = template;
+        this.num = num;
+        this.moneyBox = moneyBox;
+    }
+
+    public Printer getPrinter() {
+        return printer;
+    }
+
+    public HashMap<String, String[]> getData() {
+        return data;
+    }
+
+    public String getTemplate() {
+        return template;
+    }
+
+    public int getNum() {
+        return num;
+    }
+
+    public boolean isMoneyBox() {
+        return moneyBox;
+    }
+
+    public int doPrint(){
+        return PrintService.doPrint(printer, data, template, num, moneyBox);
+    }
+
+    @Override
+    public void run() {
+        setStartMSEL(System.currentTimeMillis());
+        int x = doPrint();
+        try {
+            sleep(2000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+        }
+        setStatus(x);
+//        if(x == 0){
+//            return;
+//        }
+        try {
+            this.finalize();
+        } catch (Throwable throwable) {
+            throwable.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+        }
+    }
+}

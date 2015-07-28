@@ -1,0 +1,35 @@
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/yee/!svn/ver/131/server/Redot/CloverServer/src/org/redot/clover/app/crm
+END
+ClientTypeAction.java
+K 25
+svn:wc:ra_dav:version-url
+V 97
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/crm/ClientTypeAction.java
+END
+ClientPasswordCheckAction.java
+K 25
+svn:wc:ra_dav:version-url
+V 106
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/crm/ClientPasswordCheckAction.java
+END
+ClientChargeAction.java
+K 25
+svn:wc:ra_dav:version-url
+V 100
+/svn/yee/!svn/ver/131/server/Redot/CloverServer/src/org/redot/clover/app/crm/ClientChargeAction.java
+END
+ClientConsumptionSelectAction.java
+K 25
+svn:wc:ra_dav:version-url
+V 110
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/crm/ClientConsumptionSelectAction.java
+END
+ClientAction.java
+K 25
+svn:wc:ra_dav:version-url
+V 93
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/crm/ClientAction.java
+END

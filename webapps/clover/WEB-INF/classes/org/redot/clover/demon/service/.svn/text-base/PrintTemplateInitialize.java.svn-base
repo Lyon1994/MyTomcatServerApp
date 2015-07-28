@@ -1,0 +1,39 @@
+package org.redot.clover.demon.service;
+
+import org.apache.log4j.Logger;
+import org.redot.clover.demon.Demon;
+import org.redot.clover.print.PrintJob;
+import org.redot.clover.print.PrintManager;
+import org.redot.clover.print.template.PrintTemplateManager;
+
+import java.util.List;
+import java.util.Map;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 11-4-7
+ * Time: 上午11:01
+ * To change this template use File | Settings | File Templates.
+ */
+public class PrintTemplateInitialize extends Demon{
+
+    Logger logger = Logger.getLogger(this.getClass());
+
+    public PrintTemplateInitialize(String name) {
+        super(name);
+        setRepeat(false);
+    }
+
+    @Override
+    public void exec() {
+        PrintTemplateManager.getInstance();
+        PrintManager.getInstance();
+    }
+
+    @Override
+    public void destroy() {
+        super.destroy();
+        PrintManager.getInstance().destroy();
+    }
+}

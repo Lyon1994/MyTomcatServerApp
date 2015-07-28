@@ -1,0 +1,25 @@
+package org.redot.clover.app.order.rest;
+
+import org.redot.clover.app.order.OrderBillAction;
+import org.redot.clover.core.data.DataPackage;
+import org.redot.clover.core.ext.BaseResource;
+import org.restlet.resource.Post;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 10-12-21
+ * Time: 上午10:43
+ * To change this template use File | Settings | File Templates.
+ */
+public class OrderBillDelete extends BaseResource {
+
+    @Post("json")
+    public String doPost(){
+        DataPackage dp = new DataPackage();
+        OrderBillAction a = new OrderBillAction();
+        a.setClient(client);
+        dp.setStatus(a.delete(form));
+        return dp.toJSON();
+    }
+}

@@ -1,0 +1,40 @@
+/**
+ * Copyright By Redot.
+ * User: CASH
+ * Date: 2009-10-19
+ * Time: 10:22:50
+ */
+package org.redot.library.script;
+
+import java.util.LinkedHashMap;
+import java.util.Map;
+
+public class ScriptFactory {
+    private static ScriptFactory instance = new ScriptFactory();
+
+    private LinkedHashMap<String, ScriptCache> scriptMap;
+
+    public static final int MAX_SCRIPT_CACHE = 10;
+
+    public static ScriptFactory getInstance() {
+        return instance;
+    }
+
+    private ScriptFactory() {
+        scriptMap = new LinkedHashMap<String, ScriptCache>(
+            MAX_SCRIPT_CACHE, 1, false) {
+            protected boolean removeEldestEntry(Map.Entry eldest) {
+                return size() > MAX_SCRIPT_CACHE;
+            }
+        };
+    }
+
+    public synchronized ScriptCache get(String key){
+        return scriptMap.get(key);
+    }
+
+    public ScriptCache add(String key, ScriptCache scriptCache){
+        scriptMap.put(key, scriptCache);
+        return scriptCache;
+    }
+}

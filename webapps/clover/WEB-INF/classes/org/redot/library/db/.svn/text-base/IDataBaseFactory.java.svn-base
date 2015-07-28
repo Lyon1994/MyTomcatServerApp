@@ -1,0 +1,63 @@
+package org.redot.library.db;
+
+import java.util.Hashtable;
+import java.util.Enumeration;
+
+import org.apache.log4j.Logger;
+
+/**
+ * Copyright By Redot.
+ * User: CASH
+ * Date: 2009-10-14
+ * Time: 14:39:58
+ */
+public class IDataBaseFactory {
+
+    Logger logger = Logger.getLogger(this.getClass());
+
+    private static IDataBaseFactory instance = new IDataBaseFactory();
+
+    Hashtable<String, IDataBase> dbs = null;
+
+    public IDataBaseFactory() {
+        dbs = new Hashtable<String, IDataBase>();
+    }
+
+    public static IDataBaseFactory getInstance() {
+        return instance;
+    }
+
+    public IDataBase get(String name) {
+        return dbs.get(name);
+    }
+
+    public IDataBase add(String name, int type, String url, String user, String pass){
+        IDataBase db = new IDataBase(name, type, url, user, pass);
+        if(db.init()){
+            dbs.put(db.getName(), db);
+            logger.info("databse:"+db.getName()+",add database success ");
+            return db;
+        }
+        db = null;
+        return null;
+    }
+
+    public boolean remove(String name){
+        IDataBase db = dbs.get(name);
+        if(db == null){
+            return true;
+        }
+        db.destroy();
+        dbs.remove(db);
+        logger.info("databse:"+name+",delete database success ");
+        return true;
+    }
+
+    public void destory(){
+        Enumeration<String> em = dbs.keys();
+        while(em.hasMoreElements()){
+            String name = em.nextElement();
+            remove(name);
+        }
+    }
+}

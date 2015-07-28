@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<clover>
+
+    <resource class="org.redot.clover.app.order.rest.TakeAway">/order/takeaway</resource>
+    <resource class="org.redot.clover.app.order.rest.TakeAway">/order/takeaway/deliver</resource>
+
+    <resource class="org.redot.clover.app.order.rest.OrderDesk">/order/desk</resource>
+    <resource class="org.redot.clover.app.order.rest.OrderInfo">/order/info/{O_ID}</resource>
+
+    <resource class="org.redot.clover.app.order.rest.OrderOpen">/order/open</resource>
+    <resource class="org.redot.clover.app.order.rest.OrderSet">/order/set</resource>
+    <resource class="org.redot.clover.app.order.rest.OrderClear">/order/clear</resource>
+
+    <resource class="org.redot.clover.app.order.rest.OrderTransfer">/order/transfer</resource>
+    <resource class="org.redot.clover.app.order.rest.OrderExchange">/order/exchange</resource>
+    <resource class="org.redot.clover.app.order.rest.OrderUnion">/order/union</resource>
+
+    <resource class="org.redot.clover.app.order.rest.OrderShiftingOfDuty">/order/shiftingofduty</resource>
+    <!--<resource class="org.redot.clover.app.order.rest.OrderPrint">/order/print</resource>-->
+
+</clover>

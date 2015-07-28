@@ -1,0 +1,60 @@
+package org.redot.clover.core.data;
+
+import org.json.JSONObject;
+
+import java.util.Hashtable;
+import java.util.Map;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 10-12-18
+ * Time: 下午3:43
+ * To change this template use File | Settings | File Templates.
+ */
+public class SimpleDataPackage {
+    private String query = "";
+
+    private String[] suggestions = new String[0];
+
+    private String[] data = new String[0];
+
+    public SimpleDataPackage() {
+
+    }
+
+
+    public String getQuery() {
+        return query;
+    }
+
+    public void setQuery(String query) {
+        this.query = query;
+    }
+
+    public String[] getSuggestions() {
+        return suggestions;
+    }
+
+    public void setSuggestions(String[] suggestions) {
+        this.suggestions = suggestions;
+    }
+
+    public String[] getData() {
+        return data;
+    }
+
+    public void setData(String[] data) {
+        this.data = data;
+    }
+
+    public String toJSON() {
+        Map<String, Object> map = new Hashtable<String, Object>();
+        map.put("query", getQuery());
+        map.put("suggestions", getSuggestions());
+        map.put("data", getData());
+        JSONObject jo = new JSONObject(map);
+        return jo.toString();
+    }
+
+}

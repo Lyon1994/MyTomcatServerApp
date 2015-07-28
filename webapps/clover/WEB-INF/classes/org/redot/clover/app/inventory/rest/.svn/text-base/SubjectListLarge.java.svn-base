@@ -1,0 +1,27 @@
+package org.redot.clover.app.inventory.rest;
+
+import org.redot.clover.app.inventory.SubjectAction;
+import org.redot.clover.core.data.DataPackage;
+import org.redot.clover.core.ext.BaseResource;
+import org.restlet.resource.Get;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 11-3-27
+ * Time: 下午5:35
+ * To change this template use File | Settings | File Templates.
+ */
+public class SubjectListLarge extends BaseResource {
+
+    @Get("json")
+    public String doGet() {
+        DataPackage dp = new DataPackage();
+
+        SubjectAction a = new SubjectAction();
+        dp.addTable("table", a.listLarge());
+        return dp.toJSON();
+    }
+
+
+}

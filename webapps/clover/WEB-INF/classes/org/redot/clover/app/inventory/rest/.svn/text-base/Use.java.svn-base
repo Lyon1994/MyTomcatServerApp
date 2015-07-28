@@ -1,0 +1,46 @@
+package org.redot.clover.app.inventory.rest;
+
+import org.redot.clover.app.inventory.UseAction;
+import org.redot.clover.core.data.DataPackage;
+import org.redot.clover.core.ext.BaseResource;
+import org.redot.library.lang.StringUtils;
+import org.restlet.resource.Get;
+import org.restlet.resource.Post;
+import org.restlet.resource.Put;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 11-3-27
+ * Time: 下午5:35
+ * To change this template use File | Settings | File Templates.
+ */
+public class Use extends BaseResource {
+
+    @Get("json")
+    public String doGet() {
+        DataPackage dp = new DataPackage();
+
+        UseAction a = new UseAction();
+        dp.addTable("table", a.get(StringUtils.toString(getRequestAttributes().get("U_ID"))));
+        return dp.toJSON();
+    }
+
+    @Post("json")
+    public String doPost() {
+        DataPackage dp = new DataPackage();
+        UseAction a = new UseAction();
+        a.setClient(client);
+        dp.setStatus(a.set(form));
+        return dp.toJSON();
+    }
+
+    @Put("json")
+    public String doPut() {
+        DataPackage dp = new DataPackage();
+        UseAction a = new UseAction();
+        a.setClient(client);
+        dp.setStatus(a.delete(form));
+        return dp.toJSON();
+    }
+}

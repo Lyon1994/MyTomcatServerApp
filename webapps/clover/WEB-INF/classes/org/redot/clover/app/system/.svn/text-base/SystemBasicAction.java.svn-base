@@ -1,0 +1,179 @@
+package org.redot.clover.app.system;
+
+import org.redot.clover.app.message.MessageManager;
+import org.redot.clover.core.CloverManager;
+import org.redot.clover.core.ext.BaseAction;
+import org.redot.clover.license.LicenseManager;
+import org.redot.library.db.IQuery;
+import org.redot.library.db.ITable;
+import org.redot.library.lang.NumberUtils;
+import org.redot.library.lang.StringUtils;
+import org.restlet.data.Form;
+
+import java.util.Hashtable;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 11-3-27
+ * Time: 下午5:36
+ * To change this template use File | Settings | File Templates.
+ */
+public class SystemBasicAction extends BaseAction {
+
+    public Map get(){
+        Map data = new Hashtable();
+        String sql = "SELECT * FROM X_BASIC_CONFIG";
+        IQuery query = getQuery();
+        Map m = query.doQuery(sql).table();
+        if(m != null){
+            data.putAll(m);
+        }
+        sql = "SELECT * FROM X_BASIC_SUBCOMPANY ORDER BY BASIC_SUBCOMPANY_ID";
+
+        List<Map> companyList = query.doQuery(sql).tables();
+        if(companyList.size() < 5){
+            int x = 5 - companyList.size();
+            for(int i=0;i<x;i++){
+                Map mx = new Hashtable();
+                mx.put("BASIC_SUBCOMPANY_NAME", "");
+                mx.put("BASIC_SUBCOMPANY_ADDRESS", "");
+                mx.put("BASIC_SUBCOMPANY_PHONE", "");
+                companyList.add(mx);
+            }
+        }
+        data.put("SUBCOMPANY", companyList);
+        sql = "SELECT * FROM X_PAY_TYPE ORDER BY PAY_TYPE_ID";
+        List<Map> payTypeList = query.doQuery(sql).tables();
+        if(payTypeList.size() < 5){
+            int x = 5 - payTypeList.size();
+            for(int i=0;i<x;i++){
+                Map mx = new Hashtable();
+                mx.put("PAY_TYPE_NAME", "");
+                mx.put("PAY_TYPE_ID", "");
+                payTypeList.add(mx);
+            }
+        }
+        data.put("PAY_TYPE", payTypeList);
+        sql = "SELECT * FROM X_MT WHERE MT_ID > 0 ORDER BY MT_ID";
+        List<Map> mtList = query.doQuery(sql).tables();
+        data.put("MT", mtList);
+        data.put("LICENSE_DATE", LicenseManager.getInstance().getLicenseDate());
+        sql = "SELECT VERSION FROM X_VERSION";
+        String version = query.doQuery(sql).getValue();
+        data.put("VERSION", version);
+        query.free();
+        return data;
+    }
+
+    public int getBookInterval(){
+        String sql = "SELECT BASIC_BOOK_INTERVAL FROM X_BASIC_CONFIG";
+        IQuery query = getQuery();
+        int bookInterval = NumberUtils.toInt(query.doQuery(sql).getValue());
+        query.free();
+        return bookInterval;
+    }
+
+    public String getCompany(){
+        String sql = "SELECT BASIC_COMPANY_NAME FROM X_BASIC_CONFIG";
+        IQuery query = getQuery();
+        String Company = StringUtils.toString(query.doQuery(sql).getValue());
+        query.free();
+        return Company;
+    }
+
+    public boolean isCut(){
+        return false;
+//        String sql = "SELECT BASIC_P_CUT FROM X_BASIC_CONFIG";
+//        IQuery query = getQuery();
+//        boolean isCut = NumberUtils.toInt(query.doQuery(sql).getValue()) == 1;
+//        query.free();
+//        return isCut;
+    }
+
+    public boolean isSign(){
+        String sql = "SELECT BASIC_P_SIGN FROM X_BASIC_CONFIG";
+        IQuery query = getQuery();
+        boolean isSign = NumberUtils.toInt(query.doQuery(sql).getValue()) == 1;
+        query.free();
+        return isSign;
+    }
+
+
+    public int set(Form form) {
+        Map data = form.getValuesMap();
+        ITable B = getTable("X_BASIC_CONFIG").clearData();
+        B.delete();
+        B.data(data).create();
+//        String[] BASIC_SUBCOMPANY_NAME = form.getValuesArray("BASIC_SUBCOMPANY_NAME");
+//        String[] BASIC_SUBCOMPANY_ADDRESS = form.getValuesArray("BASIC_SUBCOMPANY_ADDRESS");
+//        String[] BASIC_SUBCOMPANY_PHONE = form.getValuesArray("BASIC_SUBCOMPANY_PHONE");
+//        ITable C = getTable("X_BASIC_SUBCOMPANY").clearData();
+//        C.delete();
+//        if(BASIC_SUBCOMPANY_NAME != null && BASIC_SUBCOMPANY_NAME.length > 0){
+//            int x = 0;
+//            for(int i=0;i<BASIC_SUBCOMPANY_NAME.length;i++){
+//                if(BASIC_SUBCOMPANY_NAME[i] == null || BASIC_SUBCOMPANY_NAME[i].length() == 0){
+//                    continue;
+//                }
+//                x++;
+//                Map m = new Hashtable();
+//                m.put("BASIC_SUBCOMPANY_ID", x);
+//                m.put("BASIC_SUBCOMPANY_NAME", BASIC_SUBCOMPANY_NAME[i]);
+//                m.put("BASIC_SUBCOMPANY_ADDRESS", StringUtils.toString(BASIC_SUBCOMPANY_ADDRESS[i]));
+//                m.put("BASIC_SUBCOMPANY_PHONE", StringUtils.toString(BASIC_SUBCOMPANY_PHONE[i]));
+//                C.data(m).create();
+//                C.clearData();
+//            }
+//        }
+        String[] PAY_TYPE_NAME = form.getValuesArray("PAY_TYPE_NAME");
+        ITable P = getTable("X_PAY_TYPE").clearData();
+        P.delete();
+        if(PAY_TYPE_NAME != null && PAY_TYPE_NAME.length > 0){
+            int x = 0;
+            for(int i=0;i<PAY_TYPE_NAME.length;i++){
+                if(PAY_TYPE_NAME[i] == null || PAY_TYPE_NAME[i].length() == 0){
+                    continue;
+                }
+                x++;
+                Map m = new Hashtable();
+                m.put("PAY_TYPE_ID", x);
+                m.put("PAY_TYPE_NAME", PAY_TYPE_NAME[i]);
+                P.data(m).create();
+                P.clearData();
+            }
+        }
+
+        String[] MT_TIME = form.getValuesArray("MT_TIME");
+        String[] MT_STATUS = form.getValuesArray("MT_STATUS");
+        ITable MT = getTable("X_MT").clearData();
+
+        if(MT_TIME != null && MT_TIME.length > 0){
+
+            for(int i=0;i<MT_TIME.length;i++){
+
+                Map m = new Hashtable();
+                m.put("MT_TIME", StringUtils.toString(MT_TIME[i]));
+                int status = 0;
+                if(MT_STATUS != null && MT_STATUS.length > 0){
+                    for(int j=0;j<MT_STATUS.length;j++){
+                        if(MT_STATUS[j] == null && MT_STATUS[j].length() == 0){
+                            continue;
+                        }
+                        if(MT_STATUS[j].equals(String.valueOf(i + 1))){
+                            status = 1;
+                            break;
+                        }
+                    }
+                }
+                m.put("MT_STATUS", status);
+                MT.data(m).where(MT.column("MT_ID").eq(i+1)).update();
+                MT.clearData();
+            }
+        }
+        MessageManager.getInstance().setVersion(MessageManager.MSG_VER_SYSTEM);
+        return CloverManager.CODE_SUCCESS;
+    }
+}

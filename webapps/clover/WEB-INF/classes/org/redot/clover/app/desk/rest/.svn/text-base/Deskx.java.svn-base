@@ -1,0 +1,55 @@
+package org.redot.clover.app.desk.rest;
+
+import org.redot.clover.app.desk.DeskAction;
+import org.redot.clover.core.data.DataPackage;
+import org.redot.clover.core.ext.BaseResource;
+import org.restlet.resource.Get;
+import org.restlet.resource.Post;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 10-12-18
+ * Time: 上午11:36
+ * To change this template use File | Settings | File Templates.
+ */
+public class Deskx extends BaseResource {
+    @Get("json")
+    public String doGet() {
+        DataPackage dp = new DataPackage();
+        DeskAction da = new DeskAction();
+
+        dp.addTable("table", da.list(), null, null);
+        return dp.toJSON();
+    }
+
+    @Post("json")
+    public String doPost(){
+        //System.out.println(ArrayUtils.join(",", params.names) );
+        //Form form = new Form(entity);
+        //getRequest().getEntity().get
+//        System.out.println(getRequestAttributes().keySet());
+//        System.out.println(getRequestAttributes().entrySet());
+//        System.out.println(this.form.getFirstValue("DESK_ID"));
+//        System.out.println(this.form.contains("DESK_ID"));
+//        System.out.println(this.form.getValues("DESK_ID"));
+//        System.out.println(this.form.getNames());
+//        System.out.println(this.form.getFirstValue("DESK_CODE"));
+        DataPackage dp = new DataPackage();
+        DeskAction da = new DeskAction() ;
+        if(this.form.getFirstValue("DESK_ID") == null){
+            dp.setStatus(da.create(form));
+        }
+        else{
+            dp.setStatus(da.update(form));
+        }
+
+        //String id = StringUtils.toString(getRequestAttributes().get("id"));
+        //System.out.println("desk_id="+desk_id);
+//        if(desk_id.length() > 0){
+//            DeskAction da = new DeskAction() ;
+//            dp.getData().put("form", da.getDeskInfo(NumberUtils.toInt(desk_id)));
+//        }
+        return dp.toJSON() ;
+    }
+}

@@ -1,0 +1,137 @@
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/svn/yee/!svn/ver/131/server/Redot/CloverServer/src/org/redot/clover/print/cases
+END
+DishOrderAddPrintCase.java
+K 25
+svn:wc:ra_dav:version-url
+V 106
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/print/cases/DishOrderAddPrintCase.java
+END
+PurchaseOrderPrintCase.java
+K 25
+svn:wc:ra_dav:version-url
+V 108
+/svn/yee/!svn/ver/131/server/Redot/CloverServer/src/org/redot/clover/print/cases/PurchaseOrderPrintCase.java
+END
+OrderPrintCase.java
+K 25
+svn:wc:ra_dav:version-url
+V 99
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/print/cases/OrderPrintCase.java
+END
+OrderExchangePrintCase.java
+K 25
+svn:wc:ra_dav:version-url
+V 107
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/print/cases/OrderExchangePrintCase.java
+END
+DishHurryPrintCase.java
+K 25
+svn:wc:ra_dav:version-url
+V 103
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/print/cases/DishHurryPrintCase.java
+END
+DishCancelPrintCase.java
+K 25
+svn:wc:ra_dav:version-url
+V 104
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/print/cases/DishCancelPrintCase.java
+END
+DishOrderPrintCase.java
+K 25
+svn:wc:ra_dav:version-url
+V 103
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/print/cases/DishOrderPrintCase.java
+END
+OrderBillPrintCase.java
+K 25
+svn:wc:ra_dav:version-url
+V 103
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/print/cases/OrderBillPrintCase.java
+END
+OrderBookPrintCase.java
+K 25
+svn:wc:ra_dav:version-url
+V 103
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/print/cases/OrderBookPrintCase.java
+END
+DishCallPrintCase.java
+K 25
+svn:wc:ra_dav:version-url
+V 102
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/print/cases/DishCallPrintCase.java
+END
+OrderBillLostPrintCase.java
+K 25
+svn:wc:ra_dav:version-url
+V 107
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/print/cases/OrderBillLostPrintCase.java
+END
+OrderTransferPrintCase.java
+K 25
+svn:wc:ra_dav:version-url
+V 107
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/print/cases/OrderTransferPrintCase.java
+END
+OrderPreBillPrintCase.java
+K 25
+svn:wc:ra_dav:version-url
+V 106
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/print/cases/OrderPreBillPrintCase.java
+END
+KitchenPrintCaseSame.java
+K 25
+svn:wc:ra_dav:version-url
+V 105
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/print/cases/KitchenPrintCaseSame.java
+END
+ClientChargePrintCase.java
+K 25
+svn:wc:ra_dav:version-url
+V 107
+/svn/yee/!svn/ver/131/server/Redot/CloverServer/src/org/redot/clover/print/cases/ClientChargePrintCase.java
+END
+OrderCheckBillPrintCase.java
+K 25
+svn:wc:ra_dav:version-url
+V 108
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/print/cases/OrderCheckBillPrintCase.java
+END
+OrderBillFreePrintCase.java
+K 25
+svn:wc:ra_dav:version-url
+V 107
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/print/cases/OrderBillFreePrintCase.java
+END
+AbstractPrintCase.java
+K 25
+svn:wc:ra_dav:version-url
+V 102
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/print/cases/AbstractPrintCase.java
+END
+KitchenPrintCase.java
+K 25
+svn:wc:ra_dav:version-url
+V 101
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/print/cases/KitchenPrintCase.java
+END
+DishTransferPrintCase.java
+K 25
+svn:wc:ra_dav:version-url
+V 106
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/print/cases/DishTransferPrintCase.java
+END
+OrderBillArrearPrintCase.java
+K 25
+svn:wc:ra_dav:version-url
+V 109
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/print/cases/OrderBillArrearPrintCase.java
+END
+DishHangPrintCase.java
+K 25
+svn:wc:ra_dav:version-url
+V 102
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/print/cases/DishHangPrintCase.java
+END

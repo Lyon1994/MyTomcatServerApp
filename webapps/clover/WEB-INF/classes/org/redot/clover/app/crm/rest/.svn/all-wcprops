@@ -1,0 +1,83 @@
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/yee/!svn/ver/102/server/Redot/CloverServer/src/org/redot/clover/app/crm/rest
+END
+ClientTypeDelete.java
+K 25
+svn:wc:ra_dav:version-url
+V 102
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/crm/rest/ClientTypeDelete.java
+END
+ClientCharge.java
+K 25
+svn:wc:ra_dav:version-url
+V 99
+/svn/yee/!svn/ver/101/server/Redot/CloverServer/src/org/redot/clover/app/crm/rest/ClientCharge.java
+END
+ClientChargeList.java
+K 25
+svn:wc:ra_dav:version-url
+V 102
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/crm/rest/ClientChargeList.java
+END
+ClientConsumptionSelect.java
+K 25
+svn:wc:ra_dav:version-url
+V 109
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/crm/rest/ClientConsumptionSelect.java
+END
+Client.java
+K 25
+svn:wc:ra_dav:version-url
+V 93
+/svn/yee/!svn/ver/100/server/Redot/CloverServer/src/org/redot/clover/app/crm/rest/Client.java
+END
+ClientList.java
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/crm/rest/ClientList.java
+END
+ClientDelete.java
+K 25
+svn:wc:ra_dav:version-url
+V 98
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/crm/rest/ClientDelete.java
+END
+ClientType.java
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/crm/rest/ClientType.java
+END
+ClientTypeList.java
+K 25
+svn:wc:ra_dav:version-url
+V 100
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/crm/rest/ClientTypeList.java
+END
+ClientPasswordCheck.java
+K 25
+svn:wc:ra_dav:version-url
+V 105
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/crm/rest/ClientPasswordCheck.java
+END
+ClientBack.java
+K 25
+svn:wc:ra_dav:version-url
+V 97
+/svn/yee/!svn/ver/102/server/Redot/CloverServer/src/org/redot/clover/app/crm/rest/ClientBack.java
+END
+ClientTypeSelect.java
+K 25
+svn:wc:ra_dav:version-url
+V 102
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/crm/rest/ClientTypeSelect.java
+END
+ClientBalance.java
+K 25
+svn:wc:ra_dav:version-url
+V 99
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/app/crm/rest/ClientBalance.java
+END

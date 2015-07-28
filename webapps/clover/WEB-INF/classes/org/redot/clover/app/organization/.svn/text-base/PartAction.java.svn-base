@@ -1,0 +1,214 @@
+package org.redot.clover.app.organization;
+
+import org.redot.clover.app.message.MessageManager;
+import org.redot.clover.core.CloverManager;
+import org.redot.clover.core.ext.BaseAction;
+import org.redot.library.codec.AESEncrypter;
+import org.redot.library.db.IQuery;
+import org.redot.library.db.ITable;
+import org.redot.library.lang.NumberUtils;
+import org.redot.library.lang.StringUtils;
+import org.restlet.data.Form;
+
+import java.util.Hashtable;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 12-11-21
+ * Time: 上午11:26
+ * To change this template use File | Settings | File Templates.
+ */
+public class PartAction extends BaseAction{
+
+    public List<Map> listLarge(){
+        String sql = "SELECT A.*,(SELECT COUNT(*) FROM X_ROLE WHERE ROLE_DEPT_ID= A.DEPT_ID) AS CHILDREN FROM X_DEPT A " +
+                "WHERE A.DEPT_PARENT = 0 AND DEPT_STATUS<>2 ORDER BY DEPT_SORT, DEPT_ID";
+        System.out.println(sql);
+        IQuery query = getQuery();
+        List<Map> list = query.doQuery(sql).tables();
+        query.free();
+        return list;
+    }
+
+    public List<Map> listSmall(String Q, String DEPT_ID){
+        String sql = "SELECT A.*,(SELECT COUNT(*) FROM X_ACCOUNT_ROLE WHERE ACCOUNT_ROLE_ID=A.ROLE_ID) AS CHILDREN FROM X_ROLE A " +
+                "WHERE A.ROLE_DEPT_ID = "+ DEPT_ID +" AND ROLE_STATUS<>2 ORDER BY ROLE_SORT, ROLE_ID";
+        System.out.println(sql);
+        IQuery query = getQuery();
+        List<Map> list = query.doQuery(sql).tables();
+        query.free();
+        return list;
+    }
+
+    public List<Map> list(String ROLE_ID){
+        String sql = "SELECT A.*,B.ACCOUNT_ROLE_ID,C.ROLE_NAME AS ACCOUNT_ROLE_NAME,D.DEPT_NAME AS ACCOUNT_DEPT_NAME FROM X_ACCOUNT A " +
+                "LEFT JOIN X_ACCOUNT_ROLE B ON B.ACCOUNT_ID = A.ACCOUNT_ID LEFT JOIN X_ROLE C ON C.ROLE_ID = B.ACCOUNT_ROLE_ID " +
+                "LEFT JOIN X_DEPT D ON D.DEPT_ID = A.ACCOUNT_DEPT_ID WHERE C.ROLE_ID = "+ ROLE_ID +" AND ACCOUNT_STATUS <>2 ORDER BY ACCOUNT_SORT,ACCOUNT_ID";
+        System.out.println(sql);
+        IQuery query = getQuery();
+        List<Map> list = query.doQuery(sql).tables();
+        query.free();
+        return list;
+    }
+
+    public int setLarge(Form form){
+        Map data = form.getValuesMap();
+        String DEPT_ID = StringUtils.toString(data.get("DEPT_ID"));
+        String DEPT_SORT = StringUtils.toString(data.get("DEPT_SORT"));
+
+        data.put("DEPT_ID", DEPT_ID);
+        ITable t = getTable("X_DEPT").clearData();
+        int result;
+        if(DEPT_ID.length() == 0){
+            DEPT_ID = String.valueOf(t.getMaxID("DEPT_ID"));
+            data.put("DEPT_ID", DEPT_ID);
+            if(DEPT_SORT.length() == 0){
+                data.put("DEPT_SORT", 0);
+            }
+            data.put("DEPT_SORT", DEPT_SORT);
+            data.put("DEPT_PARENT", 0);
+            result = t.data(data).create();
+        }
+        else{
+            result = t.data(data).where(t.column("DEPT_ID").eq(DEPT_ID)).update();
+        }
+
+        if(result < 0){
+            return CloverManager.CODE_FAILED;
+        }
+        else{
+            return CloverManager.CODE_SUCCESS;
+        }
+    }
+
+    public int setSmall(Form form){
+        Map data = form.getValuesMap();
+        String ROLE_ID = StringUtils.toString(data.get("ROLE_ID"));
+        String ROLE_DEPT_ID = StringUtils.toString(data.get("ROLE_DEPT_ID"));
+        String ROLE_SORT= StringUtils.toString(data.get("ROLE_SORT"));
+
+        data.put("ROLE_DEPT_ID",ROLE_DEPT_ID);
+        ITable t = getTable("X_ROLE").clearData();
+        int result;
+        if(ROLE_ID.length() == 0){
+            ROLE_ID = String.valueOf(t.getMaxID("ROLE_ID"));
+            data.put("ROLE_ID", ROLE_ID);
+            if(ROLE_SORT.length() == 0){
+                data.put("ROLE_SORT", 0);
+            }else{
+                data.put("ROLE_SORT", ROLE_SORT);
+            }
+            result = t.data(data).create();
+        }
+        else{
+            result = t.data(data).where(t.column("ROLE_ID").eq(ROLE_ID)).update();
+        }
+        if(result < 0){
+            return CloverManager.CODE_FAILED;
+        }
+        else{
+            return CloverManager.CODE_SUCCESS;
+        }
+    }
+
+    public int set(Form form){
+        Map data = form.getValuesMap();
+        String ACCOUNT_ID = StringUtils.toString(data.get("ACCOUNT_ID"));
+        String ACCOUNT_PASSWORD = StringUtils.toString(data.get("ACCOUNT_PASSWORD"));
+        String ACCOUNT_ROLE_ID = StringUtils.toString(data.get("ACCOUNT_ROLE_ID"));
+
+        ITable t = getTable("X_ACCOUNT").clearData();
+        int result;
+        String sql = "SELECT A.DEPT_ID FROM X_DEPT A LEFT JOIN X_ROLE B ON B.ROLE_DEPT_ID = A.DEPT_ID WHERE B.ROLE_ID = " + ACCOUNT_ROLE_ID;
+        IQuery query = getQuery();
+        String DEPT_ID = query.doQuery(sql).getValue();
+
+        if(ACCOUNT_ID.length() == 0){
+            ACCOUNT_ID = String.valueOf(t.getMaxID("ACCOUNT_ID"));
+            data.put("ACCOUNT_ID", ACCOUNT_ID);
+            ACCOUNT_PASSWORD = AESEncrypter.getEncrypt(ACCOUNT_PASSWORD);
+            data.put("ACCOUNT_PASSWORD", ACCOUNT_PASSWORD);
+            data.put("ACCOUNT_DEPT_ID", DEPT_ID);
+            result = t.data(data).create();
+        }
+        else{
+            if(ACCOUNT_PASSWORD.length() == 0){
+                data.remove("ACCOUNT_PASSWORD");
+            }
+            else{
+                ACCOUNT_PASSWORD = AESEncrypter.getEncrypt(ACCOUNT_PASSWORD);
+                data.put("ACCOUNT_PASSWORD", ACCOUNT_PASSWORD);
+            }
+            data.put("ACCOUNT_DEPT_ID", DEPT_ID);
+            result = t.data(data).where(t.column("ACCOUNT_ID").eq(ACCOUNT_ID)).update();
+        }
+        if(result < 0){
+            return CloverManager.CODE_FAILED;
+        }
+
+        String[] ACCOUNT_ROLES = ACCOUNT_ROLE_ID.split(",");
+        sql = "DELETE FROM X_ACCOUNT_ROLE WHERE ACCOUNT_ID = " + ACCOUNT_ID;
+        query.doExec(sql);
+        for(int i=0;i<ACCOUNT_ROLES.length;i++){
+            sql = "INSERT INTO X_ACCOUNT_ROLE (ACCOUNT_ID, ACCOUNT_ROLE_ID) VALUES ("+ACCOUNT_ID+", "+ACCOUNT_ROLES[i]+")";
+            query.doExec(sql);
+        }
+        query.free();
+        MessageManager.getInstance().setVersion(MessageManager.MSG_VER_ORGANIZATION);
+        return CloverManager.CODE_SUCCESS;
+    }
+
+    public int delete(Form form){
+        Map data = form.getValuesMap();
+        String ACCOUNT_ID = StringUtils.toString(data.get("ACCOUNT_ID"));
+        if(ACCOUNT_ID.length() == 0){
+            return CloverManager.CODE_FAILED;
+        }
+        IQuery query = getQuery();
+        String sql = "UPDATE X_ACCOUNT SET ACCOUNT_STATUS = 2 WHERE ACCOUNT_ID = " + ACCOUNT_ID;
+        int result = query.doExec(sql);
+        System.out.println(sql);
+        query.free();
+        if(result < 0){
+            return CloverManager.CODE_FAILED;
+        }
+        return CloverManager.CODE_SUCCESS;
+    }
+
+    public int deleteSmall(Form form){
+        Map data = form.getValuesMap();
+        String ROLE_ID = StringUtils.toString(data.get("ROLE_ID"));
+        if(ROLE_ID.length() == 0){
+            return CloverManager.CODE_FAILED;
+        }
+        String sql = "UPDATE X_ROLE SET ROLE_STATUS = 2 WHERE ROLE_ID = " + ROLE_ID;
+        IQuery query = getQuery();
+        int result = query.doExec(sql);
+        System.out.println(sql);
+        query.free();
+        if(result < 0){
+            return CloverManager.CODE_FAILED;
+        }
+        return CloverManager.CODE_SUCCESS;
+    }
+
+    public int deleteLarge(Form form){
+        Map data = form.getValuesMap();
+        String DEPT_ID = StringUtils.toString(data.get("DEPT_ID"));
+        if(DEPT_ID.length() == 0){
+            return CloverManager.CODE_FAILED;
+        }
+        String sql = "UPDATE X_DEPT SET DEPT_STATUS = 2 WHERE DEPT_ID = " + DEPT_ID;
+        IQuery query = getQuery();
+        int result = query.doExec(sql);
+        System.out.println(sql);
+        query.free();
+        if(result < 0){
+            return CloverManager.CODE_FAILED;
+        }
+        return CloverManager.CODE_SUCCESS;
+    }
+}

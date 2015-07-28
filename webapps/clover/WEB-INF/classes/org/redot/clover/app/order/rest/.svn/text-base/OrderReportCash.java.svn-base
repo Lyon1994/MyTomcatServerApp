@@ -1,0 +1,25 @@
+package org.redot.clover.app.order.rest;
+
+import org.redot.clover.app.order.OrderReportAction;
+import org.redot.clover.core.data.DataPackage;
+import org.redot.clover.core.ext.BaseResource;
+import org.restlet.resource.Get;
+import org.restlet.resource.Post;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 10-12-21
+ * Time: 上午10:43
+ * To change this template use File | Settings | File Templates.
+ */
+public class OrderReportCash extends BaseResource {
+
+    @Get("json")
+    public String doGet(){
+        DataPackage dp = new DataPackage();
+        OrderReportAction a = new OrderReportAction();
+        dp.getData().put("form", a.cash());
+        return dp.toJSON();
+    }
+}

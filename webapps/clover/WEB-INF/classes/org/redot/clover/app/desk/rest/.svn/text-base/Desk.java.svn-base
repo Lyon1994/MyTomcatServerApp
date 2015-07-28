@@ -1,0 +1,56 @@
+package org.redot.clover.app.desk.rest;
+
+import org.redot.clover.app.desk.DeskAction;
+import org.redot.clover.app.product.ProductAction;
+import org.redot.clover.core.data.DataPackage;
+import org.redot.clover.core.ext.BaseResource;
+import org.redot.library.lang.NumberUtils;
+import org.redot.library.lang.StringUtils;
+import org.restlet.resource.Get;
+import org.restlet.resource.Post;
+import org.restlet.resource.Put;
+
+import java.util.Hashtable;
+import java.util.Map;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 10-12-18
+ * Time: 上午11:36
+ * To change this template use File | Settings | File Templates.
+ */
+public class Desk extends BaseResource {
+    @Get("json")
+    public String doGet() {
+        DataPackage dp = new DataPackage();
+        DeskAction a = new DeskAction();
+
+        Map m = a.get(StringUtils.toString(getRequestAttributes().get("ID")));
+        if (m == null) {
+            m = new Hashtable();
+        }
+        dp.getData().put("form", m);
+
+        return dp.toJSON();
+    }
+
+    @Post("json")
+    public String doPost() {
+
+        DataPackage dp = new DataPackage();
+        DeskAction a = new DeskAction();
+        Map data = a.set(form);
+        dp.setStatus(NumberUtils.toInt(data.get("STATUS")));
+        dp.getData().put("form", data);
+        return dp.toJSON();
+    }
+
+    @Put("json")
+    public String doDelete() {
+        DataPackage dp = new DataPackage();
+        DeskAction a = new DeskAction();
+        dp.setStatus(a.delete(form));
+        return dp.toJSON();
+    }
+}

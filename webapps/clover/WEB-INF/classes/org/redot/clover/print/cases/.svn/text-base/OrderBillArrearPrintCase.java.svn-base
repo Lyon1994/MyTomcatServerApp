@@ -1,0 +1,249 @@
+package org.redot.clover.print.cases;
+
+import org.redot.clover.app.system.SystemAction;
+import org.redot.clover.core.CloverManager;
+import org.redot.library.db.IQuery;
+import org.redot.library.lang.ArrayUtils;
+import org.redot.library.lang.NumberUtils;
+import org.redot.library.lang.StringUtils;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 11-4-13
+ * Time: 下午11:24
+ * To change this template use File | Settings | File Templates.
+ */
+public class OrderBillArrearPrintCase extends AbstractPrintCase {
+    @Override
+    public void process() {
+        String BILL_ID = StringUtils.toString(getPrams().get("BILL_ID"));
+        if(BILL_ID.length() == 0){
+            setOK(false);
+            return;
+        }
+        String CASE_PS_AREA = StringUtils.toString(getPrams().get("CASE_PS_AREA"));
+        String CS = "";
+        if(CASE_PS_AREA.length() > 0){
+             CS += " AND A.O_ID IN (SELECT X.O_ID FROM X_O X LEFT JOIN X_DESK XX ON X.O_DESK_ID = XX.DESK_ID WHERE X.O_BILL_ID = "+BILL_ID+" AND XX.DESK_AREA_ID IN ("+CASE_PS_AREA+"))";
+        }
+        else{
+            CS += " AND A.O_ID IN (SELECT X.O_ID FROM X_O X WHERE X.O_BILL_ID = "+BILL_ID+")";
+        }
+        String CASE_PS = StringUtils.toString(getPrams().get("CASE_PS"));
+        String CASE_PSX = StringUtils.toString(getPrams().get("CASE_PSX"));
+        String COND = "";
+        if(CASE_PS.length() > 0 || CASE_PSX.length() > 0){
+            String s = "";
+            s =  CASE_PS.length() > 0 ? "A.O_P_TYPE_ID IN ("+CASE_PS+")" : "";
+            if(CASE_PSX.length() > 0){
+                if(s.length() > 0){
+                    s += " OR ";
+                }
+                s += "A.O_P_ID IN ("+CASE_PSX+")";
+            }
+            COND += " AND ("+ s +")";
+        }
+        IQuery query = CloverManager.getInstance().getQuery();
+//        String sql = "SELECT BILL_UNION FROM X_BILL WHERE BILL_ID = " + BILL_ID;
+//        boolean isUnion = query.doQuery(sql).getValue().equals("1");
+//        if(isUnion){
+           String sql = "SELECT A.O_P_ID, A.O_P_NAME, A.O_P_TYPE_ID, A.O_P_EXT_STATUS, " +
+                    "A.O_P_PRICE, A.O_P_TAG_WEIGHT, A.O_P_TASTE, A.O_P_PACK, A.O_P_WAY, " +
+                    "A.O_P_REQUIRE, A.O_P_MEMO, A.O_P_DISCOUNT, " +
+                    "SUM(CONVERT(A.O_P_NUM, DECIMAL(10,1))) AS O_P_NUM, " +
+                    "SUM(CONVERT(A.O_P_WEIGHT, DECIMAL(10,1))) AS O_P_WEIGHT, " +
+                    "SUM(CONVERT(A.O_P_AMOUNT, DECIMAL(10,1))) AS O_P_AMOUNT, " +
+                    "B.UNIT_NAME, CX.P_TYPE_NAME AS O_P_TYPE_NAME FROM X_O_P A " +
+                "LEFT JOIN X_UNIT B ON A.O_P_UNIT_ID = B.UNIT_ID " +
+                "LEFT JOIN X_P_TYPE C ON A.O_P_TYPE_ID = C.P_TYPE_ID " +
+                "LEFT JOIN X_P_TYPE CX ON C.P_TYPE_PARENT = CX.P_TYPE_ID " +
+                "WHERE A.O_P_STATUS > 0 AND A.O_P_PARENT = 0 " + CS + COND + " GROUP BY A.O_P_ID, A.O_P_DISCOUNT ORDER BY CX.P_TYPE_SORT, C.P_TYPE_SORT, A.O_P_ID";
+//        }
+//        else{
+//            sql = "SELECT A.*, B.UNIT_NAME, CX.P_TYPE_NAME AS O_P_TYPE_NAME FROM X_O_P A " +
+//                "LEFT JOIN X_UNIT B ON A.O_P_UNIT_ID = B.UNIT_ID " +
+//                "LEFT JOIN X_P_TYPE C ON A.O_P_TYPE_ID = C.P_TYPE_ID " +
+//                "LEFT JOIN X_P_TYPE CX ON C.P_TYPE_PARENT = CX.P_TYPE_ID " +
+//                "WHERE A.O_P_STATUS > 0 AND A.O_P_PARENT = 0 " + CS + COND + " ORDER BY CX.P_TYPE_SORT";
+//        }
+//        String sql = "SELECT A.*, B.UNIT_NAME, CX.P_TYPE_NAME AS O_P_TYPE_NAME FROM X_O_P A " +
+//                "LEFT JOIN X_UNIT B ON A.O_P_UNIT_ID = B.UNIT_ID " +
+//                "LEFT JOIN X_P_TYPE C ON A.O_P_TYPE_ID = C.P_TYPE_ID " +
+//                "LEFT JOIN X_P_TYPE CX ON C.P_TYPE_PARENT = CX.P_TYPE_ID " +
+//                "WHERE A.O_P_STATUS > 0 AND A.O_P_PARENT = 0 " + CS + COND + " ORDER BY CX.P_TYPE_SORT";
+        List<Map> OPS = query.doQuery(sql).tables();
+        int count = OPS.size();
+        if(count == 0){
+            System.out.println("打印区域不满足：结账");
+            setOK(false);
+            query.free();
+            return;
+        }
+        String[] P_NAME = new String[count];
+        String[] P_PRICE = new String[count];
+        String[] P_NUM = new String[count];
+        String[] P_UNIT = new String[count];
+        String[] P_AMOUNT = new String[count];
+        String[] P_MEMO = new String[count];
+        String[] P_TYPE = new String[count];
+        String[] P_TYPE_NAME = new String[count];
+        String[] P_DT = new String[count];
+        setDataLen(count);
+        int i = 0;
+        for(Map OP : OPS){
+            String O_P_ID = StringUtils.toString(OP.get("O_P_ID"));
+            String O_P_TYPE_ID = StringUtils.toString(OP.get("O_P_TYPE_ID"));
+            String O_P_TYPE_NAME = StringUtils.toString(OP.get("O_P_TYPE_NAME"));
+            P_TYPE[i] = O_P_TYPE_ID;
+            P_TYPE_NAME[i] = O_P_TYPE_NAME;
+            String O_P_DT_ORDER = StringUtils.toString(OP.get("O_P_DT_ORDER"));
+            P_DT[i] = O_P_DT_ORDER;
+            long _O_P_ID = NumberUtils.toLong(O_P_ID);
+            if(_O_P_ID > 10000){
+                P_NAME[i] = "[临]" + StringUtils.toString(OP.get("O_P_NAME"));
+            }
+            else{
+                P_NAME[i] = StringUtils.toString(OP.get("O_P_NAME"));
+            }
+            //P_NAME[i] = StringUtils.toString(OP.get("O_P_NAME"));
+            P_PRICE[i] = StringUtils.toString(OP.get("O_P_PRICE"));
+            String O_P_TAG_WEIGHT = StringUtils.toString(OP.get("O_P_TAG_WEIGHT"));
+            if(O_P_TAG_WEIGHT.equals("1")){
+                P_NUM[i] = StringUtils.toString(OP.get("O_P_WEIGHT"));
+            }
+            else{
+                P_NUM[i] = StringUtils.toString(OP.get("O_P_NUM"));
+            }
+            float P_AMOUNT_ = NumberUtils.toFloat(OP.get("O_P_AMOUNT"));
+            P_AMOUNT[i] = StringUtils.toString(NumberUtils.toDecimal(P_AMOUNT_, 1));
+            P_UNIT[i] = StringUtils.toString(OP.get("UNIT_NAME"));
+
+            String O_P_TASTE = StringUtils.toString(OP.get("O_P_TASTE"));
+            String O_P_PACK = StringUtils.toString(OP.get("O_P_PACK"));
+            String O_P_REQUIRE = StringUtils.toString(OP.get("O_P_REQUIRE"));
+            String O_P_MEMO = StringUtils.toString(OP.get("O_P_MEMO"));
+            float O_P_DISCOUNT = NumberUtils.toFloat(OP.get("O_P_DISCOUNT"));
+            List<String> memos = new ArrayList<String>();
+            if(O_P_PACK.equals("1")){
+                //memos.add("打包");
+            }
+            if(O_P_DISCOUNT >= 0){
+                if(O_P_DISCOUNT == 0){
+                    memos.add("赠送");
+                }
+                else{
+                    memos.add(O_P_DISCOUNT + "折");
+                }
+            }
+            if(O_P_TASTE.length() > 0){
+                //memos.add(O_P_TASTE);
+            }
+            if(O_P_REQUIRE.length() > 0){
+                //memos.add(O_P_REQUIRE);
+            }
+            if(O_P_MEMO.length() > 0){
+                //memos.add(O_P_MEMO);
+            }
+            P_MEMO[i] = ArrayUtils.join(",", memos);
+            i++;
+        }
+        getDataX().put("菜品名称", P_NAME);
+        getDataX().put("数量", P_NUM);
+        getDataX().put("单价", P_PRICE);
+        getDataX().put("单位", P_UNIT);
+        getDataX().put("金额", P_AMOUNT);
+        getDataX().put("菜品备注", P_MEMO);
+        getDataX().put("菜品类别", P_TYPE_NAME);
+        getDataX().put("菜品类别ID", P_TYPE);
+        getDataX().put("下单时间", P_DT);
+
+        sql = "SELECT A.*, B.DESK_CODE, B.DESK_NAME FROM X_O A " +
+                "LEFT JOIN X_DESK B ON A.O_DESK_ID = B.DESK_ID " +
+                "WHERE A.O_BILL_ID = " + BILL_ID + " ORDER BY A.O_DINE_DT";
+        List<Map> OS = query.doQuery(sql).tables();
+        String DESK_NAME = "";
+        int DINE_NOP = 0;
+        String O_SERVER = "";
+        String O_DINE_DT = "";
+        String O_OD_USER = "";
+        for(Map O : OS){
+            if(DESK_NAME.length() > 0){
+                DESK_NAME += ",";
+            }
+            if(O_SERVER.length() > 0){
+                O_SERVER += ",";
+            }
+            if(O_OD_USER.length() > 0){
+                O_OD_USER += ",";
+            }
+            DESK_NAME += StringUtils.toString(O.get("DESK_CODE")) + StringUtils.toString(O.get("DESK_NAME"));
+            O_SERVER += StringUtils.toString(O.get("O_SERVER"));
+            O_OD_USER += StringUtils.toString(O.get("O_OD_USER"));
+            DINE_NOP += NumberUtils.toInt(O.get("O_DINE_NOP"));
+            if(O_DINE_DT.length() == 0){
+                O_DINE_DT = StringUtils.toString(O.get("O_DINE_DT"));
+            }
+        }
+
+        getData().put("桌台", new String[]{DESK_NAME});
+        getData().put("人数", new String[]{DINE_NOP+""});
+        getData().put("服务员", new String[]{O_SERVER});
+
+        getData().put("点菜员", new String[]{O_OD_USER});
+        getData().put("就餐时间", new String[]{O_DINE_DT});
+        sql = "SELECT * FROM X_BILL WHERE BILL_ID = " + BILL_ID;
+        Map B = query.doQuery(sql).table();
+        String BILL_DISCOUNT_STR = "";
+        float BILL_DISCOUNT = NumberUtils.toFloat(B.get("BILL_DISCOUNT"));
+        if(BILL_DISCOUNT >= 0){
+            if(BILL_DISCOUNT == 0){
+                BILL_DISCOUNT_STR = "免单";
+            }
+            else{
+                BILL_DISCOUNT_STR = "整单" + BILL_DISCOUNT + "折";
+            }
+        }
+        else{
+            String BILL_FAVORABLE_CLIENT = StringUtils.toString(B.get("BILL_FAVORABLE_CLIENT"));
+
+            if(BILL_FAVORABLE_CLIENT.length() > 0){
+                sql = "SELECT CLIENT_TYPE_DISCOUNT FROM X_CLIENT_TYPE WHERE CLIENT_TYPE_ID IN (SELECT CLIENT_TYPE_ID FROM X_CLIENT WHERE CLIENT_ID = "+BILL_FAVORABLE_CLIENT+")";
+                String CLIENT_TYPE_DISCOUNT_STR = query.doQuery(sql).getValue();
+                if(CLIENT_TYPE_DISCOUNT_STR.length() > 0){
+                    BILL_DISCOUNT_STR = "会员" + CLIENT_TYPE_DISCOUNT_STR + "折";
+                }
+            }
+            sql = "SELECT CASE_NAME FROM X_BILL_FAVORABLE_CASE WHERE BILL_ID = " + BILL_ID;
+            String BILL_FAVORABLE_CASE = query.doQuery(sql).getValue();
+            if(BILL_FAVORABLE_CASE.length() > 0){
+                if(BILL_DISCOUNT_STR.length() > 0){
+                    BILL_DISCOUNT_STR += ",";
+                }
+                BILL_DISCOUNT_STR += BILL_FAVORABLE_CASE;
+            }
+        }
+        if(BILL_DISCOUNT_STR.length() == 0){
+            BILL_DISCOUNT_STR = "无";
+        }
+        getData().put("单号", new String[]{StringUtils.toString(B.get("BILL_NO"))});
+        getData().put("消费总额", new String[]{StringUtils.toString(B.get("BILL_AMOUNT_ALL"))});
+        getData().put("服务费", new String[]{StringUtils.toString(B.get("BILL_AMOUNT_SC"))});
+        float BILL_AMOUNT_DISCOUNT = NumberUtils.toFloat(B.get("BILL_AMOUNT_FAVORABLE_DISCOUNT")) + NumberUtils.toFloat(B.get("BILL_AMOUNT_FAVORABLE_CLIENT"));
+        getData().put("折扣金额", new String[]{BILL_AMOUNT_DISCOUNT +""});
+        getData().put("折扣", new String[]{BILL_DISCOUNT_STR});
+        getData().put("优惠", new String[]{BILL_DISCOUNT_STR});
+        getData().put("优惠总额", new String[]{StringUtils.toString(B.get("BILL_AMOUNT_FAVORABLE_ALL"))});
+        getData().put("应付总额", new String[]{StringUtils.toString(B.get("BILL_AMOUNT"))});
+        getData().put("实收金额", new String[]{StringUtils.toString(B.get("BILL_AMOUNT_PAY"))});
+        getData().put("挂账金额", new String[]{StringUtils.toString(B.get("BILL_AMOUNT_ARREAR"))});
+         getData().put("店名", new String[]{SystemAction.getCompany()});
+         getData().put("结账时间", new String[]{StringUtils.toString(B.get("BILL_DT_FINISH"))});
+         getData().put("收银员", new String[]{StringUtils.toString(B.get("BILL_MAKER"))});
+        query.free();
+    }
+}

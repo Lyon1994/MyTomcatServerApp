@@ -1,0 +1,199 @@
+package org.redot.clover.print.cases;
+
+import org.redot.clover.core.CloverManager;
+import org.redot.library.db.IQuery;
+import org.redot.library.lang.ArrayUtils;
+import org.redot.library.lang.NumberUtils;
+import org.redot.library.lang.StringUtils;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 11-4-13
+ * Time: 下午11:24
+ * To change this template use File | Settings | File Templates.
+ */
+public class DishCancelPrintCase extends AbstractPrintCase {
+
+    @Override
+    public void process() {
+        String O_ID = StringUtils.toString(getPrams().get("O_ID"));
+        String O_P_DT_CANCEL = StringUtils.toString(getPrams().get("O_P_DT_CANCEL"));
+        String MAKER = StringUtils.toString(getPrams().get("MAKER"));
+//        System.out.println("O_ID = " + O_ID);
+//        System.out.println("O_P_DT_CANCEL = " + O_P_DT_CANCEL);
+        if(O_ID.length() == 0 || O_P_DT_CANCEL.length() == 0){
+            setOK(false);
+            return;
+        }
+
+        IQuery query = CloverManager.getInstance().getQuery();
+        String CASE_PS_AREA = StringUtils.toString(getPrams().get("CASE_PS_AREA"));
+        if(CASE_PS_AREA.length() > 0){
+            if(query.doQuery("SELECT O_ID FROM X_O WHERE O_ID IN (" + O_ID + ") AND O_DESK_ID IN (SELECT DESK_ID FROM X_DESK WHERE DESK_AREA_ID IN ("+CASE_PS_AREA+"))").list().size() == 0){
+                System.out.println("打印区域不满足：退菜");
+                setOK(false);
+                query.free();
+                return;
+            }
+        }
+        String CASE_PS = StringUtils.toString(getPrams().get("CASE_PS"));
+        String CASE_PSX = StringUtils.toString(getPrams().get("CASE_PSX"));
+        String COND = "";
+        if(CASE_PS.length() > 0 || CASE_PSX.length() > 0){
+            String s = "";
+            s =  CASE_PS.length() > 0 ? "A.O_P_TYPE_ID IN ("+CASE_PS+")" : "";
+            if(CASE_PSX.length() > 0){
+                if(s.length() > 0){
+                    s += " OR ";
+                }
+                s += "A.O_P_ID IN ("+CASE_PSX+")";
+            }
+            COND += " AND ("+ s +")";
+        }
+        String sql = "SELECT A.*, B.UNIT_NAME, CX.P_TYPE_NAME AS O_P_TYPE_NAME FROM X_O_P A " +
+                "LEFT JOIN X_UNIT B ON A.O_P_UNIT_ID = B.UNIT_ID " +
+                "LEFT JOIN X_P_TYPE C ON A.O_P_TYPE_ID = C.P_TYPE_ID " +
+                "LEFT JOIN X_P_TYPE CX ON C.P_TYPE_PARENT = CX.P_TYPE_ID " +
+                "WHERE A.O_P_STATUS = -1 AND A.O_P_DT_CANCEL = '"+O_P_DT_CANCEL+"' AND A.O_ID IN (" + O_ID + ")" + COND + " ORDER BY CX.P_TYPE_SORT, C.P_TYPE_SORT, A.O_P_ID";
+        List<Map> OPS = query.doQuery(sql).tables();
+        int count = OPS.size();
+        if(count == 0){
+            setOK(false);
+            query.free();
+            return;
+        }
+        String[] P_NAME = new String[count];
+        String[] P_PRICE = new String[count];
+        String[] P_NUM = new String[count];
+        String[] P_UNIT = new String[count];
+        String[] P_AMOUNT = new String[count];
+        String[] P_MEMO = new String[count];
+        String[] P_TYPE = new String[count];
+        String[] P_TYPE_NAME = new String[count];
+        String[] P_DT = new String[count];
+        setDataLen(count);
+        String O_P_REASON = "";
+        float AMOUNT = 0;
+        int i = 0;
+         for(Map OP : OPS){
+            String O_P_ID = StringUtils.toString(OP.get("O_P_ID"));
+            String O_P_EXT_STATUS = StringUtils.toString(OP.get("O_P_EXT_STATUS"));
+            String _O_P_NAME = StringUtils.toString(OP.get("O_P_NAME"));
+            String O_P_TYPE_ID = StringUtils.toString(OP.get("O_P_TYPE_ID"));
+            String O_P_TYPE_NAME = StringUtils.toString(OP.get("O_P_TYPE_NAME"));
+            P_TYPE[i] = O_P_TYPE_ID;
+            P_TYPE_NAME[i] = O_P_TYPE_NAME;
+            String O_P_DT_ORDER = StringUtils.toString(OP.get("O_P_DT_ORDER"));
+            P_DT[i] = O_P_DT_ORDER;
+            long _O_P_ID = NumberUtils.toLong(O_P_ID);
+            if(_O_P_ID > 10000){
+                _O_P_NAME = "[临]" + _O_P_NAME;
+            }
+            if(O_P_EXT_STATUS.equals("1")){
+                _O_P_NAME = "[挂起]" + _O_P_NAME;
+            }
+            P_NAME[i] = _O_P_NAME;
+
+            P_PRICE[i] = StringUtils.toString(OP.get("O_P_PRICE"));
+            String O_P_TAG_WEIGHT = StringUtils.toString(OP.get("O_P_TAG_WEIGHT"));
+            if(O_P_TAG_WEIGHT.equals("1")){
+                P_NUM[i] = StringUtils.toString(OP.get("O_P_WEIGHT"));
+            }
+            else{
+                P_NUM[i] = StringUtils.toString(OP.get("O_P_NUM"));
+            }
+            float P_AMOUNT_ = NumberUtils.toFloat(OP.get("O_P_AMOUNT"));
+            AMOUNT +=  P_AMOUNT_;
+            P_AMOUNT[i] = StringUtils.toString(NumberUtils.toDecimal(P_AMOUNT_, 1));
+            P_UNIT[i] = StringUtils.toString(OP.get("UNIT_NAME"));
+
+            String O_P_TASTE = StringUtils.toString(OP.get("O_P_TASTE"));
+            String O_P_WAY = StringUtils.toString(OP.get("O_P_WAY"));
+            String O_P_PACK = StringUtils.toString(OP.get("O_P_PACK"));
+            String O_P_REQUIRE = StringUtils.toString(OP.get("O_P_REQUIRE"));
+            String O_P_MEMO = StringUtils.toString(OP.get("O_P_MEMO"));
+            float O_P_DISCOUNT = NumberUtils.toFloat(OP.get("O_P_DISCOUNT"));
+            List<String> memos = new ArrayList<String>();
+            if(O_P_PACK.equals("1")){
+                memos.add("打包");
+            }
+            if(O_P_DISCOUNT >= 0){
+                if(O_P_DISCOUNT == 0){
+                    memos.add("赠送");
+                }
+                else{
+                    memos.add(O_P_DISCOUNT + "折");
+                }
+            }
+            if(O_P_WAY.length() > 0){
+                memos.add(O_P_WAY);
+            }
+            if(O_P_TASTE.length() > 0){
+                memos.add(O_P_TASTE);
+            }
+            if(O_P_REQUIRE.length() > 0){
+                memos.add(O_P_REQUIRE);
+            }
+            if(O_P_MEMO.length() > 0){
+                memos.add(O_P_MEMO);
+            }
+            P_MEMO[i] = ArrayUtils.join(",", memos);
+            O_P_REASON = StringUtils.toString(OP.get("O_P_REASON"));
+            i++;
+        }
+
+        getDataX().put("菜品名称", P_NAME);
+        getDataX().put("数量", P_NUM);
+        getDataX().put("单价", P_PRICE);
+        getDataX().put("单位", P_UNIT);
+        getDataX().put("金额", P_AMOUNT);
+        getDataX().put("菜品备注", P_MEMO);
+        getDataX().put("菜品类别", P_TYPE_NAME);
+        getDataX().put("菜品类别ID", P_TYPE);
+        getDataX().put("下单时间", P_DT);
+//        sql = "SELECT A.*, B.DESK_CODE, B.DESK_NAME,A.O_SERVER FROM X_O A " +
+//                "LEFT JOIN X_DESK B ON A.O_DESK_ID = B.DESK_ID " +
+//                "WHERE A.O_ID IN (" + O_ID + ")";
+        sql = "SELECT A.*, B.DESK_CODE, B.DESK_NAME,A.O_SERVER FROM X_O A " +
+                "LEFT JOIN X_DESK B ON A.O_DESK_ID = B.DESK_ID " +
+                "WHERE A.O_ID IN (" + O_ID + ") ORDER BY A.O_DINE_DT";
+        List<Map> OS = query.doQuery(sql).tables();
+        Map O = null;
+        if(OS.size() > 0){
+            O = OS.get(0);
+        }
+        else{
+            O = new HashMap();
+        }
+        String DESK_NAME = "";
+        for(Map _O : OS){
+            if(DESK_NAME.length() > 0){
+                DESK_NAME += ",";
+            }
+            DESK_NAME += StringUtils.toString(_O.get("DESK_CODE")) + StringUtils.toString(_O.get("DESK_NAME"));
+        }
+        int DINE_NOP = NumberUtils.toInt(O.get("O_DINE_NOP"));
+        String O_SERVER = StringUtils.toString(O.get("O_SERVER"));
+
+        String O_DINE_DT = StringUtils.toString(O.get("O_DINE_DT"));
+        getData().put("桌台", new String[]{DESK_NAME});
+        getData().put("订单ID", new String[]{O_ID});
+        getData().put("人数", new String[]{DINE_NOP+""});
+        getData().put("服务员", new String[]{O_SERVER});
+        String O_OD_USER = StringUtils.toString(O.get("O_OD_USER"));
+        getData().put("点菜员", new String[]{O_OD_USER});
+        getData().put("就餐时间", new String[]{O_DINE_DT});
+        String O_P_CANCEL_USER = query.doQuery("SELECT ACCOUNT_NAME FROM X_ACCOUNT WHERE ACCOUNT_ID = " + MAKER).getValue();
+        getData().put("退菜人员", new String[]{O_P_CANCEL_USER});
+        getData().put("退菜原因", new String[]{O_P_REASON});
+        getData().put("退菜时间", new String[]{O_P_DT_CANCEL});
+        getData().put("小计", new String[]{AMOUNT+""});
+        query.free();
+    }
+}

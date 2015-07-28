@@ -1,0 +1,41 @@
+package org.redot.clover.core;
+
+import org.redot.clover.demon.DemonService;
+import org.restlet.Application;
+import org.restlet.Restlet;
+import org.restlet.routing.Router;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: CASH
+ * Date: 10-12-17
+ * Time: 上午10:56
+ * To change this template use File | Settings | File Templates.
+ */
+public class CloverApplication extends Application {
+    /**
+     * Creates a root Restlet that will receive all incoming calls.
+     */
+    @Override
+    public synchronized Restlet createInboundRoot() {
+        // Create a router Restlet that routes each call to a new instance of HelloWorldResource.
+        Router router = new Router(getContext());
+        // router.
+        // Defines only one route
+        router.attachDefault(RootResource.class);
+        //router.attach("/test", HelloWorldResource.class);
+        //router.attach("/test/{id}", HelloWorldResource.class);
+        //router.attach("/test/{id}/{name}", HelloWorldResource.class);
+        new CloverApplicationConfig().config(router);
+        return router;
+    }
+
+    public CloverApplication() {
+        setName("Clover");
+        setDescription("Clover");
+        setOwner("YiHeng Soft");
+        setAuthor("CASH");
+        getTunnelService().setMethodParameter("_method");
+//        DemonService.getInstance();
+    }
+}

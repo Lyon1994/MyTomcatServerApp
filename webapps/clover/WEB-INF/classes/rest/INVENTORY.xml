@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<clover>
+
+     <resource class="org.redot.clover.app.inventory.rest.SupplierList">/inventory/supplier/list</resource>
+    <resource class="org.redot.clover.app.inventory.rest.SupplierAmountList">/inventory/supplier/amount/list</resource>
+     <resource class="org.redot.clover.app.inventory.rest.Supplier">/inventory/supplier</resource>
+    <resource class="org.redot.clover.app.inventory.rest.PurchaseDetail">/inventory/purchase/detail</resource>
+
+
+    <resource class="org.redot.clover.app.inventory.rest.SubjectList">/inventory/subject/list</resource>
+    <resource class="org.redot.clover.app.inventory.rest.SubjectListLarge">/inventory/subject/list/large</resource>
+    <resource class="org.redot.clover.app.inventory.rest.SubjectListSmall">/inventory/subject/list/small/{PARENT}</resource>
+    <resource class="org.redot.clover.app.inventory.rest.Subject">/inventory/subject</resource>
+
+
+    <resource class="org.redot.clover.app.inventory.rest.UseList">/inventory/use/list</resource>
+    <resource class="org.redot.clover.app.inventory.rest.Use">/inventory/use</resource>
+    <resource class="org.redot.clover.app.inventory.rest.Use">/inventory/use/info/{U_ID}</resource>
+    <resource class="org.redot.clover.app.inventory.rest.UseCheck">/inventory/use/check</resource>
+    <resource class="org.redot.clover.app.inventory.rest.UseReject">/inventory/use/reject</resource>
+
+    <resource class="org.redot.clover.app.inventory.rest.StockList">/inventory/stock/list</resource>
+    <resource class="org.redot.clover.app.inventory.rest.ListWarning">/inventory/stock/listWarning</resource>
+    <resource class="org.redot.clover.app.inventory.rest.StockFix">/inventory/stock/fix</resource>
+
+    <resource class="org.redot.clover.app.inventory.rest.ItemLoss">/inventory/item/loss</resource>
+    <resource class="org.redot.clover.app.inventory.rest.ItemUse">/inventory/item/use</resource>
+
+    <resource class="org.redot.clover.app.inventory.rest.PurchaseReject">/inventory/purchase/reject</resource>
+
+     <resource class="org.redot.clover.app.inventory.rest.StockPurchaseList">/inventory/stock/purchase/list</resource> <!--/{PO_ITEM_ID}-->
+    <resource class="org.redot.clover.app.inventory.rest.StockOrderList">/inventory/stock/order/list</resource>
+
+
+    <resource class="org.redot.clover.app.inventory.rest.PurchaseList">/inventory/purchase/list</resource>  <!--查询-->
+    <resource class="org.redot.clover.app.inventory.rest.Purchase">/inventory/purchase</resource>  <!--添加、修改、删除-->
+    <resource class="org.redot.clover.app.inventory.rest.PurchaseCheck">/inventory/purchase/check</resource>  <!--审核-->
+    <resource class="org.redot.clover.app.inventory.rest.PurchaseVerify">/inventory/purchase/verify</resource> <!--核单-->
+    <resource class="org.redot.clover.app.inventory.rest.PurchaseIn">/inventory/purchase/in</resource>  <!--入库-->
+    <resource class="org.redot.clover.app.inventory.rest.PurchaseCancel">/inventory/purchase/cancel</resource>  <!--审核不通过-->
+    <resource class="org.redot.clover.app.inventory.rest.PurchaseBack">/inventory/purchase/back</resource>  <!--还原-->
+    <resource class="org.redot.clover.app.inventory.rest.PurchaseBill">/inventory/purchase/bill</resource>  <!--结账-->
+    <resource class="org.redot.clover.app.inventory.rest.OrderPurchasePrint">/inventory/order/purchase/print</resource> <!--打印-->
+
+
+
+    <resource class="org.redot.clover.app.item.rest.ItemTree">/item/tree</resource>        <!-- 物料树-->
+
+
+
+
+    <resource class="org.redot.clover.print.cases.ItemUsePrintPre">/item/use</resource>        <!-- 打印损耗单-->
+
+
+
+</clover>

@@ -1,0 +1,97 @@
+package org.redot.clover.print;
+
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 11-10-11
+ * Time: 下午5:14
+ * To change this template use File | Settings | File Templates.
+ */
+public class PrintThread extends Thread{
+    private int printerId = 0;
+    private List<PrintProxy> proxyList = new ArrayList<PrintProxy>();
+
+    private PrintProxy running = null;
+
+    private boolean run = true;
+
+    public boolean isRun() {
+        return run;
+    }
+
+    public void setRun(boolean run) {
+        this.run = run;
+    }
+
+    public int getPrinterId() {
+        return printerId;
+    }
+
+
+    public void setPrinterId(int printerId) {
+        this.printerId = printerId;
+    }
+
+    public synchronized void addProxy(PrintProxy printProxy){
+        getProxyList().add(printProxy);
+    }
+
+    public void exec(){
+//        System.out.println("查询需要的打印任务......");
+
+        if(running != null){
+//            System.out.println("队列中已有打印任务......");
+            if(running.isAlive()){
+//                System.out.println("已有打印任务执行中......");
+                return;
+            }
+            else{
+                if(running.getStatus() == 0){
+                    System.out.println("打印任务执行失败,加入队列重新执行......");
+                    addProxy(new PrintProxy(running.getPrinter(), running.getData(), running.getTemplate(), running.getNum(), running.isMoneyBox()));
+                }
+                else{
+                    running = null;
+                }
+            }
+//            System.out.println("已有打印任务执行完毕......");
+        }
+         if(getProxyList().size() == 0){
+//            System.out.println("线程池中暂无需要的打印任务......");
+            return;
+        }
+//        System.out.println("获取线程池中第一个打印任务并移除......");
+        running = getProxyList().get(0);
+        getProxyList().remove(0);
+//        System.out.println("打印任务启动中......");
+        running.start();
+    }
+
+
+    public synchronized List<PrintProxy> getProxyList() {
+        return proxyList;
+    }
+
+    public PrintThread(int printerId){
+        this.printerId = printerId;
+    }
+
+        public void run(){
+            while (isRun()){
+                exec();
+                try {
+                    sleep(2000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+                }
+            }
+            try {
+                this.finalize();
+            } catch (Throwable throwable) {
+                throwable.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+            }
+        }
+}

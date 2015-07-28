@@ -1,0 +1,25 @@
+package org.redot.clover.print.rest;
+
+import org.redot.clover.core.data.DataPackage;
+import org.redot.clover.core.ext.BaseResource;
+import org.redot.clover.print.PrintCaseAreaAcion;
+import org.redot.clover.print.PrintCasePrinterAction;
+import org.restlet.resource.Post;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: yh_admin
+ * Date: 12-12-7
+ * Time: 下午3:18
+ * To change this template use File | Settings | File Templates.
+ */
+public class PrintCasePrinter extends BaseResource {
+    @Post("json")
+    public String doPost() {
+        DataPackage dp = new DataPackage();
+        PrintCasePrinterAction a = new PrintCasePrinterAction();
+        dp.setStatus(a.updateprinter(form));
+        return dp.toJSON();
+    }
+
+}

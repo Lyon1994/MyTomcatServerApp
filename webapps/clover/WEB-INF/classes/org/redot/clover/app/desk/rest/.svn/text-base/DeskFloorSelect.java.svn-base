@@ -1,0 +1,31 @@
+package org.redot.clover.app.desk.rest;
+
+import org.redot.clover.app.desk.DeskAction;
+import org.redot.clover.core.data.SimpleDataPackage;
+import org.redot.clover.core.ext.BaseResource;
+import org.redot.library.lang.StringUtils;
+import org.restlet.resource.Get;
+
+import java.util.List;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 10-12-22
+ * Time: 上午8:57
+ * To change this template use File | Settings | File Templates.
+ */
+public class DeskFloorSelect extends BaseResource {
+    @Get("json")
+    public String getArea(){
+        SimpleDataPackage dp = new SimpleDataPackage();
+        DeskAction da = new DeskAction() ;
+        List<String[]> list = da.getDeskFloor();
+        String[] suggestions = new String[list.size()];
+        for(int i=0;i<list.size(); i++){
+            suggestions[i] = StringUtils.toString(list.get(i)[0]);
+        }
+        dp.setSuggestions(suggestions);
+        return dp.toJSON();
+    }
+}

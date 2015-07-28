@@ -1,0 +1,29 @@
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/yee/!svn/ver/132/server/Redot/CloverServer/src/org/redot/clover/app/report/rest
+END
+ReportPurchaseCancel.java
+K 25
+svn:wc:ra_dav:version-url
+V 110
+/svn/yee/!svn/ver/125/server/Redot/CloverServer/src/org/redot/clover/app/report/rest/ReportPurchaseCancel.java
+END
+ItemUseReportForms.java
+K 25
+svn:wc:ra_dav:version-url
+V 108
+/svn/yee/!svn/ver/132/server/Redot/CloverServer/src/org/redot/clover/app/report/rest/ItemUseReportForms.java
+END
+ReportPurchase.java
+K 25
+svn:wc:ra_dav:version-url
+V 104
+/svn/yee/!svn/ver/112/server/Redot/CloverServer/src/org/redot/clover/app/report/rest/ReportPurchase.java
+END
+ItemLossReportForms.java
+K 25
+svn:wc:ra_dav:version-url
+V 109
+/svn/yee/!svn/ver/132/server/Redot/CloverServer/src/org/redot/clover/app/report/rest/ItemLossReportForms.java
+END

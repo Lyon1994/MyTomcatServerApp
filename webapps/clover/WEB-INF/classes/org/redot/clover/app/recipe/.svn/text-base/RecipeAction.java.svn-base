@@ -1,0 +1,131 @@
+package org.redot.clover.app.recipe;
+
+import org.redot.clover.app.message.MessageManager;
+import org.redot.clover.core.CloverManager;
+import org.redot.clover.core.ext.BaseAction;
+import org.redot.clover.core.ext.Params;
+import org.redot.library.db.IQuery;
+import org.redot.library.db.ITable;
+import org.redot.library.lang.StringUtils;
+import org.restlet.data.Form;
+
+import java.util.ArrayList;
+import java.util.Hashtable;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: yh_admin
+ * Date: 12-8-20
+ * Time: 下午2:39
+ * To change this template use File | Settings | File Templates.
+ */
+public class RecipeAction extends BaseAction{
+    public List<Map> list(Params params)
+    {
+//        Map data = form.getValuesMap();
+//         List<Map> data = new ArrayList<Map>();
+        String P_ID= StringUtils.toString(params.val("P_ID"));
+        // String str=new String(P_NAME,"UTF-8");
+        System.out.println("++++++++++++++++++++"+P_ID);
+//        String sql="SELECT B.RP_ID,A.P_NAME FROM X_P A LEFT JOIN X_RP B ON A.P_ID =B.RP_P_ID WHERE A.P_NAME='"+P_NAME+"'";
+        IQuery query=getQuery();
+//        List<Map> list = query.doQuery(sql).tables();
+//        for(Map m : list){
+//            String  RP_ID=StringUtils.toString(m.get("RP_ID"))  ;
+           String sql="SELECT  B.ITEM_ID, B.ITEM_NAME ,B.ITEM_UNIT_ID,C.UNIT_NAME,A.RP_ITEM_NUM,A.RP_ITEM_RATE FROM  X_RP_DESC A LEFT JOIN X_ITEM B ON B.ITEM_ID=A.RP_ITEM_ID LEFT JOIN X_UNIT C ON B.ITEM_UNIT_ID=C.UNIT_ID  INNER JOIN  (SELECT B.RP_ID,A.P_NAME FROM X_P A LEFT JOIN X_RP B ON A.P_ID =B.RP_P_ID WHERE A.P_ID='"+P_ID+"')  T ON T.RP_ID=A.RP_ID" ;
+            List<Map> ITEM= query.doQuery(sql).tables();
+            System.out.println(sql);
+//            m.put("ITEM",ITEM)    ;
+            query.free();
+//        }
+        return ITEM;
+    }
+
+    public int set(Form form){
+        Map data = form.getValuesMap();
+//        String RP_ID=StringUtils.toString(data.get("RP_ID"))  ;
+        String P_ID= StringUtils.toString(data.get("P_ID"));
+        String    RP_ITEM_ID=StringUtils.toString(data.get("RP_ITEM_ID"));
+        String      RP_ITEM_NUM    =StringUtils.toString(data.get("RP_ITEM_NUM"));
+        String    RP_ITEM_RATE=StringUtils.toString(data.get("RP_ITEM_RATE"));
+        String[] RP_ITEM_IDX = StringUtils.split(RP_ITEM_ID, ",");
+        String[] RP_ITEM_NUMX = StringUtils.split(RP_ITEM_NUM, ",");
+        String[] RP_ITEM_RATEX=StringUtils.split(RP_ITEM_RATE,",");
+        if(RP_ITEM_IDX.length!=RP_ITEM_NUMX.length && RP_ITEM_NUMX.length!=RP_ITEM_RATEX.length)
+        {
+            return CloverManager.CODE_FAILED;
+        }
+        int result=0;
+        ITable TD = getTable("X_RP").clearData();
+        ITable TC = getTable("X_RP_DESC").clearData();
+         String sql="SELECT RP_ID FROM X_RP WHERE RP_P_ID="+P_ID;
+         IQuery query=getQuery();
+           String  RP_IDX=query.doQuery(sql).getValue();
+        if(RP_IDX.length() == 0){
+            RP_IDX = String.valueOf(TD.getMaxID("RP_ID"));
+            System.out.println(RP_IDX);
+            data.put("RP_ID",RP_IDX)  ;
+            data.put("RP_P_ID",P_ID) ;
+            result = TD.data(data).create();
+            TC.where(TC.column("RP_ID").eq(RP_IDX)).delete();
+            result = 0;
+            for(int i = 0; i< RP_ITEM_IDX.length;i++){
+                Map  m = new Hashtable();
+                m.put("RP_ID",RP_IDX) ;
+                m.put("RP_ITEM_ID",RP_ITEM_IDX[i]);
+                m.put("RP_ITEM_NUM",RP_ITEM_NUMX[i]);
+                m.put("RP_ITEM_RATE",RP_ITEM_RATEX[i]) ;
+//                m.put("RP_UNIT_ID",RP_UNIT_IDX[i])  ;
+                TC.data(m).create();
+                TC.clearData();
+            }
+        }
+        else{
+            TC.where(TC.column("RP_ID").eq(RP_IDX)).delete();
+            result = 0;
+            for(int i = 0; i< RP_ITEM_IDX.length;i++){
+                Map  m = new Hashtable();
+                m.put("RP_ID",RP_IDX) ;
+                m.put("RP_ITEM_ID",RP_ITEM_IDX[i]);
+                m.put("RP_ITEM_NUM",RP_ITEM_NUMX[i]);
+                m.put("RP_ITEM_RATE",RP_ITEM_RATEX[i]) ;
+//                m.put("RP_UNIT_ID",RP_UNIT_IDX[i])  ;
+                TC.data(m).create();
+                TC.clearData();
+            }
+        }
+
+        if(result < 0){
+            return CloverManager.CODE_FAILED;
+        }
+        MessageManager.getInstance().setVersion(MessageManager.MSG_VER_CLIENT);
+        return CloverManager.CODE_SUCCESS;
+    }
+    public int delete(Form form) {
+        Map data = form.getValuesMap();
+        String P_ID= StringUtils.toString(data.get("P_ID"));
+        String sql="SELECT A.RP_ID FROM X_RP A WHERE A.RP_P_ID="+P_ID;
+        IQuery query=getQuery();
+        List<Map> list = query.doQuery(sql).tables();
+        int  result=0;
+        for(Map m : list){
+            String RP_ID = StringUtils.toString(m.get("RP_ID"));
+            sql="DELETE  FROM  X_RP_DESC  WHERE RP_ID = "+RP_ID;
+            result=query.doExec(sql);
+        }
+        System.out.println("*************************2"+sql);
+        sql = "DELETE  FROM X_RP  WHERE RP_P_ID = " + P_ID;
+        result = query.doExec(sql);
+        System.out.println("*************************1"+sql);
+        if(result < 0){
+            query.free();
+            return CloverManager.CODE_FAILED;
+        }
+        query.free();
+        MessageManager.getInstance().setVersion(MessageManager.MSG_VER_CLIENT);
+        return CloverManager.CODE_SUCCESS;
+    }
+}
+

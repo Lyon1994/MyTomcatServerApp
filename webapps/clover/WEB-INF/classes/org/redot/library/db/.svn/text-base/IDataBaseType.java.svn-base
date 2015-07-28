@@ -1,0 +1,40 @@
+package org.redot.library.db;
+
+/**
+ * Copyright By Redot.
+ * User: CASH
+ * Date: 2009-10-14
+ * Time: 14:44:42
+ */
+public class IDataBaseType {
+    public static final int MSSQL_2000 = 1;
+    public static final int MSSQL_2005 = 2;
+    public static final int MYSQL      = 3;
+    public static final int SYSBASE    = 4;
+    public static final int DB2        = 5;
+    public static final int ORACLE_9   = 6;
+    public static final int ORACLE_10  = 7;
+    public static final int ORACLE_11  = 8;
+
+    public static String getDriver(int type){
+        switch(type){
+            case MSSQL_2000 :
+                return "net.sourceforge.jtds.jdbc.Driver";
+            case MSSQL_2005 :
+                return "net.sourceforge.jtds.jdbc.Driver";
+            case MYSQL :
+                return "com.mysql.jdbc.Driver";
+            case SYSBASE :
+                return "";
+            case DB2 :
+                return "";
+            case ORACLE_9 :
+                return "";
+            case ORACLE_10 :
+                return "";
+            case ORACLE_11 :
+                return "";
+        }
+        return "";
+    }
+}

@@ -1,0 +1,25 @@
+package org.redot.clover.print.rest;
+
+import org.redot.clover.core.data.DataPackage;
+import org.redot.clover.core.ext.BaseResource;
+import org.redot.clover.print.PrintTypeLargeAction;
+import org.restlet.resource.Post;
+import org.restlet.resource.Put;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: yh_admin
+ * Date: 12-11-21
+ * Time: 下午4:40
+ * To change this template use File | Settings | File Templates.
+ */
+public class PrintTypeLargeDelete extends BaseResource {
+    @Post("json")
+    public String doDelete(){
+        System.out.println("1111111");
+        DataPackage dp = new DataPackage();
+        PrintTypeLargeAction a = new PrintTypeLargeAction();
+        dp.setStatus(a.deleteLarge(form));
+        return dp.toJSON();
+    }
+}

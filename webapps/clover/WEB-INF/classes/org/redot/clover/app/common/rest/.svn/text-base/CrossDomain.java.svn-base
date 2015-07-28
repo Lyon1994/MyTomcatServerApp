@@ -1,0 +1,41 @@
+package org.redot.clover.app.common.rest;
+
+import org.redot.clover.app.product.ProductAction;
+import org.redot.clover.core.ext.BaseResource;
+import org.redot.library.lang.StringUtils;
+import org.restlet.data.MediaType;
+import org.restlet.representation.FileRepresentation;
+import org.restlet.representation.Representation;
+import org.restlet.resource.Get;
+
+import java.io.*;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 10-12-21
+ * Time: 下午5:02
+ * To change this template use File | Settings | File Templates.
+ */
+public class CrossDomain extends BaseResource {
+
+    @Get("xml")
+    public String doGet() throws Exception {
+
+
+        String fileName = "crossdomain.xml";
+        String path = this.getClass().getResource("/common").getPath();
+        System.out.println(path);
+        System.out.println(fileName);
+        File file = new File(path + "/" + fileName);
+        BufferedReader reader = new BufferedReader(new FileReader(file));
+        String temp = "";
+        String str = "";
+        while ((temp = reader.readLine()) != null){
+            str += temp;
+        }
+
+        reader.close();
+        return str;
+    }
+}

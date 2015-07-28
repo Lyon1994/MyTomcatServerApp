@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<clover>
+    <resource class="org.redot.clover.print.rest.PrinterList">/print/printer/list</resource>
+    <!--<resource class="org.redot.clover.print.rest.Printer">/print/printer/info/{ID}</resource>-->
+    <resource class="org.redot.clover.print.rest.Printer">/print/printer</resource>
+    <resource class="org.redot.clover.print.rest.PrinterDelete">/print/printer/delete</resource>
+    <resource class="org.redot.clover.print.rest.PrinterSelect">/print/printer/select</resource>
+    <resource class="org.redot.clover.print.rest.PrinterBak">/print/printer/bak</resource>
+
+    <resource class="org.redot.clover.print.rest.PrintTypeSmall">/print/case/list/{ID}</resource>
+    <!--<resource class="org.redot.clover.print.rest.PrintCase">/print/case/info/{ID}</resource>-->
+    <resource class="org.redot.clover.print.rest.PrintCase">/print/case</resource>
+    <resource class="org.redot.clover.print.rest.PrintCaseDelete">/print/case/delete</resource>
+    <!--<resource class="org.redot.clover.print.rest.PrintTypeSmall">/print/case/small/{PARENT}</resource>-->
+    <resource class="org.redot.clover.print.rest.PrintCaseClass">/print/case/class</resource>
+    <resource class="org.redot.clover.print.rest.PrintCaseDish">/print/case/dish</resource>
+    <resource class="org.redot.clover.print.rest.PrintCaseArea">/print/case/area</resource>
+    <resource class="org.redot.clover.print.rest.PrintCasePrinter">/print/case/printer</resource>
+
+
+        <resource class="org.redot.clover.print.rest.PrintTemplateSelect">/print/template/select</resource>
+        <resource class="org.redot.clover.print.rest.PrintTemplateList">/print/template/list</resource>
+        <resource class="org.redot.clover.print.rest.PrintTemplate">/print/template/info/{ID}</resource>
+        <resource class="org.redot.clover.print.rest.PrintTemplate">/print/template</resource>
+        <resource class="org.redot.clover.print.rest.PrintCommandSelect">/print/command/select</resource>
+        <resource class="org.redot.clover.print.rest.PrintTypeSelect">/print/type/select</resource>
+
+       <!--<resource class="org.redot.clover.print.rest.PrintTypeLarge">/print/type/large</resource>-->
+       <!--<resource class="org.redot.clover.print.rest.PrintTypeLargeDelete">/print/type/large/delete</resource>-->
+       <!--<resource class="org.redot.clover.print.rest.PrintTypeSmall">/print/type/small</resource>-->
+    <!--<resource class="org.redot.clover.print.rest.PrintTypeSmallDelete">/print/type/small/delete</resource>-->
+       <!--<resource class="org.redot.clover.print.rest.PrintTypeSmall">/print/type/small/{PARENT}</resource>-->
+
+</clover>

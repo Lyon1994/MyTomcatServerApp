@@ -1,0 +1,384 @@
+package org.redot.clover.app.product;
+
+import org.redot.clover.app.message.MessageManager;
+import org.redot.clover.core.CloverManager;
+import org.redot.clover.core.ext.BaseAction;
+import org.redot.clover.core.ext.Params;
+import org.redot.library.db.IQuery;
+import org.redot.library.db.ITable;
+import org.redot.library.lang.NumberUtils;
+import org.redot.library.lang.StringUtils;
+import org.restlet.data.Form;
+
+import java.util.ArrayList;
+import java.util.Hashtable;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 11-4-26
+ * Time: 下午4:48
+ * To change this template use File | Settings | File Templates.
+ */
+public class ProductTypeAction extends BaseAction{
+
+    public List<Map> tree(String P_TYPE_ID){
+        P_TYPE_ID = P_TYPE_ID == null || P_TYPE_ID.equals("") ? "0" : P_TYPE_ID;
+        String sql = "SELECT * FROM X_P_TYPE WHERE P_TYPE_STATUS <> 2 AND P_TYPE_PARENT= "+P_TYPE_ID+" ORDER BY P_TYPE_SORT, P_TYPE_ID";
+        IQuery query = getQuery();
+        List<Map> list = query.doQuery(sql).tables();
+        List<Map> data = new ArrayList<Map>();
+        for(int i=0;i<list.size();i++){
+            Map m = list.get(i);
+            Map d = new Hashtable();
+            String P_TYPE_ID_ = StringUtils.toString(m.get("P_TYPE_ID"));
+            d.put("ID", P_TYPE_ID_);
+            d.put("NAME", StringUtils.toString(m.get("P_TYPE_NAME")));
+
+            sql = "SELECT * FROM X_P_TYPE WHERE P_TYPE_STATUS <> 2 AND P_TYPE_PARENT="+P_TYPE_ID_;
+            int count = query.rowCount(sql);
+            if( count > 0){
+                d.put("ITEM", tree(P_TYPE_ID_));
+            }
+            else{
+                d.put("ITEM", new ArrayList<Map>());
+            }
+            m.put("CHILDREN", count);
+            d.put("EXT", m);
+            data.add(d);
+        }
+        query.free();
+        return data;
+    }
+
+    public List<Map> list(){
+        String sql = "SELECT A.* FROM X_P_TYPE A ORDER BY P_TYPE_SORT";
+        IQuery query = getQuery();
+        List<Map> list = query.doQuery(sql).tables();
+        query.free();
+        return list;
+    }
+
+    public List<Map> listLarge(){
+        String sql = "SELECT A.*,(SELECT COUNT(*) FROM X_P_TYPE WHERE P_TYPE_PARENT=A.P_TYPE_ID) AS CHILDREN FROM X_P_TYPE A WHERE A.P_TYPE_PARENT = 0 ORDER BY P_TYPE_SORT";
+        IQuery query = getQuery();
+        List<Map> list = query.doQuery(sql).tables();
+        query.free();
+        return list;
+    }
+
+    public List<Map> listSmall(String Q, String PARENT){
+        String sql = "SELECT A.*,(SELECT COUNT(*) FROM X_P WHERE P_TYPE_ID=A.P_TYPE_ID) AS CHILDREN FROM X_P_TYPE A WHERE A.P_TYPE_PARENT  <> 0 AND A.P_TYPE_PARENT = " +  PARENT + " ORDER BY P_TYPE_SORT";
+        IQuery query = getQuery();
+        List<Map> list = query.doQuery(sql).tables();
+        query.free();
+        return list;
+    }
+
+    public Map get(String P_TYPE_ID){
+        if(P_TYPE_ID == null || P_TYPE_ID.equals("")){
+            return null;
+        }
+        String sql = "SELECT A.*,B.P_TYPE_NAME AS P_TYPE_PARENT_NAME FROM X_P_TYPE A " +
+                "LEFT JOIN X_P_TYPE B ON A.P_TYPE_PARENT = B.P_TYPE_ID " +
+                "WHERE A.P_TYPE_ID="+P_TYPE_ID;
+        IQuery query = getQuery();
+        Map m = query.doQuery(sql).table();
+        query.free();
+        return m;
+    }
+
+    public int set(Form form){
+        Map data = form.getValuesMap();
+        String P_TYPE_ID = StringUtils.toString(data.get("P_TYPE_ID"));
+        String P_TYPE_PARENT = StringUtils.toString(data.get("P_TYPE_PARENT"));
+        if(P_TYPE_PARENT.length() == 0){
+            data.put("P_TYPE_PARENT", "0");
+        }
+
+        ITable t = getTable("X_P_TYPE").clearData();
+        int result;
+        if(P_TYPE_ID.length() == 0){
+            P_TYPE_ID = String.valueOf(t.getMaxID("P_TYPE_ID"));
+            data.put("P_TYPE_ID", P_TYPE_ID);
+            result = t.data(data).create();
+        }
+        else{
+            if(P_TYPE_PARENT.equals(P_TYPE_ID)){
+                data.put("P_TYPE_PARENT", "0");
+            }
+            result = t.data(data).where(t.column("P_TYPE_ID").eq(P_TYPE_ID)).update();
+        }
+        if(result < 0){
+            return CloverManager.CODE_FAILED;
+        }
+        MessageManager.getInstance().setVersion(MessageManager.MSG_VER_PRODUCT_TYPE);
+        return CloverManager.CODE_SUCCESS;
+    }
+
+    public int delete(Form form) {
+        Map data = form.getValuesMap();
+        String P_TYPE_ID = StringUtils.toString(data.get("P_TYPE_ID"));
+        if(P_TYPE_ID.length() == 0){
+            return CloverManager.CODE_FAILED;
+        }
+        String sql = "SELECT * FROM X_P_TYPE WHERE P_TYPE_PARENT = " + P_TYPE_ID;
+        IQuery query = getQuery();
+        if(query.rowCount(sql) > 0){
+            query.free();
+            return CloverManager.CODE_FAILED;
+        }
+        sql = "UPDATE X_P_TYPE SET P_TYPE_STATUS = 2 WHERE P_TYPE_ID = " + P_TYPE_ID;
+        int result = query.doExec(sql);
+        query.free();
+        if(result < 0){
+            return CloverManager.CODE_FAILED;
+        }
+        return CloverManager.CODE_SUCCESS;
+    }
+
+    public Map setLarge(Form form){
+        Map data = form.getValuesMap();
+        String P_TYPE_ID = StringUtils.toString(data.get("P_TYPE_ID_L"));
+        String P_TYPE_NAME = StringUtils.toString(data.get("P_TYPE_NAME_L"));
+        String P_TYPE_SHOW = StringUtils.toString(data.get("P_TYPE_SHOW"));
+        String P_TYPE_SORT = StringUtils.toString(data.get("P_TYPE_SORT_L"));
+        Map d = new Hashtable();
+//        System.out.println("P_TYPE_SHOW = " + P_TYPE_SHOW);
+        if(P_TYPE_SHOW.length() == 0){
+            P_TYPE_SHOW = "0";
+        }
+        d.put("P_TYPE_SHOW", P_TYPE_SHOW);
+        d.put("P_TYPE_NAME", P_TYPE_NAME);
+        d.put("P_TYPE_ID", P_TYPE_ID);
+
+        ITable t = getTable("X_P_TYPE").clearData();
+
+//        System.out.println("P_TYPE_SORT = " + P_TYPE_SORT);
+        int result;
+        if(P_TYPE_ID.length() == 0){
+            P_TYPE_ID = String.valueOf(t.getMaxID("P_TYPE_ID"));
+            d.put("P_TYPE_ID", P_TYPE_ID);
+            IQuery query = getQuery();
+            String sql = "SELECT MAX(P_TYPE_SORT) FROM X_P_TYPE WHERE P_TYPE_PARENT = 0";
+            if(P_TYPE_SORT.length() == 0){
+                P_TYPE_SORT = (NumberUtils.toInt(query.doQuery(sql).getValue()) + 1) + "";
+            }
+//            else{
+//                sql = "UPDATE X_P_TYPE SET P_TYPE_SORT=P_TYPE_SORT+1 WHERE P_TYPE_PARENT = 0 AND P_TYPE_SORT > " + P_TYPE_SORT;
+//                query.doExec(sql);
+//                P_TYPE_SORT = (NumberUtils.toInt(P_TYPE_SORT) + 1) + "";
+//            }
+            //ww
+            query.free();
+            d.put("P_TYPE_SORT", P_TYPE_SORT);
+            d.put("P_TYPE_PARENT", 0);
+            result = t.data(d).create();
+        }
+        else{
+            if(P_TYPE_SORT.length() > 0){
+                d.put("P_TYPE_SORT", P_TYPE_SORT);
+            }
+            result = t.data(d).where(t.column("P_TYPE_ID").eq(P_TYPE_ID)).update();
+        }
+        if(result < 0){
+            d.put("STATUS", CloverManager.CODE_FAILED);
+
+        }
+        else{
+            MessageManager.getInstance().setVersion(MessageManager.MSG_VER_PRODUCT_TYPE);
+            d.put("STATUS", CloverManager.CODE_SUCCESS);
+        }
+        return d;
+    }
+
+    public Map setLargeSort(Params params){
+        String P_TYPE_ID = params.val("P_TYPE_ID");
+        int P_TYPE_SORT = NumberUtils.toInt(params.val("P_TYPE_SORT"));
+
+        Map d = new Hashtable();
+        d.put("P_TYPE_ID", P_TYPE_ID);
+        d.put("P_TYPE_SORT", P_TYPE_SORT);
+        int result;
+        if(P_TYPE_ID.length() > 0){
+            String sql = "UPDATE X_P_TYPE SET P_TYPE_SORT=P_TYPE_SORT+1 WHERE P_TYPE_PARENT = 0 AND P_TYPE_SORT > " + P_TYPE_SORT;
+            IQuery query = getQuery();
+            result = query.doExec(sql);
+            sql = "UPDATE X_P_TYPE SET P_TYPE_SORT=" + (P_TYPE_SORT+1) + " WHERE P_TYPE_ID = " + P_TYPE_ID;
+            result = query.doExec(sql);
+            query.free();
+        }
+        else{
+            d.put("STATUS", CloverManager.CODE_FAILED);
+            return d;
+        }
+        if(result < 0){
+            d.put("STATUS", CloverManager.CODE_FAILED);
+        }
+        else{
+            MessageManager.getInstance().setVersion(MessageManager.MSG_VER_PRODUCT_TYPE);
+            d.put("STATUS", CloverManager.CODE_SUCCESS);
+        }
+        return d;
+    }
+
+    public Map setSmallSort(Params params){
+        String P_TYPE_ID = params.val("P_TYPE_ID");
+        String P_TYPE_PARENT = params.val("P_TYPE_PARENT");
+        int P_TYPE_SORT = NumberUtils.toInt(params.val("P_TYPE_SORT"));
+
+        Map d = new Hashtable();
+        d.put("P_TYPE_ID", P_TYPE_ID);
+        d.put("P_TYPE_SORT", P_TYPE_SORT);
+        int result;
+        if(P_TYPE_ID.length() > 0){
+            String sql = "UPDATE X_P_TYPE SET P_TYPE_SORT=P_TYPE_SORT+1 WHERE P_TYPE_PARENT = "+P_TYPE_PARENT+" AND P_TYPE_SORT > " + P_TYPE_SORT;
+            IQuery query = getQuery();
+            result = query.doExec(sql);
+            sql = "UPDATE X_P_TYPE SET P_TYPE_SORT=" + (P_TYPE_SORT+1) + " WHERE P_TYPE_ID = " + P_TYPE_ID;
+            result = query.doExec(sql);
+            query.free();
+        }
+        else{
+            d.put("STATUS", CloverManager.CODE_FAILED);
+            return d;
+        }
+        if(result < 0){
+            d.put("STATUS", CloverManager.CODE_FAILED);
+        }
+        else{
+            MessageManager.getInstance().setVersion(MessageManager.MSG_VER_PRODUCT_TYPE);
+            d.put("STATUS", CloverManager.CODE_SUCCESS);
+        }
+        return d;
+    }
+
+    public Map setSmallChange(Params params){
+        String P_TYPE_ID = params.val("P_TYPE_ID");
+        String P_TYPE_PARENT = params.val("P_TYPE_PARENT");
+
+
+        Map d = new Hashtable();
+        d.put("P_TYPE_ID", P_TYPE_ID);
+        d.put("P_TYPE_PARENT", P_TYPE_PARENT);
+        int result;
+        if(P_TYPE_ID.length() > 0){
+            String sql = "SELECT MAX(P_TYPE_SORT) FROM X_P_TYPE WHERE P_TYPE_PARENT = "+P_TYPE_PARENT;
+            IQuery query = getQuery();
+            int P_TYPE_SORT = (NumberUtils.toInt(query.doQuery(sql).getValue()) + 1);
+            result = query.doExec(sql);
+            sql = "UPDATE X_P_TYPE SET P_TYPE_SORT=" + P_TYPE_SORT + ",P_TYPE_PARENT="+P_TYPE_PARENT+" WHERE P_TYPE_ID = " + P_TYPE_ID;
+            result = query.doExec(sql);
+            query.free();
+        }
+        else{
+            d.put("STATUS", CloverManager.CODE_FAILED);
+            return d;
+        }
+        if(result < 0){
+            d.put("STATUS", CloverManager.CODE_FAILED);
+        }
+        else{
+            MessageManager.getInstance().setVersion(MessageManager.MSG_VER_PRODUCT_TYPE);
+            d.put("STATUS", CloverManager.CODE_SUCCESS);
+        }
+        return d;
+    }
+
+    public Map setSmall(Form form){
+        Map data = form.getValuesMap();
+        String P_TYPE_ID = StringUtils.toString(data.get("P_TYPE_ID_S"));
+        String P_TYPE_NAME = StringUtils.toString(data.get("P_TYPE_NAME_S"));
+        String P_TYPE_PARENT = StringUtils.toString(data.get("P_TYPE_PARENT"));
+        String P_TYPE_SORT = StringUtils.toString(data.get("P_TYPE_SORT_S"));
+        Map d = new Hashtable();
+        if(P_TYPE_PARENT.length() == 0){
+            d.put("STATUS", CloverManager.CODE_FAILED);
+            return d;
+        }
+        d.put("P_TYPE_NAME", P_TYPE_NAME);
+        d.put("P_TYPE_PARENT", P_TYPE_PARENT);
+        d.put("P_TYPE_ID", P_TYPE_ID);
+        ITable t = getTable("X_P_TYPE").clearData();
+        int result;
+        if(P_TYPE_ID.length() == 0){
+            P_TYPE_ID = String.valueOf(t.getMaxID("P_TYPE_ID"));
+            d.put("P_TYPE_ID", P_TYPE_ID);
+            IQuery query = getQuery();
+            String sql = "SELECT MAX(P_TYPE_SORT) FROM X_P_TYPE WHERE P_TYPE_PARENT = "+P_TYPE_PARENT;
+            if(P_TYPE_SORT.length() == 0){
+                P_TYPE_SORT = (NumberUtils.toInt(query.doQuery(sql).getValue()) + 1) + "";
+            }
+//            else{
+//                sql = "UPDATE X_P_TYPE SET P_TYPE_SORT=P_TYPE_SORT+1 WHERE P_TYPE_PARENT = "+P_TYPE_PARENT+" AND P_TYPE_SORT > " + P_TYPE_SORT;
+//                query.doExec(sql);
+//                P_TYPE_SORT = (NumberUtils.toInt(P_TYPE_SORT) + 1) + "";
+//            }
+            query.free();
+            d.put("P_TYPE_SORT", P_TYPE_SORT);
+            result = t.data(d).create();
+        }
+        else{
+            if(P_TYPE_SORT.length() > 0){
+                d.put("P_TYPE_SORT", P_TYPE_SORT);
+            }
+            result = t.data(d).where(t.column("P_TYPE_ID").eq(P_TYPE_ID)).update();
+        }
+        if(result < 0){
+            d.put("STATUS", CloverManager.CODE_FAILED);
+
+        }
+        else{
+            MessageManager.getInstance().setVersion(MessageManager.MSG_VER_PRODUCT_TYPE);
+            d.put("STATUS", CloverManager.CODE_SUCCESS);
+        }
+        return d;
+    }
+
+    public int deleteLarge(Form form) {
+        Map data = form.getValuesMap();
+        String P_TYPE_ID = StringUtils.toString(data.get("P_TYPE_ID_L"));
+        if(P_TYPE_ID.length() == 0){
+            return CloverManager.CODE_FAILED;
+        }
+        String sql = "SELECT * FROM X_P_TYPE WHERE P_TYPE_PARENT = " + P_TYPE_ID;
+        IQuery query = getQuery();
+        if(query.rowCount(sql) > 0){
+            query.free();
+            return CloverManager.CODE_FAILED;
+        }
+        sql = "DELETE FROM X_P_TYPE WHERE P_TYPE_ID = " + P_TYPE_ID;
+//        sql = "UPDATE X_P_TYPE SET P_TYPE_STATUS = 2 WHERE P_TYPE_ID = " + P_TYPE_ID;
+        int result = query.doExec(sql);
+        query.free();
+        if(result < 0){
+            return CloverManager.CODE_FAILED;
+        }
+        MessageManager.getInstance().setVersion(MessageManager.MSG_VER_PRODUCT_TYPE);
+        return CloverManager.CODE_SUCCESS;
+    }
+    public int deleteSmall(Form form) {
+        Map data = form.getValuesMap();
+        String P_TYPE_ID = StringUtils.toString(data.get("P_TYPE_ID_S"));
+        if(P_TYPE_ID.length() == 0){
+            return CloverManager.CODE_FAILED;
+        }
+        String sql = "SELECT * FROM X_P_TYPE WHERE P_TYPE_PARENT = " + P_TYPE_ID;
+        IQuery query = getQuery();
+        if(query.rowCount(sql) > 0){
+            query.free();
+            return CloverManager.CODE_FAILED;
+        }
+        sql = "DELETE FROM X_P_TYPE WHERE P_TYPE_ID = " + P_TYPE_ID;
+//        sql = "UPDATE X_P_TYPE SET P_TYPE_STATUS = 2 WHERE P_TYPE_ID = " + P_TYPE_ID;
+        int result = query.doExec(sql);
+        query.free();
+        if(result < 0){
+            return CloverManager.CODE_FAILED;
+        }
+        MessageManager.getInstance().setVersion(MessageManager.MSG_VER_PRODUCT_TYPE);
+        return CloverManager.CODE_SUCCESS;
+    }
+}

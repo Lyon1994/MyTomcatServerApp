@@ -1,0 +1,42 @@
+package org.redot.clover.app.message;
+
+import org.redot.clover.core.ext.BaseAction;
+import org.redot.library.db.IQuery;
+import org.redot.library.lang.NumberUtils;
+
+import java.util.List;
+import java.util.Map;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 11-8-31
+ * Time: 下午2:28
+ * To change this template use File | Settings | File Templates.
+ */
+public class MessageVersionAction extends BaseAction{
+
+    public List<Map> get(){
+
+        IQuery query = getQuery();
+        String sql = "SELECT * FROM X_DATA_VERSION ORDER BY DATA_TYPE";
+        List<Map> data = query.doQuery(sql).tables();
+        query.free();
+        return data;
+    }
+
+    public void set(int type){
+        String sql = "SELECT DATA_VERSION FROM X_DATA_VERSION WHERE DATA_TYPE = " + type;
+        IQuery query = getQuery();
+        String versionStr = query.doQuery(sql).getValue();
+        long version = NumberUtils.toLong(query.doQuery(sql).getValue());
+        if(versionStr.length() == 0){
+            sql = "INSERT INTO X_DATA_VERSION (DATA_TYPE, DATA_VERSION) VALUES ("+type+", 1)";
+        }
+        else{
+            sql = "UPDATE X_DATA_VERSION SET DATA_VERSION = " + (version + 1)+" WHERE DATA_TYPE = " + type;
+        }
+        query.doExec(sql);
+        query.free();
+    }
+}

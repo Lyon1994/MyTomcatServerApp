@@ -1,0 +1,57 @@
+package org.redot.clover.app.product.rest;
+
+import org.redot.clover.app.product.ProductAction;
+import org.redot.clover.core.data.DataPackage;
+import org.redot.clover.core.ext.BaseResource;
+import org.redot.library.lang.NumberUtils;
+import org.redot.library.lang.StringUtils;
+import org.restlet.resource.Get;
+import org.restlet.resource.Post;
+import org.restlet.resource.Put;
+
+import java.util.HashMap;
+import java.util.Hashtable;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * Created by IntelliJ IDEA.
+ * User: Administrator
+ * Date: 10-12-30
+ * Time: 下午11:51
+ * To change this template use File | Settings | File Templates.
+ */
+public class Product extends BaseResource {
+
+    @Get("json")
+    public String doGet() {
+        DataPackage dp = new DataPackage();
+        ProductAction a = new ProductAction();
+        Map m = a.get(StringUtils.toString(getRequestAttributes().get("ID")));
+        if(m == null){
+            m = new Hashtable();
+        }
+        dp.getData().put("form", m);
+        return dp.toJSON();
+    }
+
+    @Post("json")
+    public String doPost() {
+        DataPackage dp = new DataPackage();
+        ProductAction a = new ProductAction();
+        Map data = a.set(form);
+        dp.setStatus(NumberUtils.toInt(data.get("STATUS")));
+        dp.getData().put("form", data);
+//       dp.setStatus(a.set(form));
+        return dp.toJSON();
+    }
+
+    @Put("json")
+    public String doDelete() {
+        DataPackage dp = new DataPackage();
+        ProductAction a = new ProductAction();
+        dp.setStatus(a.delete(form));
+        return dp.toJSON();
+    }
+
+}

@@ -1,0 +1,73 @@
+10
+
+dir
+134
+https://yh-cash/svn/yee/server/Redot/CloverServer/src/org/redot/clover/app
+https://yh-cash/svn/yee
+
+
+
+2012-12-17T01:51:55.015625Z
+134
+dev04
+
+
+svn:special svn:externals svn:needs-lock
+
+
+
+
+
+
+
+
+
+
+
+30be89d8-28cf-c24b-860c-b6d93eef35b8
+
+common
+dir
+
+crm
+dir
+
+desk
+dir
+
+favorable
+dir
+
+hr
+dir
+
+inventory
+dir
+
+item
+dir
+
+kitchen
+dir
+
+message
+dir
+
+order
+dir
+
+organization
+dir
+
+product
+dir
+
+recipe
+dir
+
+report
+dir
+
+system
+dir
+

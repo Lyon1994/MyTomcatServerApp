@@ -1,0 +1,190 @@
+package org.redot.library.db;
+
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+/**
+ * Copyright By Redot.
+ * User: CASH
+ * Date: 2009-10-17
+ * Time: 20:25:58
+ */
+public class ISqlParser {
+    private String type;
+    private String conditions;
+    private String tables;
+    private String order;
+    private String where;
+
+    public void parse(String sql) {
+        String regex = "";
+
+        type = "";
+        conditions = "";
+        tables = "";
+        order = "";
+        where = "";
+
+        if (sql.indexOf("select") == 0) {
+
+            type = "select";
+            if (isContains(sql, "\\s+where\\s+")) {
+                regex = "(select)(.+)(from)(.+)(where*)";
+            } else if (isContains(sql, "\\s+order\\s+")) {
+                regex = "(select)(.+)(from)(.+)(order*)";
+            } else {
+                regex = "(select)(.+)(from)(.+)($)";
+            }
+            tables = getMatchedPosition(regex, sql, 4);
+            conditions = getMatchedPosition(regex, sql, 2);
+            order = getOrderIndex(sql);
+            where = getWhere(sql);
+
+        } else if (sql.indexOf("insert") == 0) {
+
+            type = "insert";
+            regex = "(insert.*into)(.+)(values)(.+)";
+            tables = getMatchedPosition(regex, sql, 2);
+            conditions = getMatchedPosition(regex, sql, 4);
+
+        } else if (sql.indexOf("update") == 0) {
+
+            type = "update";
+            regex = "(update)(.+)(set)(.+)(where*)";
+            tables = getMatchedPosition(regex, sql, 2);
+            conditions = getMatchedPosition(regex, sql, 4);
+            where = getWhere(sql);
+
+        } else if (sql.indexOf("delete") == 0) {
+
+            type = "delete";
+            if (isContains(sql, "\\s+where\\s+")) {
+                regex = "(delete.*from)(.+)(where)(.+)";
+                where = getMatchedPosition(regex, sql, 4);
+            } else {
+                regex = "(delete.*from)(.+)($)";
+            }
+            tables = getMatchedPosition(regex, sql, 2);
+        }
+    }
+
+    // get matched string from position.
+    private static String getMatchedPosition(String regex, String text, int position) {
+        try {
+            // ignore string case.
+            Pattern pattern = Pattern.compile(regex, Pattern.CASE_INSENSITIVE);
+            Matcher matcher = pattern.matcher(text);
+            while (matcher.find()) {
+                return matcher.group(position).trim();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    // get where condition.
+    private static String getWhere(String sql) {
+        String regex = "";
+
+        if (isContains(sql, "where\\s+")) {
+            if (isContains(sql, "order\\s+by")) {
+                regex = "(where\\s+)(.+)(order)";
+            } else {
+                regex = "(where\\s+)(.+)($)";
+            }
+        } else {
+            return null;
+        }
+
+        return getMatchedPosition(regex, sql, 2).trim();
+    }
+
+    // get order by content.
+    private static String getOrderIndex(String sql) {
+        String regex = "";
+
+        if (isContains(sql, "order\\s+by")) {
+            regex = "(order\\s+by)(.+)($)";
+        } else {
+            return null;
+        }
+
+        return getMatchedPosition(regex, sql, 2).trim();
+    }
+
+    // check if contains.
+    private static boolean isContains(String lineText, String word) {
+        // ignore string case.
+        Pattern pattern = Pattern.compile(word, Pattern.CASE_INSENSITIVE);
+        Matcher matcher = pattern.matcher(lineText);
+        return matcher.find();
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    public void setType(String type) {
+        this.type = type;
+    }
+
+    public String getConditions() {
+        return conditions;
+    }
+
+    public void setConditions(String conditions) {
+        this.conditions = conditions;
+    }
+
+    public String getTables() {
+        return tables;
+    }
+
+    public void setTables(String tables) {
+        this.tables = tables;
+    }
+
+    public String getOrder() {
+        return order;
+    }
+
+    public void setOrder(String order) {
+        this.order = order;
+    }
+
+    public String getWhere() {
+        return where;
+    }
+
+    public void setWhere(String where) {
+        this.where = where;
+    }
+
+    public static void main(String[] args) {
+
+        /*
+        ISqlParser.parse("select * from ADMIN_MSTR order by ID desc");
+        System.out.println("tables: " + tables + ", condition: " + conditions);
+
+        ISqlParser.parse("select AM_NO, AM_PASSWD from ADMIN_MSTR where ID=3");
+        System.out.println("tables: " + tables + ", condition: " + conditions + ", where: " + where);
+
+        ISqlParser.parse("select AM_NO, AM_PASSWD from ADMIN_MSTR where ID>0 order by ID desc");
+        System.out.println("tables: " + tables + ", condition: " + conditions + ", where: " + where + ", order by: " + order);
+
+        ISqlParser.parse("insert into ADMIN_MSTR(ID, NAME, PASSWD) values ('1', 'Sam', 'abcd1234')");
+        System.out.println("tables: " + tables + ", condition: " + conditions);
+
+        ISqlParser.parse("update ADMIN_MSTR set NAME='ABCD', PASSWD='123465' where ID=1");
+        System.out.println("tables: " + tables + ", condition: " + conditions + ", where: " + where);
+
+        ISqlParser.parse("delete from ADMIN_MSTR where ID=2");
+        System.out.println("tables: " + tables + ", where: " + where);
+
+        ISqlParser.parse("select aaa, bb, (select * from ss,33 where aaa),(select cc from ss where is=1) from       222 a,ADMIN_MSTR b,aaa gg where ID=2 and name in(select name from xxx) left join aa on 12=32");
+        System.out.println("tables: " + tables + ", condition: " + conditions + ", where: " + where);
+
+        */
+    }
+}

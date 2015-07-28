@@ -1,0 +1,127 @@
+package org.redot.clover.print;
+
+import org.redot.clover.print.template.*;
+import org.redot.clover.print.template.PrintTemplate;
+import org.redot.library.lang.ArrayUtils;
+import org.redot.library.lang.NumberUtils;
+
+import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
+import java.net.InetSocketAddress;
+import java.net.Socket;
+import java.util.HashMap;
+import java.util.Set;
+
+public class PrintService {
+
+//    public static void doPrint(Printer printer, HashMap<String, String[]> data, String template) {
+//        PrintService.doPrint(printer, data, template, 1, false);
+//    }
+//
+//     public static void doPrint(Printer printer, HashMap<String, String[]> data, String template, int num) {
+//        PrintService.doPrint(printer, data, template, num, false);
+//    }
+
+    public static void Alarm(Printer printer){
+        Socket client = new Socket();
+        PrintWriter socketWriter = null;
+        try {
+            client.connect(new InetSocketAddress(printer.getIp(), printer.getPort()));
+            socketWriter = new PrintWriter(new OutputStreamWriter(client.getOutputStream(), "GBK"));
+            socketWriter.print(PrintInitialize.Alarm);
+            socketWriter.flush();
+            socketWriter.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+    }
+
+    public static int doPrint(Printer printer, HashMap<String, String[]> data, String template, int num, boolean moneyBox) {
+        try {
+
+//            System.out.println("------------------------------------------");
+//            System.out.println("printer = " + printer.getName());
+//            System.out.println("template = " + template);
+//            Set<String> set = data.keySet();
+//            for(String str : set){
+//                System.out.println(str + ":" + ArrayUtils.join("," , (String[])data.get(str)));
+//            }
+//            System.out.println("-------------------------------------------");
+            System.out.println("-------------------------------------------");
+            if(data != null){
+                if(data.containsKey("桌台")){
+                    System.out.println("桌台：" + ArrayUtils.join("," , (String[])data.get("桌台")));
+                }
+                 if(data.containsKey("订单ID")){
+                    System.out.println("订单ID：" + ArrayUtils.join("," , (String[])data.get("订单ID")));
+                }
+            }
+            System.out.println("打印机：" + printer.getName() + ", " + printer.getIp());
+            System.out.println("打印份数：" + num);
+
+
+            String printContent = "";
+            PrintTemplate printTemplate = PrintTemplateManager.getInstance().getTemplate(NumberUtils.toInt(template));
+            if(printTemplate != null){
+                PrintTemplate _printTemplate = printTemplate.copy();
+                if(_printTemplate == null){
+                    System.out.println("打印模板找不到");
+                    return 0;
+                }
+                System.out.println("打印模板：" + _printTemplate.getName());
+                _printTemplate.process(data);
+                printContent = _printTemplate.show();
+                _printTemplate = null;
+            }
+            else{
+                System.out.println("打印模板找不到");
+                return 0;
+            }
+            System.out.println("-------------------------------------------");
+            int status = printer.getStatus();
+            System.out.println("打印机状态:" + PrinterMonitor.getStatusName(status));
+            if(status > 0){
+                Printer bakPrinter = printer.getBakPrinter();
+                if(bakPrinter == null){
+                    System.out.println("找不到备用打印机!");
+                    return 0;
+                }
+                return doPrint(bakPrinter, data, template, num, moneyBox);
+            }
+
+            //PrintTemplate printTemplate = new PrintTemplate(template);
+//            String printContent = new HashMapConvert(printTemplate, data).show();
+
+
+
+            Socket client = new Socket();
+            PrintWriter socketWriter = null;
+            client.connect(new InetSocketAddress(printer.getIp(), printer.getPort()));
+            socketWriter = new PrintWriter(new OutputStreamWriter(client.getOutputStream(), "GBK"));
+//            printContent += PrintInitialize.CUT;
+//            printContent += PrintInitialize.Voice;
+            for(int i=0;i<num;i++){
+                socketWriter.print(printContent);
+                if (moneyBox) {
+                    System.out.println("开钱箱");
+                    socketWriter.println(PrintInitialize.MONEY_BOX);
+                }
+            }
+
+            socketWriter.flush();
+            socketWriter.close();
+            return 1;
+            //status = printer.getStatus();
+            //System.out.println("打印机状态XXXXXXXXXX:" + PrinterMonitor.getStatusName(status));
+        } catch (Exception e) {
+
+            e.printStackTrace();
+            return 0;
+        }
+
+    }
+}
+
+

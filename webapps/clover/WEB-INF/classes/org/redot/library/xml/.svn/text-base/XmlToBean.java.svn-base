@@ -1,0 +1,79 @@
+package org.redot.library.xml;
+
+import java.io.File;
+import java.io.FileReader;
+import java.io.FileNotFoundException;
+
+import com.thoughtworks.xstream.io.xml.DomDriver;
+import org.apache.log4j.Logger;
+import com.thoughtworks.xstream.XStream;
+
+/**
+ * Copyright By Redot.
+ * User: CASH
+ * Date: 2009-10-21
+ * Time: 14:11:35
+ */
+public class XmlToBean {
+
+    Logger logger = Logger.getLogger(this.getClass());
+
+    private XStream xs = null;
+
+    private File file = null;
+
+    private StringBuffer sb = null;
+
+
+    public XmlToBean(File file) {
+        xs = new XStream(new DomDriver());
+        this.file = file;
+    }
+
+    public XmlToBean(String name) {
+        xs = new XStream(new DomDriver());
+        this.file = new File(name);
+    }
+
+    public XmlToBean(StringBuffer sb) {
+        xs = new XStream(new DomDriver());
+        this.sb = sb;
+    }
+
+    public void alias(String name, Class cls){
+        xs.alias(name, cls);
+    }
+
+    public void addImplicitCollection(Class cls, String name){
+        xs.addImplicitCollection(cls, name);
+    }
+
+    public <T> T convert(Class<T> cls) {
+        if(file != null){
+            try {
+            //System.out.println("file="+file.getName());
+                FileReader reader = new FileReader(file);
+                return (T)xs.fromXML(reader);
+            }
+            catch (FileNotFoundException e) {
+                logger.error(file.getPath() + " is not found.");
+                //e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+            }
+            catch(Exception e){
+                logger.error(e);
+                //e.printStackTrace();
+            }
+        }
+        else if(sb != null){
+            try{
+                return (T)xs.fromXML(sb.toString());
+            }
+            catch(Exception e){
+                logger.error(e);
+                //e.printStackTrace();
+            }
+        }
+
+        return null;
+    }
+}

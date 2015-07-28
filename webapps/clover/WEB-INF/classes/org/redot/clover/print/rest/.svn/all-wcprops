@@ -1,0 +1,137 @@
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/yee/!svn/ver/134/server/Redot/CloverServer/src/org/redot/clover/print/rest
+END
+PrintTypeSmallDelete.java
+K 25
+svn:wc:ra_dav:version-url
+V 105
+/svn/yee/!svn/ver/118/server/Redot/CloverServer/src/org/redot/clover/print/rest/PrintTypeSmallDelete.java
+END
+PrintCaseArea.java
+K 25
+svn:wc:ra_dav:version-url
+V 98
+/svn/yee/!svn/ver/134/server/Redot/CloverServer/src/org/redot/clover/print/rest/PrintCaseArea.java
+END
+PrintCaseDelete.java
+K 25
+svn:wc:ra_dav:version-url
+V 99
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/print/rest/PrintCaseDelete.java
+END
+PrintTemplate.java
+K 25
+svn:wc:ra_dav:version-url
+V 97
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/print/rest/PrintTemplate.java
+END
+PrintTemplateList.java
+K 25
+svn:wc:ra_dav:version-url
+V 101
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/print/rest/PrintTemplateList.java
+END
+PrinterDelete.java
+K 25
+svn:wc:ra_dav:version-url
+V 97
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/print/rest/PrinterDelete.java
+END
+PrintTemplateSelect.java
+K 25
+svn:wc:ra_dav:version-url
+V 103
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/print/rest/PrintTemplateSelect.java
+END
+PrintTypeSelect.java
+K 25
+svn:wc:ra_dav:version-url
+V 99
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/print/rest/PrintTypeSelect.java
+END
+PrintTypeSmall.java
+K 25
+svn:wc:ra_dav:version-url
+V 99
+/svn/yee/!svn/ver/134/server/Redot/CloverServer/src/org/redot/clover/print/rest/PrintTypeSmall.java
+END
+PrintTypeLargeDelete.java
+K 25
+svn:wc:ra_dav:version-url
+V 105
+/svn/yee/!svn/ver/118/server/Redot/CloverServer/src/org/redot/clover/print/rest/PrintTypeLargeDelete.java
+END
+PrintCase.java
+K 25
+svn:wc:ra_dav:version-url
+V 93
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/print/rest/PrintCase.java
+END
+PrintCasePrinter.java
+K 25
+svn:wc:ra_dav:version-url
+V 101
+/svn/yee/!svn/ver/134/server/Redot/CloverServer/src/org/redot/clover/print/rest/PrintCasePrinter.java
+END
+PrintCaseList.java
+K 25
+svn:wc:ra_dav:version-url
+V 98
+/svn/yee/!svn/ver/134/server/Redot/CloverServer/src/org/redot/clover/print/rest/PrintCaseList.java
+END
+PrintCaseClass.java
+K 25
+svn:wc:ra_dav:version-url
+V 99
+/svn/yee/!svn/ver/134/server/Redot/CloverServer/src/org/redot/clover/print/rest/PrintCaseClass.java
+END
+Printer.java
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/print/rest/Printer.java
+END
+PrintCommandSelect.java
+K 25
+svn:wc:ra_dav:version-url
+V 102
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/print/rest/PrintCommandSelect.java
+END
+PrinterList.java
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/svn/yee/!svn/ver/134/server/Redot/CloverServer/src/org/redot/clover/print/rest/PrinterList.java
+END
+PrintCaseDish.java
+K 25
+svn:wc:ra_dav:version-url
+V 98
+/svn/yee/!svn/ver/134/server/Redot/CloverServer/src/org/redot/clover/print/rest/PrintCaseDish.java
+END
+PrinterSelect.java
+K 25
+svn:wc:ra_dav:version-url
+V 97
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/print/rest/PrinterSelect.java
+END
+PrintTypeLarge.java
+K 25
+svn:wc:ra_dav:version-url
+V 99
+/svn/yee/!svn/ver/118/server/Redot/CloverServer/src/org/redot/clover/print/rest/PrintTypeLarge.java
+END
+PrintTemplateDelete.java
+K 25
+svn:wc:ra_dav:version-url
+V 103
+/svn/yee/!svn/ver/12/server/Redot/CloverServer/src/org/redot/clover/print/rest/PrintTemplateDelete.java
+END
+PrinterBak.java
+K 25
+svn:wc:ra_dav:version-url
+V 95
+/svn/yee/!svn/ver/134/server/Redot/CloverServer/src/org/redot/clover/print/rest/PrinterBak.java
+END

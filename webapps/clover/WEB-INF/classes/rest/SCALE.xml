@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<clover>
+	<resource class="org.redot.clover.app.online.scale.rest.TypeScaleList">/scale/type_list</resource>
+	<resource class="org.redot.clover.app.online.scale.rest.TypeScaleUpdate">/scale/type_update</resource>
+	<resource class="org.redot.clover.app.online.scale.rest.TypeScaleInsert">/scale/type_insert</resource>
+	<resource class="org.redot.clover.app.online.scale.rest.TypeScaleDelete">/scale/type_delete</resource>
+	<resource class="org.redot.clover.app.online.scale.rest.SmartScaleList">/scale/smart_list</resource>
+	<resource class="org.redot.clover.app.online.scale.rest.SmartScaleUpdate">/scale/smart_update</resource>
+	<resource class="org.redot.clover.app.online.scale.rest.SmartScaleInsert">/scale/smart_insert</resource>
+	<resource class="org.redot.clover.app.online.scale.rest.SmartScaleDelete">/scale/smart_delete</resource>
+</clover>
